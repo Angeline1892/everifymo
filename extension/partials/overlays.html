@@ -1,0 +1,101 @@
+<!-- overlays.html -->
+<div id="notification-overlay" class="notification-view overlay">
+  <div class="overlay-header">
+    <strong>Notifications</strong>
+    <a href="#" id="mark-all-read">Mark all as read</a>
+  </div>
+    <div id="notification-list"></div>
+</div>
+
+<div id="profile-overlay" class="overlay">
+
+  <!-- Main profile view -->
+  <div id="profile-main-view" class="profile-view">
+    <div class="profile-icon-circle">
+      <img src="../assets/images/profile_icon.png" alt="Profile" />
+    </div>
+    <p class="profile-welcome">Welcome to your profile page, <span id="profile-username-display"></span>!</p>
+    <p class="profile-detail"><strong>E-mail:</strong> <span id="profile-email-display"></span></p>
+    <p class="profile-detail"><strong>Username:</strong> <span id="profile-username-display-2"></span></p>
+
+    <div class="profile-actions">
+      <button class="profile-action-link" id="btn-edit-username">
+        <span>Edit Username</span>
+        <img src="../assets/images/pen_icon.png" alt="Edit" class="profile-action-icon" />
+      </button>
+      <button class="profile-action-link" id="btn-sign-out">
+        <span>Sign Out</span>
+        <img src="../assets/images/out_icon.png" alt="Sign Out" class="profile-action-icon" />
+      </button>
+      <button class="profile-action-link profile-action-danger" id="btn-delete-account">
+        <span>Delete Account</span>
+        <img src="../assets/images/delete_icon.png" alt="Delete" class="profile-action-icon" />
+      </button>
+    </div>
+  </div>
+
+  <!-- Edit username view -->
+  <div id="profile-edit-view" class="profile-view hidden">
+    <div class="profile-icon-circle">
+      <img src="../assets/images/edit_icon.png" alt="Edit" />
+    </div>
+    <p class="profile-welcome">Input Your New Username.</p>
+    <input type="text" id="new-username-input" class="profile-input" />
+    <div class="profile-confirm-row">
+      <button class="profile-action-link" id="btn-confirm-username">
+        <span>Confirm</span>
+        <img src="../assets/images/confirm_icon.png" alt="Confirm" class="profile-action-icon" />
+      </button>
+      <button class="profile-action-link" id="btn-cancel-username">
+        <span>Cancel</span>
+        <img src="../assets/images/out_icon.png" alt="Cancel" class="profile-action-icon" />
+      </button>
+    </div>
+  </div>
+
+  <!-- Delete account confirmation -->
+  <div id="profile-delete-confirm-view" class="profile-view hidden">
+    <div class="profile-icon-circle">
+      <img src="../assets/images/sad_face_icon.png" alt="Sad face" />
+    </div>
+    <p class="profile-welcome">Are you sure?</p>
+    <p class="profile-detail profile-detail-center">Deleting an account means you will lose access to all of your records. This cannot be undone.</p>
+    <div class="input-wrap">
+      <input type="password" id="delete-password-input" class="profile-input" placeholder="Confirm your password" />
+      <button type="button" class="icon-placeholder-eye toggle-password-visibility" data-target="delete-password-input" aria-label="Show password">
+        <img src="../assets/images/eye_open_icon.png" class="eye-icon" alt="" />
+      </button>
+    </div>
+    <div class="field-error" id="delete-password-error" aria-live="polite"></div>
+    <div class="profile-confirm-row">
+      <button class="profile-action-link" id="btn-confirm-delete">
+        <span>Confirm</span>
+        <img src="../assets/images/confirm_icon.png" alt="Confirm" class="profile-action-icon" />
+      </button>
+      <button class="profile-action-link" id="btn-cancel-delete">
+        <span>Cancel</span>
+        <img src="../assets/images/out_icon.png" alt="Cancel" class="profile-action-icon" />
+      </button>
+    </div>
+  </div>
+
+  <!-- Sign out confirmation -->
+  <div id="profile-signout-confirm-view" class="profile-view hidden">
+    <div class="profile-icon-circle">
+      <img src="../assets/images/sad_face_icon.png" alt="Sad face" />
+    </div>
+    <p class="profile-welcome">Are you sure?</p>
+    <p class="profile-detail profile-detail-center">Signing out means you will need to sign in again to access your records.</p>
+    <div class="profile-confirm-row">
+      <button class="profile-action-link" id="btn-confirm-signout">
+        <span>Confirm</span>
+        <img src="../assets/images/confirm_icon.png" alt="Confirm" class="profile-action-icon" />
+      </button>
+      <button class="profile-action-link" id="btn-cancel-signout">
+        <span>Cancel</span>
+        <img src="../assets/images/out_icon.png" alt="Cancel" class="profile-action-icon" />
+      </button>
+    </div>
+  </div>
+
+</div>

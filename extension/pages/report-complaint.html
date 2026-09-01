@@ -1,0 +1,189 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product Complaint</title>
+  <link rel="stylesheet" href="../css/global.css" />
+</head>
+<body>
+  <main class="report-complaint-card">
+    <div id="header-slot"></div>
+        <div id="overlay-slot"></div>
+        
+        <div id="blur-target">
+            <div id="nav-slot"></div>
+            <div id="page-content">
+
+              <div id="report-default-view" class="report-view">
+                <div class="notice-banner">
+                   <img class="notice-icon" src="../assets/images/report.png" alt="Report Icon" /> 
+                  <div class="notice-text-container">
+                    <p class="notice-title">This is Your Complaint Report Page.</p> 
+                    <p class="notice-text">Optional. Highlight a cosmetic product on supported platforms to 
+                        check its FDA registration — if unregistered, file a complaint 
+                        right here. See About for details.</p> 
+                  </div>  
+                </div>
+              </div>
+
+              <div id="report-form-view" class="report-view hidden">
+                <div class="notice-banner">
+                   <img class="notice-icon" src="../assets/images/report.png" alt="Report Icon" /> 
+                  <div class="notice-text-container">
+                    <p class="notice-title">Reporting a Complaint as <span id="home-username"></span>.</p> 
+                    <p class="notice-text">This report will be saved to your account for tracking. 
+                      Make sure your details are accurate before 
+                      submitting.</p> 
+                  </div>  
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="complaint-product-name">Product Name/Title</label>
+                  <textarea id="complaint-product-name-user" class="complaint-input" placeholder="Enter Product Name/Title"></textarea>
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="complaint-product-url">Link/URL</label>
+                  <textarea id="complaint-product-url-user" class="complaint-input" placeholder="Enter Product Link/URL"></textarea>
+                </div>
+                
+                <div class="field">
+                  <label class="field-label" for="store-name">Name of the Store</label>
+                  <textarea id="store-name-user" class="complaint-input" placeholder="Enter Store Name"></textarea>
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="complaint-description">Description (optional)</label>
+                  <textarea id="complaint-description-user" class="complaint-input" placeholder="Tell us what made this product look suspicious..."></textarea>
+                </div>
+
+                <div class="attach-box report-attach-box" role="button" tabindex="0">
+                  <input type="file" class="report-attach-input hidden" accept="image/*" />
+                  <img src="../assets/images/upload_icon.png" alt="Upload Icon" class="upload-icon report-upload-icon" />
+                  <span class="attach-text report-attach-text">Attach screenshot (optional)</span>
+                </div>
+
+                <div class="action-row">
+                  <button class="btn-cancel report-cancel-btn" type="button">Cancel</button>
+                  <button class="btn-submit-report report-submit-btn" type="button">Submit Report</button>
+                </div>
+
+              </div>
+
+              <div id="report-success-view" class="report-view hidden">
+                <div class="notice-banner">
+                   <img class="notice-icon" src="../assets/images/report.png" alt="Report Icon" /> 
+                  <div class="notice-text-container">
+                    <p class="notice-title">Complaint Successfully Reported!</p> 
+                    <p class="notice-text">You can now view your complaint status,  
+                      complaint history and verification history by clicking the buttons above.</p> 
+                  </div>  
+                </div>
+                <a href="#" class="see-details-link submit-another-link">Submit another report</a>
+              </div>
+
+              <div id="report-cancelled-view" class="report-view hidden">
+                <div class="notice-banner">
+                   <img class="notice-icon" src="../assets/images/report.png" alt="Report Icon" /> 
+                  <div class="notice-text-container">
+                    <p class="notice-title">Complaint Report Cancelled</p> 
+                    <p class="notice-text">No changes were saved. You can start a new report 
+                      anytime an unregistered/suspicious product is detected.</p> 
+                  </div>  
+                </div>
+                <a href="#" class="see-details-link back-to-report-link">Back to Report</a>
+              </div>
+
+              <!-- Guest View -->
+
+               <div id="report-default-view-guest" class="report-view-guest hidden">
+                <div class="notice-banner">
+                   <img class="notice-icon" src="../assets/images/report.png" alt="Report Icon" /> 
+                  <div class="notice-text-container">
+                    <p class="notice-title">Optional. Highlight a cosmetic product on supported platforms to 
+                        check its FDA registration — if unregistered, file a complaint 
+                        right here. See About for details.</p> 
+                  </div>  
+                </div>
+              </div>
+
+              <div id="report-form-view-guest" class="report-view-guest hidden">
+                <div class="notice-banner">
+                   <img class="notice-icon" src="../assets/images/report.png" alt="Report Icon" /> 
+                  <div class="notice-text-container">
+                    <p class="notice-title">Reporting a Complaint as a Guest</p> 
+                    <p class="notice-text">This report will not be saved. Make sure your details are accurate before 
+                      submitting.<a href="auth.html" class="guest-notice-link">Sign in/up</a> for tracking.</p>                  </div>  
+                </div>
+                
+                 <div class="field">
+                  <label class="field-label" for="complaint-product-name">Product Name/Title</label>
+                  <textarea id="complaint-product-name-guest" class="complaint-input" placeholder="Enter Product Name/Title"></textarea>
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="complaint-product-url">Link/URL</label>
+                  <textarea id="complaint-product-url-guest" class="complaint-input" placeholder="Enter Product Link/URL"></textarea>
+                </div>
+                
+                <div class="field">
+                  <label class="field-label" for="store-name">Name of the Store</label>
+                  <textarea id="store-name-guest" class="complaint-input" placeholder="Enter Store Name"></textarea>
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="complaint-description">Description (optional)</label>
+                  <textarea id="complaint-description-guest" class="complaint-input" placeholder="Tell us what made this product look suspicious..."></textarea>
+                </div>
+
+                <div class="attach-box report-attach-box" role="button" tabindex="0">
+                  <input type="file" class="report-attach-input hidden" accept="image/*" />
+                  <img src="../assets/images/upload_icon.png" alt="Upload Icon" class="upload-icon report-upload-icon" />
+                  <span class="attach-text report-attach-text">Attach screenshot (optional)</span>
+                </div>
+
+                <div class="action-row">
+                  <button class="btn-cancel report-cancel-btn" type="button">Cancel</button>
+                  <button class="btn-submit-report report-submit-btn" type="button">Submit Report</button>
+                </div>
+
+              </div>
+
+              <div id="report-success-view-guest" class="report-view-guest hidden">
+                <div class="notice-banner">
+                   <img class="notice-icon" src="../assets/images/report.png" alt="Report Icon" /> 
+                  <div class="notice-text-container">
+                    <p class="notice-title">Complaint Successfully Reported!</p> 
+                    <p class="notice-text">This report is not saved. <a href="auth.html" class="guest-notice-link">Sign in/up</a> for tracking.</p> 
+                  </div>  
+                </div>
+                <a href="#" class="see-details-link submit-another-link">Submit another report</a>
+              </div>
+
+              <div id="report-cancelled-view-guest" class="report-view-guest hidden">
+                <div class="notice-banner">
+                   <img class="notice-icon" src="../assets/images/report.png" alt="Report Icon" /> 
+                  <div class="notice-text-container">
+                    <p class="notice-title">Complaint Report Cancelled</p> 
+                    <p class="notice-text">No changes were saved. You can start a new report 
+                      anytime an unregistered product is detected.</p> 
+                  </div>  
+                </div>
+                <a href="#" class="see-details-link back-to-report-link">Back to Report</a>
+              </div>
+
+            </div>
+        </div>
+    
+  </main>
+
+  <script type="module" src="../utils/api.js"></script>
+  <script type="module" src="../scripts/session.js"></script>
+  <script type="module" src="../js/partial-loader.js"></script>
+  <script type="module" src="../js/header.js"></script>
+  <script type="module" src="../js/nav.js"></script>
+  <script type="module" src="../js/report.js"></script>
+</body>
+</html>
+

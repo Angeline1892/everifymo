@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">    
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>E-VERIFY | About</title>
+        <link rel="stylesheet" href="../css/global.css" />
+    </head>
+    <body>
+        <main class="about-card">
+            <div class="header-row-about-page">
+                <div class="header-left-about-page">
+                    <img
+                    src="../assets/images/fda_bg.png"
+                    alt="E-Verify About Page Header Image"
+                    class="about-pageheader-image">
+                    <div class="about-header-buttons"> 
+                    <button class="notif-btn" id="notif-btn"><img src="../assets/images/notif_icon.png" alt="Notification Button"> 
+                        <span id="notif-badge" class="notif-badge hidden"></span>
+                    </button>
+                    <button class="profile-dropdown-btn" id="profile-dropdown-btn"><img src="../assets/images/profile_dropdown_icon.png" alt="Profile Dropdown Button"> </button>
+                    <button class="exit-btn" id="exit-btn"><img src="../assets/images/exit_icon.png" alt="Exit Button"></button>
+
+                    </div>
+                </div>
+            </div>
+
+            <div id="overlay-slot"></div>
+            
+            <div id="blur-target">
+                <div id="nav-slot"></div>
+                
+                <div id="page-content">
+                    <div class="about-everify-details">
+                        <div class="about-everify-row">
+                            <div class="about-everify-text">
+                            <p class="about-everify-title">E-Verify</p>
+                            <p class="about-everify-version">Version 1.0</p>
+                            <p class="about-everify-description">
+                                E-Verify Extension is a real-time FDA cosmetic 
+                                products verification for major e-marketplace platforms (Shopee, Lazada, 
+                                TikTok Shop, Facebook Marketplace) in the Philippines.
+                            </p>
+                            </div>
+                            <span class="about-everify-icon">
+                            <img src="../assets/images/extension_icon_big.png" alt="Extension Icon">
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="about-everify-guide">
+                        <div class="about-everify-guide-top">
+                            <p class="about-everify-guide-title">How it Works</p>
+                            <p class="about-everify-guide-subtitle">3 simple steps:</p>
+                        </div>
+                    
+
+                        <div class="about-everify-guide-steps">
+                            <div class="about-everify-guide-step1">
+                                <img src="../assets/images/highlight_icon.png" alt="Step 1 Icon" class="about-everify-guide-step-icon">
+                                <p class="step-title">Highlight</p>
+                                <p class="step-description">Shop for cosmetic products on Shopee, Lazada, TikTok Shop, or Facebook Marketplace, then highlight an item to check its verification status.</p>
+                            </div>
+
+                            <div class="about-everify-guide-step2">
+                                <img src="../assets/images/search_icon.png" alt="Step 2 Icon" class="about-everify-guide-step-icon">
+                                <p class="step-title">Scan</p>
+                                <p class="step-description">E-Verify will then detect & check the cosmetic product from the FDA database</p>
+                            </div>
+
+                            <div class="about-everify-guide-step3">
+                                <img src="../assets/images/clock_icon.png" alt="Step 2 Icon" class="about-everify-guide-step-icon">
+                                <p class="step-title">Verify</p>
+                                <p class="step-description">See if detected cosmetic product is FDA Registered, Unregistered, and Suspicious (needs further checking).</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="about-everify-platforms">
+                        <p class="about-everify-platforms-title">Supported E-marketplace Platforms</p>
+
+                        <div class="platforms-grid">
+                            <div class="platform-item">
+                                <img src="../assets/images/shopee_icon.png" alt="Shopee Logo" class="platform-logo">
+                                <p class="platform-name">Shopee</p>
+                            </div>
+                            <div class="platform-item">
+                                <img src="../assets/images/lazada_icon.png" alt="Lazada Logo" class="platform-logo">
+                                <p class="platform-name">Lazada</p>
+                            </div>
+                            <div class="platform-item">
+                                <img src="../assets/images/marketplace_icon.png" alt="Facebook Marketplace Logo" class="platform-logo">
+                                <p class="platform-name">Facebook Marketplace</p>
+                            </div>
+                            <div class="platform-item">
+                                <img src="../assets/images/tiktok_icon.png" alt="TikTok Shop Logo" class="platform-logo">
+                                <p class="platform-name">TikTok Shop</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="about-everify-agencies">
+                            <p class="about-everify-agencies-title">Partner Agencies</p>
+
+                            <div class="agencies-grid">
+                                <div class="agency-item">
+                                    <img src="../assets/images/fda_icon.png" alt="FDA Logo" class="agency-logo">
+                                    <p class="agency-name">Food and Drug Administration</p>
+                                </div>
+                                <div class="agency-item">
+                                    <img src="../assets/images/cidg_icon.png" alt="CIDG Logo" class="agency-logo">
+                                    <p class="agency-name">Criminal Investigation and Detection Group</p>
+                                </div>
+                            </div>
+                    </div>
+
+                    <div class="about-everify-terms">
+                        <p class="about-everify-terms-title">Terms and Conditions</p>
+                        <p class="about-everify-terms-subtitle">Last updated: July 2026</p>
+                        <p class="about-everify-terms-description">
+                            By using the E-Verify Extension, you agree to the terms and conditions set forth by the developers. 
+                            The extension is provided "as is" without any warranties or guarantees, and the developers are not 
+                            responsible for any damages or losses arising from its use. E-Verify only processes publicly visible 
+                            product listing data (such as titles) for FDA verification purposes and does not collect personal 
+                            browsing history. Users are encouraged to verify product authenticity through official FDA channels 
+                            and may use the extension's built-in reporting feature to flag suspicious or unregistered products.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+        </main>
+
+        <script type="module" src="../utils/api.js"></script>
+        <script type="module" src="../scripts/session.js"></script>
+        <script type="module" src="../js/partial-loader.js"></script>
+        <script type="module" src="../js/header.js"></script>
+        <script type="module" src="../js/nav.js"></script>
+    </body>
+</html>

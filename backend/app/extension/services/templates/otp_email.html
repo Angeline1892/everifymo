@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Verification Code</title>
+</head>
+<body style="margin:0; padding:0; background-color:#E5E5E5; font-family: 'Segoe UI', Arial, sans-serif;">
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#E5E5E5; padding:32px 16px;">
+    <tr>
+      <td align="center">
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background-color:#FDFDFD; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:28px 32px 16px 32px; border-bottom:2px solid #E5E5E5;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="vertical-align:middle; padding-right:10px;">
+                    <img src="cid:extension_logo"
+                         width="36" height="36" alt="E-Verify Logo"
+                         style="display:block; border-radius:50%;" />
+                  </td>
+                  <td style="vertical-align:middle; font-size:22px; font-weight:700; color:#030303; font-family: 'Segoe UI', Arial, sans-serif;">
+                    E-Verify
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              <p style="margin:0 0 8px 0; font-size:18px; font-weight:700; color:#1F2937; font-family: 'Segoe UI', Arial, sans-serif;">
+                Your verification code
+              </p>
+              <p style="margin:0 0 24px 0; font-size:14px; line-height:1.5; color:#777777;">
+                Enter this code to verify your email and continue.
+              </p>
+
+              <!-- OTP Code box -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#EEF0F3; border:1px solid #1F2937; border-radius:10px; margin-bottom:24px;">
+                <tr>
+                  <td align="center" style="padding:20px;">
+                    <span style="font-size:32px; font-weight:700; letter-spacing:8px; color:#1F2937; font-family: 'Segoe UI', Arial, sans-serif;">
+                      {{OTP_CODE}}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Expiry notice -->
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
+                <tr>
+                  <td style="font-size:13px; color:#777777; line-height:1.5;">
+                    ⏱️&nbsp; This code expires in <strong style="color:#1F2937;">{{EXPIRE_MINUTES}} minutes</strong>.
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:20px 0 0 0; font-size:12px; line-height:1.5; color:#777777;">
+                If you didn't request this code, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:16px 32px; background-color:#F3F3F3; border-top:1px solid #E5E5E5;">
+              <p style="margin:0; font-size:11px; color:#777777; text-align:center;">
+                E-Verify · Real-time FDA product verification
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

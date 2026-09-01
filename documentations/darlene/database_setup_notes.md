@@ -55,7 +55,7 @@ This file does nothing visible on its own — it only becomes meaningful once re
 
 ---
 
-## `app/database/session.py`
+## `app/database/sessions.py`
 
 ```python
 from sqlalchemy import create_engine

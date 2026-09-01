@@ -1,0 +1,3098 @@
+.AdminLoginContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  background: #1E293B;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.AdminLoginWrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: stretch;
+  width: min(88vw, 1280px);
+  min-height: 560px;
+  background: rgba(253, 253, 253, 0.07);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 48px 56px;
+  gap: 48px;
+  box-sizing: border-box;
+  overflow: hidden;
+  animation: LoginSlideUp 0.3s ease;
+}
+
+/* ── LEFT PANEL ── */
+.AdminLoginLeftPanel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 0;
+  gap: 14px;
+}
+
+.Agency {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-direction: row;
+}
+
+.Agency img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.AgencyTop img, .FdaLogo {
+  width: 60px;
+  height: 60px;
+}
+
+
+
+
+/* ── RIGHT PANEL ── */
+.AdminLoginRightPanel {
+width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  padding: 38px 20px;
+  border-radius: 16px;
+   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow:hidden;
+}
+
+.AdminLoginRightPanel.OtpPanelActive {
+  justify-content: flex-start;
+}
+
+.AdminLoginRightPanel form.OtpFormActive .OtpContainer {
+  padding: 0 20px;
+  margin-top: 10px;
+}
+
+.AdminLoginRightPanel form.OtpFormActive {
+  padding: 0 0 36px;
+  justify-content: flex-start;
+}
+
+.AdminLoginRightPanel form {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  padding: 28px 48px 36px;
+}
+.AdminLoginInputWrapper{
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 10px;
+}
+.AdminLoginInputIcon{
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.AdminLoginInputWrapper input{
+ width: 100%;
+  padding: 11px 12px 11px 40px !important;
+  margin-bottom: 0 !important;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  background: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.AdminLoginform{
+    display: flex;
+  flex-direction: column;
+}
+.AdminLoginform label{
+    display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+@keyframes LoginSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.AdminLoginHeader{
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 5px;
+}
+
+.AdminLoginHeader small{
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+.AdminLoginHeader h2{
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+
+.AdminLoginHeader_otp {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  margin: 0 0 20px 0;
+  padding: 0;
+  background: none;
+  border-bottom: none;
+}
+
+.AdminLoginHeader_otp h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: 0.3px;
+  margin: 0;
+}
+
+.AdminLoginHeader_otp p {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #64748b;
+  margin: 8px 0 0 0;
+}
+
+
+
+
+
+.AdminLoginWrapper form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 28px 32px 36px;
+}
+.AdminLoginWrapper label {
+  /* display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-bottom: 7px;
+  letter-spacing: 0.2px; */
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.AdminLoginWrapper label span {
+  color: #B91C1C;
+}
+
+.AdminLoginWrapper input {
+  width: 100%;
+  padding: 11px 45px 11px 40px !important;
+  margin-bottom: 0 !important;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  background: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.AdminLoginWrapper input::placeholder {
+  color: #64748b;
+}
+
+.AdminLoginWrapper input:focus {
+  border-color: #1E293B;
+  box-shadow: 0 0 0 3px rgba(9, 44, 41, 0.25);
+  outline: none;
+}
+
+.AdminLoginWrapper button[type="submit"] {
+  width: 100%;
+  margin-top: 15px;
+  padding: 13px;
+  background: #1E293B;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 0 3px rgba(9, 44, 41, 0.25);
+  letter-spacing: 0.3px;
+}
+
+.AdminLoginWrapper button[type="submit"]:hover {
+  background: #1E293B;
+  transform: translateY(-2px);
+
+}
+
+.AdminLoginWrapper button[type="submit"]:active {
+  transform: translateY(0);
+}
+
+/* Password show/hide wrapper */
+.AdminPasswordInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.AdminPasswordInputWrapper input {
+    width: 100%;
+  padding: 11px 45px 11px 40px !important;
+  margin-bottom: 0 !important;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  background: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.PasswordLabelRow {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.PasswordLabelRow label {
+  margin: 0;
+}
+
+.PasswordLabelRow .ForgotPasswordLink {
+  margin: 0;
+}
+
+.TogglePasswordBtn {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #1E293B;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.TogglePasswordBtn:hover {
+  color: #1E293B;
+}
+
+/* Forgot password link */
+.ForgotPasswordLink {
+  /* display: block;
+  margin: 2px 0 6px 0;
+  cursor: pointer;
+  color: #0D9488;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.15s ease; */
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #B91C1C;
+  cursor: pointer;
+}
+
+.ForgotPasswordLink:hover {
+  color: #8f1313;
+}
+/* ── Remember me + Forgot password row (under password field) ── */
+.AdminRememberMeRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.AdminRememberMeRow label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px;
+  margin: 0 !important;
+  font-family: 'Inter', sans-serif;
+  font-size: 12.5px;
+  color: #475569;
+  cursor: pointer;
+}
+
+.AdminRememberMeRow input[type="checkbox"] {
+  width: 15px !important;
+  height: 15px !important;
+  margin: 0 !important;
+  cursor: pointer;
+  accent-color: #1E293B;
+}
+
+.AdminRememberMeRow .ForgotPasswordLink {
+  margin: 0 !important;
+}
+
+/* per-field validation error styling (mirrors SAMFieldError / UMFieldError) */
+.AdminLoginFieldError {
+  font-size: 12px;
+  color: #B91C1C !important;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Inter', sans-serif;
+}
+
+/* OTP Section */
+.OtpContainer {
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.4s ease-out forwards;
+}
+.OtpInstructions {
+  color: #cbd5e1;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.OtpInstructions span {
+  color: #0D9488;
+  font-weight: 600;
+}
+
+.OtpTestHint {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 400;
+  display: block;
+  margin-top: 6px;
+}
+
+.OtpInputGrid {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.OtpInputGrid input{
+  width: 48px !important;
+  height: 48px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex: 0 0 44px !important;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  box-sizing: border-box !important;
+  transition: all 0.2s ease;
+}
+
+.OtpInputGrid input:focus {
+  border-color: #0D9488 !important;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+  outline: none;
+}
+
+.OtpTimerContainer {
+  color: #94a3b8;
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.OtpTimerContainer strong {
+  color: #0D9488;
+  font-weight: 700;
+}
+
+.ResendButton {
+  background: transparent;
+  border: none;
+  color: #0D9488;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.ResendButton:hover {
+  color: #5eead4;
+}
+
+.BackToLoginBtn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 13px;
+  cursor: pointer;
+  display: block;
+  margin: 4px auto;
+  padding: 4px 0;
+  transition: color 0.15s ease;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.BackToLoginBtn:hover {
+  color: #f1f5f9;
+}
+
+.AdminLoginRightPanel .LoginInputWrapper, 
+.AdminLoginRightPanel .PasswordInputWrapper {
+  margin-bottom: 20px !important;
+}
+
+.AdminLoginRightPanel label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+@keyframes LoginShake {
+  0%, 100% { transform: translateX(0); }
+  25%       { transform: translateX(-5px); }
+  75%       { transform: translateX(5px); }
+}
+
+.AdminLoginErrorMsgContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 15px;
+}
+
+.AdminLoginErrorText {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #f87171;
+  margin: 0;
+  text-align: center;
+}
+
+.login-input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+/* WORKSPACE LAYOUT STYLES */
+.SuperadminMainContainer {
+  display: flex;
+  height: 100vh;
+  background: #fdfdfd;
+}
+
+.SuperadminContentContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.SuperadminMainfeed {
+  flex: 1;
+  padding: 32px;
+  background: #f5f5f5;
+  overflow-y: auto;
+}
+
+
+.AdminLoginWrapper label span{
+  color: red;
+}
+
+/* SUPERADMIN USER MANAGEMENT */
+
+.UMPageContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+
+.UMPageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.UMPageTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.UMPageTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.UMPageSubtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ── Add Personnel Button ── */
+.UMAddPersonnelBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+  white-space: nowrap;
+}
+
+.UMAddPersonnelBtn:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.45);
+}
+
+.UMAddPersonnelBtn:active {
+  transform: translateY(0);
+}
+
+.UMBtnIcon {
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 400;
+}
+
+/* ── Stats Row ── */
+.UMStatsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.UMStatCard {
+  flex: 1;
+  min-width: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.18s ease;
+}
+
+.UMStatCard:hover {
+  transform: translateY(-2px);
+}
+
+.UMStatValue {
+  font-size: 26px;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+}
+
+.UMStatLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-total  { border-top: 3px solid #1E293B; }
+.stat-total  .UMStatValue { color: #1E293B; }
+
+.stat-active { border-top: 3px solid #16a34a; }
+.stat-active .UMStatValue { color: #16a34a; }
+
+.stat-pending { border-top: 3px solid #d97706; }
+.stat-pending .UMStatValue { color: #d97706; }
+
+.stat-activation { border-top: 3px solid #2563eb; }
+.stat-activation .UMStatValue { color: #2563eb; }
+
+.stat-suspended { border-top: 3px solid #dc2626; }
+.stat-suspended .UMStatValue { color: #dc2626; }
+
+/* ── Table ── */
+.UMTableWrapper {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.UMTable thead tr:first-child th:first-child {
+  border-top-left-radius: 13px;
+}
+
+.UMTable thead tr:first-child th:last-child {
+  border-top-right-radius: 13px;
+}
+
+.UMTable tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 13px;
+}
+
+.UMTable tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 13px;
+}
+
+.UMTable {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+}
+
+.UMTable thead tr {
+  background: #1E293B;
+}
+
+.UMTable thead th {
+  padding: 13px 16px;
+  text-align: left;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+
+.UMTable tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+}
+
+.UMTable tbody tr:last-child {
+  border-bottom: none;
+}
+
+.UMTable tbody tr:hover {
+  background: #f8fafc;
+}
+
+.UMTable tbody td {
+  padding: 13px 16px;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.UMTdCenter {
+  text-align: center;
+  color: #94a3b8 !important;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.UMEmailCell {
+  color: #0D9488 !important;
+  font-size: 13px;
+}
+
+.UMEmpty {
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+/* ── Status Badges ── */
+.UMStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.badge-pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.badge-for-activation {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-active {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-suspended {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.badge-expired {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* ── Action Buttons ── */
+.UMActionBtn {
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.btn-resend {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+.btn-resend:hover {
+  background: #fde68a;
+}
+
+.btn-activate {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+.btn-activate:hover {
+  background: #bfdbfe;
+}
+
+.btn-suspend {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+.btn-suspend:hover {
+  background: #fecaca;
+}
+
+.btn-reactivate {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+.btn-reactivate:hover {
+  background: #bbf7d0;
+}
+
+/* ── Modal Overlay ── */
+.UMModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: UMFadeIn 0.2s ease;
+}
+
+@keyframes UMFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal Card ── */
+.UMModal {
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  animation: UMSlideUp 0.25s ease;
+  overflow: hidden;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+@keyframes UMSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Add Modal */
+.UMAddModal {
+  width: 100%;
+  max-width: 440px;
+  padding: 32px;
+}
+
+.UMModalHeader {
+  margin-bottom: 24px;
+}
+
+.UMModalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 6px;
+}
+
+.UMModalSubtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Confirm Modal */
+.UMConfirmModal {
+  width: 100%;
+  max-width: 400px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 36px 32px;
+  text-align: center;
+}
+
+.UMConfirmIcon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.UMConfirmMessage {
+  font-size: 14px;
+  color: #64748b;
+  margin: 8px 0 28px;
+  line-height: 1.6;
+}
+
+/* ── Form Elements ── */
+.UMFormGroup {
+  display: flex;
+  flex-direction: column;
+  
+  gap: 6px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.UMLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.UMRequired {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+.UMInput {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 14px;
+  color: #111827;
+  background: #f9fafb;
+  transition: all 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+.UMRegionAgencyRow{
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  gap: 6px;
+  margin-top: 20px;
+}
+.UMRegionAgencyRow label{
+  color: #1E293B;
+}
+ 
+.UMRegionSelect, .UMAgencySelect{
+  width: 80%;
+  height: 30px;
+  padding: 3px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+}
+.UMRegionSelect:focus, .UMAgencySelect:focus{
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+  outline: none;
+}
+
+.UMInput:focus {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+  background: #fff;
+}
+
+.UMInput.input-error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.UMFieldError {
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 2px;
+}
+
+/* ── Modal Footer ── */
+.UMModalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+}
+
+.UMFooterCenter {
+  justify-content: center;
+}
+
+.UMCancelBtn {
+  padding: 10px 20px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.UMCancelBtn:hover {
+  background: #e2e8f0;
+}
+
+.UMConfirmBtn {
+  padding: 10px 22px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.UMConfirmBtn.primary {
+  background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+}
+
+.UMConfirmBtn.primary:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  transform: translateY(-1px);
+}
+
+.UMConfirmBtn.danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.UMConfirmBtn.danger:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-1px);
+}
+
+.UMConfirmBtn:disabled,
+.UMCancelBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Success Box ── */
+.UMSuccessBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.UMSuccessIcon {
+  font-size: 36px;
+}
+
+.UMSuccessMsg {
+  font-size: 14px;
+  color: #166534;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── AUDIT TRAIL PAGE STYLES ── */
+
+.AuditTabsContainer {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.AuditTabsContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.AuditTabsButton {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border-radius: 9999px;
+  padding: 5px;
+  gap: 4px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.AuditTabButton {
+  padding: 8px 18px;
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  color: #51606f;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.AuditTabButton:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1E293B;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.AuditTabButton.active {
+  border-radius: 9999px;
+  background: #1E293B !important;
+  color: #FDFDFD !important;
+  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.25);
+}
+
+.AuditTabCount {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.22);
+  color: #FDFDFD;
+  transition: all 0.2s ease;
+}
+
+.AuditTabButton:not(.active) .AuditTabCount {
+  background: rgba(30, 41, 59, 0.08);
+  color: #475569;
+}
+
+/* Secondary Filters Row */
+.AuditFiltersRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  background: #ffffff;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.AuditSearchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 260px;
+  max-width: 380px;
+}
+
+.AuditSearchIcon {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+}
+
+.AuditSearchInput {
+  width: 100%;
+  padding: 10px 12px 10px 38px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13.5px;
+  background: #ffffff;
+  color: #1e293b;
+  transition: all 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.AuditSearchInput:focus {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+.AuditFiltersGroup {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.AuditFilterItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.AuditFilterLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.AuditSelectFilter {
+  padding: 9px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13.5px;
+  background: #ffffff;
+  color: #475569;
+  outline: none;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.AuditSelectFilter:focus {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+.AuditDateGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.AuditDateLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.AuditDateInput {
+  padding: 8px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13.5px;
+  background: #ffffff;
+  color: #475569;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.AuditDateInput:focus {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+.BtnClearAuditFilters {
+  padding: 9px 16px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.BtnClearAuditFilters:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.BtnClearFiltersIcon {
+  background: #f8fafc;
+  color: #4b5563;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.BtnClearFiltersIcon:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Badges styling */
+.badge-agency-fda {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-agency-lea {
+  background: #ccfbf1;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+}
+
+.badge-agency-super {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-agency-system {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.badge-action-create {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.badge-action-update {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.badge-action-delete {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.badge-action-neutral {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.badge-action-convert {
+  background-color: rgba(124, 58, 237, 0.1); /* purple, distinct from create/update/delete */
+  color: #7C3AED;
+  border: 1px solid #cbd5e1;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.role-badge-pill {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+  display: inline-block;
+}
+
+/* Details button in row */
+.AuditDetailsBtn {
+  padding: 6px 12px;
+  background: #f8fafc;
+  color: #0D9488;
+  border: 1px solid #0D9488;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.AuditDetailsBtn:hover {
+  background: #0D9488;
+  color: #ffffff;
+}
+
+/* Audit Side Drawer Overlay */
+.AuditDrawerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  justify-content: flex-end;
+  animation: auditFadeIn 0.25s ease;
+}
+
+.AuditDrawerContent {
+  width: 100%;
+  max-width: 500px;
+  height: 100%;
+  background: #ffffff;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  animation: auditSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes auditFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes auditSlideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+.AuditDrawerHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+}
+
+.AuditDrawerTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.AuditDrawerCloseBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: color 0.15s ease;
+}
+
+.AuditDrawerCloseBtn:hover {
+  color: #0f172a;
+}
+
+.AuditDrawerBody {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.AuditDrawerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.AuditDrawerLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.AuditDrawerValue {
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.AuditPreBlock {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12.5px;
+  color: #0f172a;
+  overflow-x: auto;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.AuditNoChangesText {
+  font-style: italic;
+  color: #64748b;
+  font-size: 13.5px;
+}
+
+/* Pagination Controls Styling */
+.AuditPaginationWrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+
+.AuditPaginationInfo {
+  font-size: 13.5px;
+  color: #64748b;
+}
+
+.AuditPaginationControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.AuditPageBtn {
+  padding: 8px 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.AuditPageBtn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.AuditPageBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.AuditPageNumber {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.AuditPageNumber:hover:not(.active) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.AuditPageNumber.active {
+  background: #0D9488;
+  border-color: #0D9488;
+  color: #ffffff;
+}
+
+.AuditUserCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.AuditNoWrap {
+  white-space: nowrap;
+}
+
+.AuditTextCenter {
+  text-align: center;
+}
+
+/* ── Responsive stacking for narrow windows ── */
+@media (max-width: 640px) {
+  .AdminLoginContainer {
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .AdminLoginWrapper {
+    flex-direction: column;
+    width: 100%;
+    height: auto;
+    max-height: none;
+  }
+
+  .AdminLoginLeftPanel,
+  .AdminLoginRightPanel {
+    width: 100%;
+    min-width: 0;
+    flex: none;
+  }
+
+  .AdminLoginLeftPanel {
+    padding: 32px 24px;
+  }
+}
+
+/* ── USER MANAGEMENT NEW CUSTOM STYLES ── */
+
+/* Filters Bar */
+.UserMgmtFiltersContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 12px;
+  background: #ffffff;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
+}
+.UserMgmtFilterRowContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.UserMgmtFilterLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.UserMgmtSelectFilter {
+  padding: 9px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13.5px;
+  background: #ffffff;
+  color: #475569;
+  outline: none;
+  transition: all 0.2s ease;
+  min-width: 180px;
+}
+
+.UserMgmtSelectFilter:focus {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+/* Status Badges */
+.UMStatusBadge.UserMgmtBadgeInvited,
+.UMStatusBadge.UserMgmtBadgePendingApproval,
+.UMStatusBadge.UserMgmtBadgeActive,
+.UMStatusBadge.UserMgmtBadgeSuspended {
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 12px;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.UserMgmtBadgeInvited {
+  background: #F3F4F6;
+  color: #4B5563;
+  border-color: #D1D5DB;
+}
+
+.UserMgmtBadgePendingApproval {
+  background: #FEF3C7;
+  color: #92400E;
+  border-color: #FCD34D;
+}
+
+.UserMgmtBadgeActive {
+  background: #DCFCE7;
+  color: #166534;
+  border-color: #86EFAC;
+}
+
+.UserMgmtBadgeSuspended {
+  background: #FEE2E2;
+  color: #991B1B;
+  border-color: #FCA5A5;
+}
+
+/* Stats Cards Top Borders */
+.UserMgmtStatInvited {
+  border-top: 3px solid #64748b;
+}
+.UserMgmtStatInvited .UMStatValue {
+  color: #64748b;
+}
+
+.UserMgmtStatPending {
+  border-top: 3px solid #d97706;
+}
+.UserMgmtStatPending .UMStatValue {
+  color: #d97706;
+}
+
+/* Action buttons container */
+.UserMgmtActionsContainer {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Dropdown Actions Styling */
+.UserMgmtDropdownWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.UserMgmtViewBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.UserMgmtViewBtn:hover {
+  background: #0D9488;
+  color: #ffffff;
+  border-color: #0D9488;
+}
+
+.UserMgmtViewBtn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1e293b;
+  color: #ffffff;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 10000;
+}
+
+.UserMgmtViewBtn::before {
+  content: '';
+  position: absolute;
+  bottom: 115%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #1e293b transparent transparent transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10000;
+}
+
+.UserMgmtViewBtn:hover::after,
+.UserMgmtViewBtn:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.UserMgmtDropdownTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.UserMgmtDropdownTrigger:hover {
+  background: #f8fafc;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+
+/* Tooltip above MoreVertical button */
+.UserMgmtDropdownTrigger::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1e293b;
+  color: #ffffff;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 10000;
+}
+
+.UserMgmtDropdownTrigger::before {
+  content: '';
+  position: absolute;
+  bottom: 115%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #1e293b transparent transparent transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10000;
+}
+
+.UserMgmtDropdownTrigger:hover::after,
+.UserMgmtDropdownTrigger:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.UserMgmtDropdownWrapper.active-open {
+  z-index: 1000;
+}
+
+/* Dropdown Menu container */
+.UserMgmtDropdownMenu {
+  /*position: absolute;
+  right: 0;      
+  top: 100%;
+  margin-top: 6px;*/
+  width: 190px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  overflow: hidden;
+  padding: 4px;
+  animation: UserMgmtDropdownFadeIn 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.UserMgmtDropdownMenu.open-upward {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 6px;
+  animation: UserMgmtDropdownFadeInUp 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes UserMgmtDropdownFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes UserMgmtDropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Menu Items */
+.UserMgmtDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.UserMgmtDropdownItem:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.UserMgmtDropdownItem svg {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.UserMgmtDropdownItem:hover svg {
+  color: #1e293b;
+}
+
+/* Destructive delete action */
+.UserMgmtDropdownItem.danger {
+  color: #dc2626;
+}
+
+.UserMgmtDropdownItem.danger:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.UserMgmtDropdownItem.danger svg {
+  color: #dc2626;
+}
+
+.UserMgmtDropdownItem.danger:hover svg {
+  color: #991b1b;
+}
+
+/* Menu divider */
+.UserMgmtDropdownDivider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 4px 0;
+}
+
+/* View Details Modal styling */
+.UserMgmtViewModal {
+  width: 100%;
+  max-width: 480px;
+  padding: 32px;
+}
+
+.UserMgmtViewDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.UserMgmtDetailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.UserMgmtDetailRow:last-child {
+  border-bottom: none;
+}
+
+.UserMgmtDetailLabel {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.UserMgmtDetailValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  text-align: right;
+}
+
+.UserMgmtEmail {
+  color: #0d9488;
+  font-weight: 600;
+}
+
+/* ── AUDIT LOG DETAILS SIDE PANEL STYLES ── */
+
+/* Slide-out Panel container */
+.AuditDrawerContent.AuditLogDetailsPanel {
+  width: 100%;
+  max-width: 580px;
+  height: 100%;
+  background: #fdfdfd;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  animation: AuditLogDetailsSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+@keyframes AuditLogDetailsSlideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Header */
+.AuditDrawerHeader.AuditLogDetailsHeader {
+  background: #1e293b;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #334155;
+  box-sizing: border-box;
+}
+
+.AuditLogDetailsHeaderTitleBlock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffffff;
+}
+
+.AuditLogDetailsHeaderIcon {
+  color: #0d9488;
+}
+
+.AuditDrawerHeader.AuditLogDetailsHeader .AuditDrawerTitle {
+  color: #ffffff;
+  font-size: 16.5px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.3px;
+}
+
+.AuditDrawerHeader.AuditLogDetailsHeader .AuditDrawerCloseBtn {
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.AuditDrawerHeader.AuditLogDetailsHeader .AuditDrawerCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* Body container (scrollable) */
+.AuditDrawerBody.AuditLogDetailsBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
+
+/* Card components */
+.AuditLogDetailsCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+.AuditLogDetailsCardTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #334155;
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1.5px solid #f1f5f9;
+  padding-bottom: 8px;
+}
+
+/* Data grid layouts */
+.AuditLogDetailsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.AuditLogDetailsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.AuditLogDetailsLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.AuditLogDetailsValue {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Badges for Actions */
+.AuditLogDetailsActionBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.AuditLogDetailsBadgeCreate {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
+.AuditLogDetailsBadgeUpdate {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+.AuditLogDetailsBadgeDelete {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.AuditLogDetailsBadgeLogin {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.AuditLogDetailsBadgeNeutral {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+/* Changes section comparison cards */
+.AuditLogDetailsChangesContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+  .AuditLogDetailsChangesContainer {
+    grid-template-columns: 1fr;
+  }
+}
+
+.AuditLogDetailsChangeSubCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.AuditLogDetailsSubCardLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.AuditLogDetailsPre {
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  overflow-x: auto;
+  max-height: 250px;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.AuditLogDetailsNoChanges {
+  font-size: 13.5px;
+  color: #64748b;
+  font-style: italic;
+  padding: 12px 0;
+}
+
+/* Footer Close Button Area */
+.AuditLogDetailsFooter {
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.AuditLogDetailsCloseBtn {
+  padding: 10px 20px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 13.5px;
+  font-weight: 700;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.AuditLogDetailsCloseBtn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+/* ========================================== */
+/* SUPERADMIN ADMIN MANAGEMENT STYLES        */
+/* ========================================== */
+
+.SAMPageContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.SAMPageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.SAMPageTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.SAMPageTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.SAMPageSubtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Add Superadmin Button ── */
+.SAMAddBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+  white-space: nowrap;
+  font-family: 'Poppins', sans-serif;
+}
+
+.SAMAddBtn:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.45);
+}
+
+.SAMAddBtn:active {
+  transform: translateY(0);
+}
+
+/* ── Stats Row ── */
+.SAMStatsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.SAMStatCard {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.18s ease;
+}
+
+.SAMStatCard:hover {
+  transform: translateY(-2px);
+}
+
+.SAMStatValue {
+  font-size: 26px;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+}
+
+.SAMStatLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sam-stat-total { border-top: 3.5px solid #1E293B; }
+.sam-stat-total .SAMStatValue { color: #1E293B; }
+
+.sam-stat-active { border-top: 3.5px solid #16a34a; }
+.sam-stat-active .SAMStatValue { color: #16a34a; }
+
+.sam-stat-pending { border-top: 3.5px solid #d97706; }
+.sam-stat-pending .SAMStatValue { color: #d97706; }
+
+.sam-stat-suspended { border-top: 3.5px solid #475569; }
+.sam-stat-suspended .SAMStatValue { color: #475569; }
+
+.sam-stat-invited { border-top: 3.5px solid #0284c7; }
+.sam-stat-invited .SAMStatValue { color: #0284c7; }
+
+.sam-stat-locked { border-top: 3.5px solid #b91c1c; }
+.sam-stat-locked .SAMStatValue { color: #b91c1c; }
+
+.sam-stat-expired { border-top: 3.5px solid #dc2626; }
+.sam-stat-expired .SAMStatValue { color: #dc2626; }
+
+/* ── Filters Bar ── */
+.SAMFiltersContainer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  flex-wrap: wrap;
+}
+
+.SAMSearchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 0 340px;
+  min-width: 240px;
+  max-width: 380px;
+}
+
+.SAMSearchIcon {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.SAMSearchInput {
+  width: 100%;
+  padding: 9px 32px 9px 36px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.SAMSearchInput:focus {
+  border-color: #0D9488;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+}
+
+.SAMClearSearch {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.SAMClearSearch:hover {
+  color: #475569;
+}
+
+.SAMFilterGroup {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.SAMFilterItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.SAMFilterLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.SAMSelectFilter {
+  padding: 9px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.SAMSelectFilter:focus {
+  border-color: #0D9488;
+  background: #ffffff;
+}
+
+/* ── Table ── */
+.SAMTableWrapper {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.SAMTable thead tr:first-child th:first-child {
+  border-top-left-radius: 13px;
+}
+
+.SAMTable thead tr:first-child th:last-child {
+  border-top-right-radius: 13px;
+}
+
+.SAMTable tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 13px;
+}
+
+.SAMTable tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 13px;
+}
+
+.SAMTable {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+}
+
+.SAMTable thead tr {
+  background: #1E293B;
+}
+
+.SAMTable thead th {
+  padding: 14px 18px;
+  text-align: left;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+
+.SAMTable tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+}
+
+.SAMTable tbody tr:last-child {
+  border-bottom: none;
+}
+
+.SAMTable tbody tr:hover {
+  background: #f8fafc;
+}
+
+.SAMTable tbody td {
+  padding: 14px 18px;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.SAMTdCenter {
+  text-align: center;
+  color: #94a3b8 !important;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.SAMEmailCell {
+  color: #0D9488 !important;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.SAMEmpty {
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+.SAMNoResults {
+  text-align: center;
+  padding: 36px 16px !important;
+  color: #94a3b8;
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* ── Status Badges ── */
+.SAMStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.sam-badge-pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.sam-badge-suspended {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.sam-badge-expired {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.sam-badge-active {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.sam-badge-invited {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.sam-badge-locked {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* ── Actions Column Buttons ── */
+.SAMDropdownWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.SAMViewBtn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.SAMViewBtn:hover {
+  background: #0D9488;
+  color: #ffffff;
+  border-color: #0D9488;
+}
+
+.SAMDropdownTrigger {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.SAMDropdownTrigger:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.SAMDropdownWrapper.active-open {
+  z-index: 1000;
+}
+
+/* Dropdown Menu */
+.SAMDropdownMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  z-index: 100;
+  min-width: 175px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: SAMDropdownFade 0.15s ease;
+}
+
+.SAMDropdownMenu.open-upward {
+  top: auto;
+  bottom: calc(100% + 4px);
+  animation: SAMDropdownFadeUp 0.15s ease;
+}
+
+@keyframes SAMDropdownFadeUp {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes SAMDropdownFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.SAMDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #334155;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.SAMDropdownItem:hover {
+  background: #f1f5f9;
+  color: #0D9488;
+}
+
+.SAMDropdownItem.danger:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.SAMDropdownDivider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 4px 0;
+}
+
+/* ── Modals ── */
+.SAMModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: SAMFadeIn 0.2s ease;
+}
+
+@keyframes SAMFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.SAMModal {
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: SAMSlideUp 0.25s ease;
+  overflow-y: auto;
+  max-height: calc(100vh - 48px);
+  box-sizing: border-box;
+}
+
+@keyframes SAMSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.SAMAddModal {
+  width: 100%;
+  max-width: 440px;
+  padding: 32px;
+}
+
+.SAMViewModal {
+  width: 100%;
+  max-width: 460px;
+  padding: 32px;
+}
+
+.SAMConfirmModal {
+  width: 100%;
+  max-width: 400px;
+  padding: 36px 32px;
+  text-align: center;
+}
+
+.SAMModalHeader {
+  margin-bottom: 22px;
+}
+
+.SAMViewTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.SAMModalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 6px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.SAMModalSubtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.SAMFormGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.SAMLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.SAMRequired {
+  color: #ef4444;
+}
+
+.SAMInput {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 14px;
+  color: #111827;
+  background: #f9fafb;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.SAMInput:focus {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+  background: #fff;
+}
+
+.SAMInput.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.SAMFieldError {
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 2px;
+}
+
+.SAMModalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.SAMFooterCenter {
+  justify-content: center;
+}
+
+.SAMCancelBtn {
+  padding: 10px 18px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.SAMCancelBtn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.SAMConfirmBtn {
+  padding: 10px 22px;
+  font-size: 13.5px;
+  font-weight: 700;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+.SAMConfirmBtn.primary {
+  background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+}
+
+.SAMConfirmBtn.primary:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  box-shadow: 0 6px 18px rgba(13, 148, 136, 0.45);
+}
+
+.SAMConfirmBtn.danger {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+}
+
+.SAMConfirmBtn.danger:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.45);
+}
+
+.SAMConfirmIcon {
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.SAMConfirmMessage {
+  font-size: 14px;
+  color: #64748b;
+  margin: 8px 0 28px;
+  line-height: 1.6;
+}
+
+.SAMSuccessBox {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.SAMSuccessIcon {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+
+.SAMSuccessMsg {
+  font-size: 14px;
+  color: #166534;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* View Details Modal Styling */
+.SAMViewDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+
+.SAMDetailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.SAMDetailRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.SAMDetailLabel {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.SAMDetailValue {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.SAMEmail {
+  color: #0D9488 !important;
+}
+
+
+

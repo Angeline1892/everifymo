@@ -38,7 +38,8 @@ env/
 node_modules/
 dist/
 dist-ssr/
-package-lock.json
+dist-electron/
+#package-lock.json
 yarn.lock
 npm-debug.log*
 yarn-debug.log*
@@ -72,3 +73,8 @@ tmp/
 .DS_Store
 Thumbs.db
 *.log
+
+#datasets and assets
+backend/nlp/assets/
+backend/nlp/datasets/
+.gitattributes

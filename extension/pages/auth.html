@@ -1,0 +1,241 @@
+<!-- Auth.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>E-VERIFY | Sign In</title>
+  <link rel="stylesheet" href="../css/global.css" />
+</head>
+<body>
+  <main class="auth-card">
+    <div class="header-row">
+      <div class="header-left">
+        <img
+          src="../assets/images/extension_icon.png"
+          alt="E-VERIFY Logo"
+          class="logo-placeholder"
+          width="36"
+          height="36"
+        />
+        <h1 class="header-title">E-Verify</h1>
+      </div>
+    </div>
+
+    <div class="notice-banner">
+      <div>
+        <p class="notice-title" id="auth-notice-title">Signing in is optional</p>
+        <p class="notice-text" id="auth-notice-text">You can still verify products and submit complaints as a guest. Sign in or Sign up to view your verification history, complaints, and report status.</p>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Authentication tabs">
+      <button class="tab-button active" type="button" data-auth-mode="signin" aria-selected="true">Sign In</button>
+      <button class="tab-button inactive" type="button" data-auth-mode="signup" aria-selected="false">Sign up</button>
+    </div>
+
+    <div class="field" id="signup-username-field" hidden>
+      <div class="field-row">
+        <label class="field-label" for="username">USERNAME</label>
+      </div>
+      <div class="input-wrap">
+        <img src="../assets/images/username_icon.png" class="icon-placeholder-username" alt="Username Icon">
+        <input id="username" class="auth-input username-input" type="text" placeholder="Choose a username" />
+      </div>
+      <div class="field-error" id="username-error" aria-live="polite"></div>
+    </div>
+
+    <div class="field" id="email-field">
+      <div class="field-row">
+        <label class="field-label" for="email">EMAIL</label>
+      </div>
+      <div class="input-wrap">
+        <img src="../assets/images/email_icon.png" class="icon-placeholder-email" alt="Email Icon">
+        <input id="email" class="auth-input" type="email" placeholder="Enter Email" />
+      </div>
+      <div class="field-error" id="email-error" aria-live="polite"></div>
+    </div>
+
+    <div class="field" id="signin-password-field">
+      <div class="field-row">
+        <label class="field-label" for="password">PASSWORD</label>
+        <a href="#" class="forgot-link">Forgot?</a>
+      </div>
+      <div class="input-wrap">
+        <img src="../assets/images/lock_icon.png" class="icon-placeholder-password" alt="Password Icon">
+        <input id="password" class="auth-input password-input" type="password" placeholder="Enter Password" />
+        <button type="button" class="icon-placeholder-eye toggle-password-visibility" data-target="password" aria-label="Show password">
+          <img src="../assets/images/eye_open_icon.png" class="eye-icon" alt="" />
+        </button>
+      </div>
+      <div class="field-error" id="password-error" aria-live="polite"></div>
+    </div>
+
+    <div class="signup-password-fields" id="signup-password-fields" hidden>
+      <div class="field">
+        <div class="field-row">
+          <label class="field-label" for="create-password">CREATE PASSWORD</label>
+        </div>
+        <div class="input-wrap">
+          <img src="../assets/images/lock_icon.png" class="icon-placeholder-password" alt="Password Icon">
+          <input id="create-password" class="auth-input password-input" type="password" placeholder="Create a password" />
+          <button type="button" class="icon-placeholder-eye toggle-password-visibility" data-target="create-password" aria-label="Show password">
+            <img src="../assets/images/eye_open_icon.png" class="eye-icon" alt="" />
+          </button>
+        </div>
+        <div class="field-error" id="create-password-error" aria-live="polite"></div>
+      </div>
+
+      <div class="field">
+        <div class="field-row">
+          <label class="field-label" for="confirm-password">CONFIRM PASSWORD</label>
+        </div>
+        <div class="input-wrap">
+          <img src="../assets/images/lock_icon.png" class="icon-placeholder-password" alt="Password Icon">
+          <input id="confirm-password" class="auth-input password-input" type="password" placeholder="Confirm your password" />
+          <button type="button" class="icon-placeholder-eye toggle-password-visibility" data-target="confirm-password" aria-label="Show password">
+            <img src="../assets/images/eye_open_icon.png" class="eye-icon" alt="" />
+          </button>
+        </div>
+        <div class="field-error" id="confirm-password-error" aria-live="polite"></div>
+      </div>
+    </div>
+
+      <div class="signup-password-fields" id="forgot-password-fields" hidden>
+        <!--OTP for forgot password-->
+        <div class="field" id="forgot-otp-field" hidden>
+          <div class="field-row">
+            <label class="field-label">VERIFICATION CODE</label>
+          </div>
+          <p class="notice-text" style="margin-top: 0; margin-bottom: 8px;">Enter the 6-digit code sent to your email</p>
+          <div class="otp-input-group">
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit-input forgot-otp-digit-input" data-otp-index="0" />
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit-input forgot-otp-digit-input" data-otp-index="1" />
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit-input forgot-otp-digit-input" data-otp-index="2" />
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit-input forgot-otp-digit-input" data-otp-index="3" />
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit-input forgot-otp-digit-input" data-otp-index="4" />
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit-input forgot-otp-digit-input" data-otp-index="5" />
+          </div>
+          <div class="field-error" id="forgot-otp-error" aria-live="polite"></div>
+          <!-- <a href="#" id="resend-forgot-otp-link" class="forgot-link" hidden>Resend code</a> -->
+          <p class="notice-text" id="forgot-otp-countdown" style="margin-top: 8px;"></p>
+        </div>
+
+        <div class="field" id="new-password-field" hidden>
+          <div class="field-row">
+            <label class="field-label" for="new-password">NEW PASSWORD</label>
+          </div>
+          <div class="input-wrap">
+            <img src="../assets/images/lock_icon.png" class="icon-placeholder-password" alt="Password Icon">
+            <input id="new-password" class="auth-input password-input" type="password" placeholder="Enter new password" />
+            <button type="button" class="icon-placeholder-eye toggle-password-visibility" data-target="new-password" aria-label="Show password">
+              <img src="../assets/images/eye_open_icon.png" class="eye-icon" alt="" />
+            </button>
+          </div>
+          <div class="field-error" id="new-password-error" aria-live="polite"></div>
+        </div>
+
+        <div class="field" id="confirm-new-password-field" hidden>
+          <div class="field-row">
+            <label class="field-label" for="confirm-new-password">CONFIRM NEW PASSWORD</label>
+          </div>
+          <div class="input-wrap">
+            <img src="../assets/images/lock_icon.png" class="icon-placeholder-password" alt="Password Icon">
+            <input id="confirm-new-password" class="auth-input password-input" type="password" placeholder="Confirm new password" />
+            <button type="button" class="icon-placeholder-eye toggle-password-visibility" data-target="confirm-new-password" aria-label="Show password">
+              <img src="../assets/images/eye_open_icon.png" class="eye-icon" alt="" />
+            </button>
+          </div>
+          <div class="field-error" id="confirm-new-password-error" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <!-- Change username if late verification and email already taken-->
+      <div class="username-fix-banner" id="otp-username-fix-field" hidden>
+        <div class="username-fix-header">
+          <p class="username-fix-title">Username unavailable</p>
+          <p class="username-fix-text">Someone else claimed this username while your verification was pending. Choose a new one to continue.</p>
+        </div>
+
+        <div class="field username-fix-input-field">
+          <div class="field-row">
+            <label class="field-label" for="otp-new-username">NEW USERNAME</label>
+          </div>
+          <div class="input-wrap">
+            <img src="../assets/images/username_icon.png" class="icon-placeholder-username" alt="Username Icon">
+            <input type="text" id="otp-new-username" class="auth-input username-input" placeholder="Choose a new username" />
+          </div>
+          <div class="field-error" id="otp-username-fix-error" aria-live="polite"></div>
+        </div>
+
+        <button type="button" class="btn-username-fix" id="otp-username-fix-button">Update Username</button>
+      </div>
+
+      <div class="field" id="otp-field" hidden>
+        <div class="field-row">
+          <label class="field-label">VERIFICATION CODE</label>
+        </div>
+        <p class="notice-text" style="margin-top: 0; margin-bottom: 8px;">Enter 6-digit code</p>
+        <div class="otp-input-group">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-digit-input" data-otp-index="0" />
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-digit-input" data-otp-index="1" />
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-digit-input" data-otp-index="2" />
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-digit-input" data-otp-index="3" />
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-digit-input" data-otp-index="4" />
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-digit-input" data-otp-index="5" />
+        </div>
+        <div class="field-error" id="otp-error" aria-live="polite"></div>
+        <p class="notice-text" id="otp-dev-preview" style="margin-top: 8px;"></p>
+        <p class="notice-text" id="otp-countdown" style="margin-top: 8px;"></p>
+      </div>
+
+    <button class="btn-primary-green" type="button" id="auth-primary-button">Sign In</button>
+
+    <!---Sign in with google button and sign in error notification/msg -->
+    <button class="btn-google" type="button" id="google-login-btn">
+      <svg class="icon-placeholder-google" viewBox="0 0 48 48" aria-hidden="true">
+        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12
+          s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24
+          s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039
+          l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36
+          c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571
+          c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24
+          C44,22.659,43.862,21.35,43.611,20.083z"/>
+      </svg>
+      <span>Sign in with Google</span>
+    </button>
+    <div class="field-error" id="googleError" aria-live="polite"></div>
+
+    <button class="btn-primary-green hidden" type="button" id="forgot-confirm-button">Confirm</button>
+    <div class="otp-links-row" id="forgot-otp-links-row">
+      <a href="#" id="resend-forgot-otp-link" class="forgot-link" hidden>Resend code</a>
+      <a href="#" id="back-from-forgot-otp-link" class="forgot-link" hidden>Back to Sign In</a>
+    </div>
+    <a href="#" id="back-to-signin-link" class="forgot-link back-to-signin-link hidden">Back to Sign In</a>
+
+    <button class="btn-primary-green hidden" type="button" id="otp-verify-button">Verify and Sign In</button>
+    <div class="otp-links-row">
+      <a href="#" id="resend-otp-link" class="forgot-link" hidden>Resend code</a>
+      <a href="#" id="back-from-otp-link" class="forgot-link" hidden>Back to Sign In</a>
+    </div>
+
+    <div class="or-divider" aria-hidden="true">
+      <div class="or-line"></div>
+      <div class="or-text">OR</div>
+      <div class="or-line"></div>
+    </div>
+
+    <button class="btn-guest" type="button" id="btn-guest">
+      <div class="icon-placeholder-guest" aria-hidden="true"></div>
+      <span>Continue as Guest</span>
+    </button>
+  </main>
+
+  <script type="module" src="../utils/api.js"></script>
+  <script type="module" src="../scripts/session.js"></script>
+  <script type="module" src="../js/auth.js"></script>
+</body>
+</html>

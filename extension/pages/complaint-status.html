@@ -1,0 +1,51 @@
+<!-- complaint-status -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-VERIFY | History</title>
+    <link rel="stylesheet" href="../css/global.css">
+</head>
+<body>
+    <main class="history-card">
+        <div id="header-slot"></div>
+        <div id="overlay-slot"></div>
+
+        <div id="blur-target">
+            <div id="nav-slot"></div>
+            <div id="page-content">
+                <div id="status-empty-view" class="status-view hidden">
+                    <div class="notice-banner">
+                        <img class="notice-icon" src="../assets/images/report.png" alt="Status Icon" />
+                        <div class="notice-text-container">
+                        <p class="notice-title">Complaint Status</p>
+                        <p class="notice-text" id="status-empty-text-main">Complaint Status page is currently empty.</p>
+                        </div>
+                    </div>
+                    </div>
+
+                    <div id="status-populated-view" class="status-view hidden">
+                    <div class="notice-banner">
+                        <img class="notice-icon" src="../assets/images/report.png" alt="Status Icon" />
+                        <div class="notice-text-container">
+                        <p class="notice-title">Complaint Status</p>
+                        <p class="notice-text">Transparent updates on your complaints — whether each one is being reviewed, has been taken care of, or has been acted upon.</p>
+                        </div>
+                    </div>
+
+                    <div id="status-list"></div>
+                </div>
+            </div>
+        </div>
+   
+    </main>
+    
+    <script type="module" src="../utils/api.js"></script>
+    <script type="module" src="../scripts/session.js"></script>
+    <script type="module" src="../js/partial-loader.js"></script>
+    <script type="module" src="../js/header.js"></script>
+    <script type="module" src="../js/nav.js"></script>
+    <script type="module" src="../js/status.js"></script>
+</body>
+</html>

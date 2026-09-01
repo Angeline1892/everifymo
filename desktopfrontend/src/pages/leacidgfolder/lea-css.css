@@ -1,0 +1,4060 @@
+/* new lea-css.css */
+.LeaDashboardMain {
+  display: flex;
+  height: 100vh;
+}
+
+.LeaMainfeed {
+  flex: 1;
+  padding: 24px 28px;
+  background: #f5f5f5;
+  overflow-y: auto;
+}
+
+.LeaContentContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/*WALK IN COMPLAINT PAGE*/
+
+
+.LeaHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px !important;
+}
+
+.LeaHeader div p:first-child {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.LeaHeader div p:last-child {
+  font-size: 24px;
+  font-weight: 700;
+  color: #13213C;
+}
+/* Header stacked variant — title row only, no inline buttons */
+.LeaHeaderStacked {
+  margin-bottom: 16px !important;
+}
+
+/* Button row now sits below the header, right-aligned on its own line */
+.WalkinButtonActionsRow {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+  margin-right: 52px;
+}
+
+
+
+.BtnExportCSV {
+  background: #FDFDFD;
+  color: #030303;
+  border: 1.5px solid #d8d8d8;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.BtnExportCSV:hover {
+  background: #EDEDED;
+}
+
+.BtnNewComplaint {
+  background: #13213C;
+  color: #FDFDFD;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.BtnNewComplaint:hover {
+  background: #FCA311;
+  color: #030303;
+}
+
+/* LEA VERIFICATION REQUEST - STATS METRIC SUMMARY BAR (NON-CLICKABLE) */
+.LeaVerifStatsBar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 0 30px 20px 30px;
+  max-width: 1150px;
+}
+
+.LeaVerifStatCard {
+  --lea-verif-accent: #055db5;
+  position: relative;
+  background: #FDFDFD;
+  border: 1px solid #EDEDED;
+  border-radius: 14px;
+  padding: 14px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  cursor: default;
+  user-select: none;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  margin-bottom: 20px;
+}
+
+.LeaVerifStatCard:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.LeaVerifStatCard::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  border-radius: 0 0 14px 14px;
+  background: var(--lea-verif-accent);
+}
+
+.LeaVerifStatCardTop {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.LeaVerifStatBadge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.LeaVerifStatBadgeResponse {
+  background: rgba(19, 33, 60, 0.1);
+  color: #13213C;
+}
+
+.LeaVerifStatBadgeInitiated {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
+.LeaVerifStatBadgeDismissed {
+  background: rgba(107, 114, 128, 0.12);
+  color: #4b5563;
+}
+
+.LeaVerifStatValue {
+  font-size: 26px;
+  font-weight: 700;
+  color: #030303;
+  margin: 0 0 3px 0;
+  line-height: 1;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.LeaVerifStatLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(31, 41, 55, 0.6);
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 900px) {
+  .LeaVerifStatsBar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .LeaVerifStatsBar {
+    grid-template-columns: 1fr;
+  }
+
+  .LeaVerifStatValue {
+    font-size: 22px;
+  }
+}
+
+.TableCard {
+  background: #FDFDFD;
+  border-radius: 12px;
+  border: 1px solid #d8d8d8;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+.ComplaintsTable {
+  width: 100%;
+  min-width: 800px;
+  border-collapse: collapse;
+}
+
+.ComplaintsTable th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 11px;
+  color: #888;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #EDEDED;
+  background: #f7f7f7;
+}
+
+.ComplaintsTable td {
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #030303;
+  border-bottom: 1px solid #EDEDED;
+}
+
+.ComplaintsTable tr:hover {
+  background: #f5f5f5;
+}
+
+.row-selected {
+  background: rgba(252, 163, 17, 0.08) !important;
+}
+
+.ClassId {
+  font-weight: 600;
+  color: #13213C;
+  font-size: 13px;
+}
+
+.ProductName {
+  font-weight: 600;
+  color: #030303;
+  font-size: 13px;
+}
+
+.ManufacturerName {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.StatusBadge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-pending {
+  background: #fff4e5;
+  color: #b76e00;
+  border: 1px solid #f5c97a;
+}
+
+.status-verified-by-lea {
+  background: #e6f9f0;
+  color: #1a7a4a;
+  border: 1px solid #7dd9a8;
+}
+
+.status-forwarded-to-nbi {
+  background: #e8f0fe;
+  color: #1a4a9c;
+  border: 1px solid #92b4f5;
+}
+
+.status-nbi-verified {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #c084fc;
+}
+
+.status-closed {
+  background: #EDEDED;
+  color: #555;
+  border: 1px solid #ccc;
+}
+
+.status-for-follow-up {
+  background: #fff0f0;
+  color: #cc0000;
+  border: 1px solid #f5a0a0;
+}
+
+/* ======================================================
+   WALK-IN COMPLAINTS — SCOPED STYLES (WC prefix)
+   These class names are unique to lea-walkin-complaints
+   and will not conflict with other pages.
+   ====================================================== */
+
+/* Status badge base — walk-in complaints only */
+.WcStatusBadge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* queued → Ready to Send */
+.WcStatus-queued {
+  background: #e8f4ff;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+}
+
+/* pending → Pending FDA Verification */
+.WcStatus-pending {
+  background: #fff4e5;
+  color: #b76e00;
+  border: 1px solid #f5c97a;
+}
+
+/* confirmed_registered → Confirmed Registered */
+.WcStatus-confirmed-registered {
+  background: #e6f9f0;
+  color: #1a7a4a;
+  border: 1px solid #7dd9a8;
+}
+
+/* confirmed_unregistered → Confirmed Unregistered */
+.WcStatus-confirmed-unregistered {
+  background: #fff0f0;
+  color: #cc0000;
+  border: 1px solid #f5a0a0;
+}
+
+/* rejected → Verification Rejected */
+.WcStatus-rejected {
+  background: #fff0f0;
+  color: #cc0000;
+  border: 1px solid #f5a0a0;
+}
+
+/* recalled → Verification Rejected fallback */
+.WcStatus-recalled {
+  background: #fff0f0;
+  color: #cc0000;
+  border: 1px solid #f5a0a0;
+}
+
+/* Product name cell — walk-in complaints table */
+.WcProductName {
+  font-weight: 600;
+  color: #030303;
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Manufacturer name cell — walk-in complaints table */
+.WcManufacturerName {
+  font-size: 13px;
+  color: #444;
+  margin: 0;
+}
+
+/* Category cell — walk-in complaints table */
+.WcCategoryCell {
+  font-size: 13px;
+  color: #030303;
+}
+
+/* Walk-in complaints table — manufacturer column width hint */
+.WcComplaintsTable th:nth-child(4),
+.WcComplaintsTable td:nth-child(4) {
+  min-width: 120px;
+}
+
+/* ---- ACTION COLUMN — walk-in complaints (WC scoped) ---- */
+
+/* Flex container that keeps icons side by side */
+.WcActionCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Wrapper that enables the tooltip positioning */
+.WcActionTooltipWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Shared base for both icon buttons */
+.WcBtnIconView,
+.WcBtnIconEdit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  border: 1.5px solid #d8d8d8;
+  background: transparent;
+  cursor: pointer;
+  color: #444;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  padding: 0;
+}
+
+.WcBtnIconView:hover {
+  background: #e8f4ff;
+  border-color: #90caf9;
+  color: #1565c0;
+}
+
+.WcBtnIconEdit:hover {
+  background: rgba(252, 163, 17, 0.12);
+  border-color: #FCA311;
+  color: #b76000;
+}
+
+/* Three-dot (MoreVertical) trigger button */
+.WcBtnIconMore {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  border: 1.5px solid #d8d8d8;
+  background: transparent;
+  cursor: pointer;
+  color: #444;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  padding: 0;
+}
+
+.WcBtnIconMore:hover {
+  background: #f0f0f0;
+  border-color: #b0b0b0;
+  color: #13213C;
+}
+
+/* Wrapper that creates the relative stacking context for the dropdown */
+.WcMenuWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Dropdown panel */
+.WcDropdownMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 200;
+  background: #FDFDFD;
+  border: 1px solid #d8d8d8;
+  border-radius: 9px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  min-width: 172px;
+  padding: 4px 0;
+  animation: WcDropdownFadeIn 0.12s ease;
+}
+
+@keyframes WcDropdownFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Individual dropdown rows */
+.WcDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #030303;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+
+.WcDropdownItem:hover {
+  background: #f5f5f5;
+}
+
+.WcDropdownItem--edit:hover {
+  background: rgba(252, 163, 17, 0.10);
+  color: #b76000;
+}
+
+.WcDropdownItem--delete {
+  color: #cc0000;
+}
+
+.WcDropdownItem--delete:hover {
+  background: rgba(204, 0, 0, 0.07);
+  color: #aa0000;
+}
+
+/* Tooltip bubble */
+.WcTooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #13213C;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 5px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+
+/* Arrow under the tooltip */
+.WcTooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #13213C;
+}
+
+.WcActionTooltipWrap:hover .WcTooltip {
+  opacity: 1;
+}
+
+/* ---- (legacy) BtnView kept for other pages if referenced ---- */
+.BtnView {
+  background: transparent;
+  border: 1.5px solid #d8d8d8;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #6b6969;
+}
+
+.BtnView:hover {
+  background: #EDEDED;
+}
+.Pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-top: 1px solid #EDEDED;
+}
+
+.Pagination p {
+  font-size: 13px;
+  color: #888;
+}
+
+.PaginationBtn {
+  display: flex;
+  gap: 8px;
+}
+
+.BtnPage {
+  padding: 8px 16px;
+  border: 1.5px solid #d8d8d8;
+  border-radius: 8px;
+  background: #FDFDFD;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.BtnPage:hover {
+  background: #EDEDED;
+}
+.BtnDelete {
+  background: #cc0000;
+  color: #FDFDFD;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.BtnDelete:hover {
+  background: #aa0000;
+}
+
+/* ---- MODAL ---- */
+.ModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(3, 3, 3, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.ModalBox {
+  background: #FDFDFD;
+  border-radius: 12px;
+  padding: 32px;
+  width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.ModalBox h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #13213C;
+  margin-bottom: 12px;
+}
+.ModalOverlay h4{
+  font-size: 20px;
+  font-weight: 600;
+  color: #13213C;
+}
+.ModalBox p {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.ModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.BtnCancelModal {
+  padding: 10px 20px;
+  border: 1.5px solid #d8d8d8;
+  border-radius: 8px;
+  background: #FDFDFD;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #030303;
+}
+
+.BtnCancelModal:hover {
+  background: #EDEDED;
+}
+
+.BtnConfirmDelete {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #cc0000;
+  color: #FDFDFD;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.BtnConfirmDelete:hover {
+  background: #aa0000;
+}
+
+.MenuIcons img{
+  width: 25px;
+  padding: 2px;
+}
+.logouticon img{
+  width: 25px;
+  padding: 2px;
+}
+.ModalViewButton{
+  background: #FDFDFD;
+  border-radius: 12px;
+  padding: 32px;
+  width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+.ModalViewButton h4{
+  font-size: 20px;
+  font-weight: 900;
+}
+.ModalSummary{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 10px 0 15px 0;
+}
+
+.ModalSummary > div {
+  min-width: 0;
+}
+.StatementBox{
+  width: 100%;
+  height: 100px;
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 10px 2px 10px 2px;
+  box-shadow: #EDEDED 1px 1px 1px 1px;
+}
+.StatementBox p{
+  color: #8d8f91;
+  font-size: 12px;
+}
+.ModalSummary strong, .Statementcomp{
+  color: #8d8f91;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  line-height: 2;
+}
+
+/* LEA NEW INTAKE PAGE*/
+
+/* LeaMainfeed base styles are defined at the top of this file */
+
+
+.LeaHeader {
+    margin-bottom: 24px;
+}
+
+.LeaHeader p:first-child {
+    font-size: 12px;
+    font-weight: 500;
+    color: #7a8899;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.LeaHeader p:last-child {
+    font-size: 28px;
+    font-weight: 700;
+    color: #13213C;
+}
+
+
+
+.FormForWalkin {
+    width: 100%;
+    max-width: 1000px;
+    justify-self: center;
+}
+
+.FormForWalkin form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+
+
+.FormSection {
+    background: #FDFDFD;
+    border: 1px solid #d8d8d8;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column;
+}
+.FormSectionAttach{
+    background: #FDFDFD;
+    border: 1px solid #d8d8d8;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.FormSectionAttach h3{
+    font-size: 14px;
+    font-weight: 700;
+    color: #13213C;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+.FormSectionAttach p{
+    font-size: 12px;
+    color: #7a8899;
+    text-transform: uppercase;
+}
+.FormSection h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #13213C;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+
+.FormSection > div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.FormSection > div:last-child {
+    margin-bottom: 0;
+}
+
+
+.FormSection > div:has(input[type="text"]:only-child) {
+    grid-template-columns: 1fr;
+}
+
+
+
+.FormSection label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #4b5563;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+
+.FormSection input,
+.FormSection select,
+.FormSection textarea {
+    width: 100%;
+    height: 44px;
+    border: 1px solid #d1d9e0;
+    border-radius: 8px;
+    padding: 0 14px;
+    font-size: 14px;
+    background: #FDFDFD;
+    transition: .2s;
+    outline: none;
+}
+
+.FormSection input:focus,
+.FormSection select:focus,
+.FormSection textarea:focus {
+    border-color: #13213C;
+    box-shadow: 0 0 0 3px rgba(19, 33, 60, .12);
+}
+
+/* Frontend Validation Message Styling */
+.LoginErrorMsgContainer {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin-top: 4px;
+    margin-bottom: 0;
+    min-height: unset;
+    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.LoginErrorMsg {
+    color: #ef4444 !important;
+    font-size: 12px;
+    font-weight: 400;
+    margin: 0 !important;
+    text-align: left;
+    line-height: 1.3;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+.FormSection input.InputErrorBorder,
+.FormSection select.InputErrorBorder,
+.FormSection textarea.InputErrorBorder {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15) !important;
+}
+
+
+
+
+.FormSection textarea {
+    width: 100%;
+    min-height: 140px;
+    padding: 10px;
+}
+
+
+.FormSection textarea[placeholder="Statement of the complainant."] {
+    font-family: 'Poppins', sans-serif;
+    min-height: 140px;
+    padding: 14px;
+}
+
+
+
+.FormSection p {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 14px;
+}
+
+.FormSection:last-of-type input {
+    height: 140px;
+    border: 2px dashed #d8d8d8;
+    background: #f8f8f8;
+    cursor: pointer;
+}
+
+
+.FormForWalkin form > div:last-child {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.UploadArea {
+    width: 100%;
+}
+.UploadBox {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 100px;
+    border: 2px dashed #d8d8d8;
+    border-radius: 10px;
+    background: #f8f8f8;
+    cursor: pointer;
+    transition: .2s;
+    box-sizing: border-box;
+    padding: 10px 15px 10px 15px;
+}
+
+.UploadBox:hover {
+    border-color: #FCA311;
+    background: rgba(252, 163, 17, 0.05);
+}
+
+.UploadContent {
+    text-align: center;
+}
+
+.UploadIcon {
+    display: block;
+    font-size: 32px;
+    margin-bottom: 8px;
+    color: #6b7280;
+}
+
+.UploadContent h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.UploadContent p {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.UploadedFiles {
+    margin-top: 12px;
+}
+.UploadBoxDragActive {
+  border-color: #13213C;
+  background: rgba(19, 33, 60, 0.04);
+}
+
+.FileItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    background: #FDFDFD;
+    font-size: 13px;
+}
+
+.BtnRemoveFile {
+    background: none;
+    border: none;
+    color: #8899a6;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color .2s, transform .2s;
+}
+
+.BtnRemoveFile:hover {
+    color: #e02424;
+    transform: scale(1.15);
+}
+
+.CancelButton,
+.DraftButton,
+.LogButton,
+.SendReqBtn {
+    border: none;
+    border-radius: 8px;
+    height: 44px;
+    padding: 0 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .2s;
+}
+
+
+.CancelButton {
+    background: #FDFDFD;
+    border: 1px solid #d1d5db;
+    color: #030303;
+}
+
+.CancelButton:hover {
+    background: #EDEDED;
+}
+
+
+.DraftButton {
+    background: #EDEDED;
+    color: #030303;
+}
+
+.DraftButton:hover {
+    background: #d8d8d8;
+}
+
+/* Delete button — Ready to Send tab (LEA Verification Request page only) */
+.LeaVerDeleteBtn {
+    border: none;
+    border-radius: 8px;
+    height: 44px;
+    padding: 0 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    background: #cc0000;
+    color: #FDFDFD;
+    margin-right: auto; /* pushes Save Draft and Send to the right */
+}
+
+.LeaVerDeleteBtn:hover {
+    background: #aa0000;
+}
+
+
+.LogButton, .SendReqBtn {
+    background: #13213C;
+    color: #FDFDFD;
+}
+
+.LogButton:hover, .SendReqBtn:hover {
+    background: #FCA311 !important;
+    color: #030303 !important;
+}
+
+
+@media (max-width: 900px) {
+
+    .FormSection > div {
+        grid-template-columns: 1fr;
+    }
+
+    .FormForWalkin form > div:last-child {
+        flex-direction: column;
+    }
+
+    .CancelButton,
+    .DraftButton,
+    .SendReqBtn {
+        width: 100%;
+    }
+}
+
+
+/*VERIFICATION REQUEST PAGE */
+.VerificationTabContent{
+  width: 100%;
+  justify-content: center;
+}
+
+.VerificationContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+
+
+.VerificationTabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.VerificationTabs::-webkit-scrollbar {
+    display: none;
+}
+
+.VerificationTabsButton {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+    border-radius: 9999px;
+    padding: 5px;
+    gap: 4px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.ButtonTab {
+    padding: 8px 18px;
+    background: transparent;
+    border: none;
+    border-radius: 9999px;
+    color: #51606f;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.4;
+    user-select: none;
+}
+
+.ButtonTab:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.8);
+    color: #13213C;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.ButtonTab.active {
+    border-radius: 9999px;
+    background: #13213C !important;
+    color: #FDFDFD !important;
+    box-shadow: 0 4px 12px rgba(19, 33, 60, 0.22);
+}
+.VerificationTabContent{
+  width: 100%;
+  max-width: 1150px;
+}
+
+
+.VerificationContent {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 16px;
+}
+
+/*LEFT PANEL*/
+
+.ReadytoSendQueue, .AwaitingLEAQueue, .LEAResponseQueue{
+    background: #FDFDFD;
+    border: 1px solid #d8d8d8;
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 650px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ReadytoSendHeader, .AwaitingHeader, .LEAResponseHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #EDEDED;
+}
+
+.ReadytoSendHeader p, .AwaitingHeader p, .LEAResponseHeader p {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.ReadytoSendHeader span, .AwaitingHeader span, .LEAResponseHeader span {
+    background: rgba(252, 163, 17, 0.12);
+    border: 1px solid rgba(252, 163, 17, 0.4);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #13213C;
+}
+
+.QueueCard {
+  background: #FDFDFD;
+  border: 1.5px solid #EDEDED;
+  border-radius: 10px;
+  padding: 12px;
+  margin: 10px 14px 0 14px;
+  box-sizing: border-box;
+  width: calc(100% - 28px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.QueueCard:last-of-type {
+  margin-bottom: 10px;
+}
+
+.QueueCard:hover {
+  border-color: #13213C;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+}
+
+.ActiveQueueCard {
+  background: rgba(252, 163, 17, 0.08) !important;
+  border-color: #EDEDED;
+  box-shadow: none;
+}
+
+.QueueCardTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.QueueCard small,
+.QueueCardTopRow small,
+.QueueLabels small {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #13213C;
+  font-family: monospace;
+  margin: 0;
+}
+
+.QueueLabels {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.QueueTagInline {
+  display: inline-block;
+  width: fit-content;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  background: rgba(252, 163, 17, 0.12);
+  color: #13213C;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.QueueStatusBadge {
+  display: inline-block;
+  width: fit-content;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.QueueStatusBadge.unregistered {
+  background-color: rgba(224, 21, 21, 0.12);
+  border: 1px solid rgba(224, 21, 21, 0.4);
+  color: #B91C1C;
+}
+
+.QueueStatusBadge.registered {
+  background-color: rgba(27, 67, 50, 0.12);
+  border: 1px solid rgba(27, 67, 50, 0.3);
+  color: #1B4332;
+}
+
+.QueueStatusBadge.rejected {
+  background-color: rgba(217, 119, 6, 0.12);
+  border: 1px solid rgba(217, 119, 6, 0.4);
+  color: #D97706;
+}
+
+.OperationInProgressBadge {
+  display: inline-block;
+  width: fit-content;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  background: rgba(252, 163, 17, 0.12);
+  color: #13213C;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.QueueCard h4 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #030303;
+  line-height: 1.3;
+}
+
+.QueueCard p {
+  margin: 0;
+  font-size: 12px;
+  color: #1F2937;
+  opacity: 0.75;
+  line-height: 1.3;
+}
+
+.QueueTag {
+  margin: 2px 0 0 0;
+}
+
+.QueueTag span {
+  display: inline-block;
+  width: fit-content;
+  background: rgba(252, 163, 17, 0.12);
+  color: #13213C;
+  padding: 2px 7px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.QueueCardFooterRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+  padding-top: 6px;
+  border-top: 1px solid #EDEDED;
+}
+
+.QueueCategoryTag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #13213C;
+  background: rgba(19, 33, 60, 0.08);
+  padding: 2px 7px;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+
+.QueueDateTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #1F2937;
+  opacity: 0.6;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Left-panel queue pagination — matches existing .Pagination / .BtnPage style */
+.LeaVerifQueuePagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-top: 1px solid #EDEDED;
+    background: #FAFAFA;
+    margin-top: auto;
+    box-sizing: border-box;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.LeaVerifQueuePagination .LeaVerifQueuePageInfo {
+    font-size: 12px;
+    color: #888;
+    white-space: nowrap;
+}
+
+.LeaVerifQueuePaginationControls {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.LeaVerifQueuePageBtn {
+    padding: 5px 10px;
+    border: 1.5px solid #d8d8d8;
+    border-radius: 8px;
+    background: #FDFDFD;
+    font-size: 12px;
+    font-weight: 600;
+    color: #13213C;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.LeaVerifQueuePageBtn:hover:not(:disabled) {
+    background: #EDEDED;
+}
+
+.LeaVerifQueuePageBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.LeaVerifQueuePageNum {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid #d8d8d8;
+    border-radius: 8px;
+    background: #FDFDFD;
+    color: #13213C;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.LeaVerifQueuePageNum:hover:not(.active) {
+    background: #EDEDED;
+}
+
+.LeaVerifQueuePageNum.active {
+    background: #13213C;
+    color: #FDFDFD;
+    border-color: #13213C;
+}
+
+@media (max-width: 768px) {
+    .LeaVerifQueuePagination {
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px 10px;
+    }
+}
+
+/*  RIGHT PANEL*/
+
+.VerificationDetails {
+  
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.VerificationCard {
+    background: #FDFDFD;
+    border: 1px solid #d8d8d8;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.VerificationCard small {
+    color: #8a97a8;
+    font-size: 12px;
+}
+
+.VerificationCard h2 {
+    margin: 8px 0 4px;
+    font-size: 28px;
+    color: #13213C;
+}
+
+.VerificationCard h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    color: #13213C;
+}
+
+.VerificationCard > p {
+    color: #6b7280;
+    font-size: 13px;
+    margin-bottom: 20px;
+}
+.VerificationRequestCard p{
+    color: #6b7280;
+    font-size: 13px;
+    margin-bottom: 20px;
+}
+.CaseInfoTitle{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0 10px 0;
+}
+.CaseInfoTitle svg{
+  width: 40px;
+  height: 40px;
+  padding: 10px;
+  margin-right: 5px;
+  background: rgba(252, 163, 17, 0.15);
+  border-radius: 10px;
+  color: #16264C;
+  transition: color .2s ease, transform .2s ease;
+  cursor: pointer;
+}
+.CaseInfoTitle svg:hover{
+  color: #F59E0B;
+  transform: scale(1.08);
+}
+.CaseInfoTitle h2{
+    font-size: 20px;
+}
+.CaseInfoGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin: 20px 0 30px 0;
+    padding: 20px 0 20px 0;
+    border-top: 1px solid #EDEDED;
+    border-bottom: 1px solid #EDEDED;
+}
+
+.CaseInfoGrid label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #7a8796;
+    margin-bottom: 6px;
+}
+
+.CaseInfoGrid p {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+
+.VerificationRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.VerificationRow label,
+.VerificationNotes label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #030303;
+}
+
+.VerificationRow input,
+.VerificationRow select {
+    width: 100%;
+    height: 42px;
+    border: 1px solid #d1d9e0;
+    border-radius: 8px;
+    padding: 0 12px;
+    outline: none;
+}
+
+.VerificationRow input:focus,
+.VerificationRow select:focus,
+.VerificationNotes textarea:focus {
+    border-color: #13213C;
+    box-shadow: 0 0 0 3px rgba(19, 33, 60, .12);
+}
+
+
+.VerificationNotes {
+    margin-top: 18px;
+}
+
+.VerificationNotes textarea {
+    width: 100%;
+    border: 1px solid #d1d9e0;
+    border-radius: 8px;
+    padding: 12px;
+    resize: vertical;
+    min-height: 120px;
+    outline: none;
+}
+
+
+.AttachedFiles {
+    margin-top: 18px;
+    padding: 15px;
+    background: #f7f7f7;
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+}
+
+.AttachedFiles h4 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: #13213C;
+}
+
+.AttachedFiles p {
+    margin: 0;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+
+.VerificationActions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.VerificationRightActions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.DeleteBtn {
+    background-color: #ef4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    height: 42px;
+    padding: 0 18px;
+    cursor: pointer;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.DeleteBtn:hover {
+    background-color: #dc2626;
+}
+
+.DeleteBtn:focus-visible {
+    outline: 2px solid #b91c1c;
+    outline-offset: 2px;
+}
+
+.VerificationActions button {
+    border: none;
+    border-radius: 8px;
+    height: 42px;
+    padding: 0 18px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.DraftButton {
+    background: #EDEDED;
+    color: #030303;
+}
+
+.DraftButton:hover {
+    background: #d8d8d8;
+}
+
+.LogButton {
+    background: #13213C;
+    color: #FDFDFD;
+}
+
+.LogButton:hover {
+    background: #FCA311;
+    color: #030303;
+}
+.UpdateForResponse{
+  width: 100%;
+}
+.StatusTitle{
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: left;
+  gap: 10px;
+}
+.StatusTitle svg{
+  width: 20px;
+  height: 20px;
+  color: #F59E0B;
+  transition: color .2s ease, transform .2s ease;
+  cursor: pointer;
+}
+.StatusTitle svg:hover{
+  transform: scale(1.08);
+}
+.StatusTitle p{
+  font-size: 13px;
+}
+.TitleHolder{
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+  gap: 10px;
+}
+.ButtonsForResponse{
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: right;
+  justify-content: right;
+  margin: 30px 10px 0 10px ;
+}
+.SendReminderBtn, .RecallRequestBtn{
+  padding: 10px 20px;
+  color: #030303;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: .2s;
+  width: 180px;
+  border: 1px solid #d1d9e0;
+}
+.SendReminderBtn svg{
+  width: 16px;
+  height: 16px;
+  color: #16264C;
+  transition: color .2s ease, transform .2s ease;
+  cursor: pointer;
+}
+.SendReminderBtn:hover svg{
+  color: #030303;
+  transform: scale(1.08);
+}
+.SendReminderBtn{
+  display: inline-flex;
+  gap: 10px;
+  justify-content: center;
+}
+.SendReminderBtn:hover{
+  background-color: #FCA311 !important;
+  color: #030303 !important;
+  border-color: #FCA311 !important;
+}
+.RecallRequestBtn:hover{
+  background-color: red !important;
+  color: #FDFDFD !important;
+}
+.ResponseQueueTag span{
+    background-color: rgba(224, 21, 21, 0.1);
+    border: 1px solid #ff0000a8;
+    color: #030303;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    width: 130px;
+}
+.ResponseQueueTag span.registered {
+    background-color: rgba(5, 150, 105, 0.1);
+    border: 1px solid #059669;
+}
+
+
+.ConfirmationReturnedBox{
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: left;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+.ConfirmationReturnedBox svg{
+  width: 20px;
+  height: 20px;
+  background-color: #a9e5c7;
+  border-radius: 5px;
+  padding: 3px;
+  color: #10B981;
+  transition: color .2s ease, transform .2s ease;
+  cursor: pointer;
+}
+.ConfirmationReturnedBox svg:hover{
+  transform: scale(1.08);
+}
+
+.StatementReturn h3{
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #13213C;
+}
+.StatementReturn p{
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.ResponseBox{
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  border: 2px solid #ff0000a8;
+  background-color: rgba(224, 21, 21, 0.1);
+  border-radius: 10px;
+  padding: 20px;
+}
+.ResponseStatus{
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ResponseStatus svg{
+  width: 25px;
+  height: 25px;
+  transition: color .2s ease, transform .2s ease;
+  cursor: pointer;
+}
+.ResponseStatus svg:hover{
+  transform: scale(1.08);
+}
+.ResponseRegistered .ResponseStatus svg{
+  color: #10B981;
+}
+.ResponseUnregistered .ResponseStatus svg{
+  color: #EF4444;
+}
+.ResponseBox h4{
+  font-size: 13px;
+}
+.ReasonDetail{
+  font-size: 14px;
+}
+.ResponseUpdateBox{
+  width: 100%;
+  margin-top: 25px;
+}
+.ResponseUpdateBox textarea{
+  border-radius: 10px;
+  width: 100%;
+  height: 80px;
+  padding: 10px;
+}
+.ResponseUpdateBox textarea:focus{
+  border: 1px solid #13213C;
+  box-shadow: 0 0 0 3px rgba(19, 33, 60, .12);
+  outline: none;
+}
+.ResponseUpdateBox h6{
+  color: #030303;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  line-height: 2;
+}
+.ResponseBtn{
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin: 8px 0 8px 0 ;
+}
+.ResponseBtn button{
+  width: 200px;
+  height: 40px;
+  padding: 7px;
+  border-radius: 10px;
+  background-color: #13213C;
+  color: #FDFDFD;
+  border: none;
+}
+.ResponseBtn button:hover{
+  background-color: #FCA311;
+  color: #030303;
+}
+.ResponseRegistered{
+    background:#ecfdf5;
+    border:2px solid #059669;
+}
+
+
+.ResponseUnregistered{
+    background:#fef2f2;
+    border:2px solid #ef4444;
+}
+
+.ResponseRejected{
+    background:#fff7ed;
+    border:2px solid #f97316;
+}
+@media (max-width: 1024px) {
+
+    .VerificationContent {
+        grid-template-columns: 1fr;
+    }
+
+    .CaseInfoGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+
+    .VerificationRow {
+        grid-template-columns: 1fr;
+    }
+
+    .CaseInfoGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .VerificationActions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .VerificationRightActions {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .VerificationActions button {
+        width: 100%;
+    }
+
+    .DraftsFilterControls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .DraftsFilterLeft,
+    .DraftsFilterRight {
+        width: 100%;
+        justify-content: flex-start;
+        margin-left: 0;
+    }
+
+    .DraftsFilterRight .DraftsFilterDropdown,
+    .DraftsFilterLeft .DraftsSearchInput {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .LeaVerifFilterControlsLeft,
+    .LeaVerifFilterControlsRight {
+        width: 100%;
+        
+        justify-content: flex-start;
+        margin-left: 0;
+    }
+
+    .LeaVerifFilterControlsLeft .LeaSearchInput,
+    .LeaVerifFilterControlsRight .LeaVerifDateInput,
+    .LeaVerifFilterControlsRight .LeaFilterGroup select {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .LeaVerifFilterPanelWithDateIcon {
+        padding-right: 20px;
+    }
+
+    .LeaVerifDateRangeIcon {
+        position: static;
+        margin-left: auto;
+    }
+}
+
+/* SAVED DRAFTS PAGE CUSTOM STYLES */
+.DraftsFilterSection {
+    background: #FDFDFD;
+    border: 1px solid #d8d8d8;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 1150px !important;
+    justify-self: center;
+}
+
+
+
+.DraftsFilterControls {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex: 1 1 100%;
+    width: 100%;
+}
+
+.DraftsFilterLeft {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 1;
+    min-width: 280px;
+}
+
+.DraftsFilterRight {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.DraftsSearchInput {
+    height: 40px;
+    box-sizing: border-box;
+    /* Change 2 — responsive: was min-width:280px fixed; now flex+clamp so it shrinks on narrow viewports */
+    flex: 1;
+    min-width: clamp(180px, 30%, 340px);
+    max-width: 340px;
+    border: 1px solid #d1d9e0;
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 14px;
+    outline: none;
+    transition: 0.2s;
+    background: #FDFDFD;
+}
+
+.DraftsSearchInput:focus {
+    border-color: #1B2746;
+    box-shadow: 0 0 0 3px rgba(27, 39, 70, 0.12);
+}
+
+.DraftsFilterDropdown {
+    height: 40px;
+    box-sizing: border-box;
+    border: 1px solid #d1d9e0;
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 13px;
+    background: #FDFDFD;
+    outline: none;
+    cursor: pointer;
+    /* Change 2 — responsive: was min-width:160px fixed; now flex+clamp so it shrinks on narrow viewports */
+    flex: 1;
+    min-width: clamp(100px, 20%, 160px);
+    max-width: 160px;
+    transition: 0.2s;
+}
+
+.DraftsFilterDropdown:focus {
+    border-color: #1B2746;
+    box-shadow: 0 0 0 3px rgba(27, 39, 70, 0.12);
+}
+
+.BtnClearFilters {
+    background: #FDFDFD;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.BtnClearFilters:hover {
+    background: #EDEDED;
+}
+
+/* Change 1 — icon-only variant of BtnClearFilters.
+   Inherits all color/border from .BtnClearFilters; overrides only size/layout to a square icon shape.
+   Matches the 32×32px icon-button sizing already used by .WcBtnIconView / .WcBtnIconMore. */
+.BtnClearFiltersIcon {
+    background: #FDFDFD;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    box-sizing: border-box;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.BtnClearFiltersIcon:hover {
+    background: #EDEDED;
+    color: #13213C;
+}
+
+.DraftsTotalCount {
+    font-size: 14px;
+    font-weight: 600;
+    color: #13213C;
+    margin-top: 4px;
+    margin-bottom: 16px;
+    margin-left: 59px;
+    margin-right: 20px;
+}
+
+/* FDA verification queue filter/search pattern reused for LEA verification parity */
+.LeaVerifTabPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.LeaVerifFilterPanel {
+    max-width: none !important;
+    justify-self: unset !important;
+    width: 100%;
+}
+
+.LeaVerifFilterControlsLeft {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 1;
+    min-width: 260px;
+}
+
+.LeaVerifFilterControlsRight {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.LeaVerifFilterPanelWithDateIcon {
+    position: relative;
+    padding-right: 52px;
+}
+
+.LeaVerifDateRangeIcon {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.LeaVerifQueueFilterHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: transparent;
+  border-bottom: none;
+  padding: 14px 14px 4px 14px;
+}
+
+.LeaSearchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.LeaSearchIcon {
+  position: absolute;
+  left: 12px;
+  color: #1F2937;
+  opacity: 0.6;
+}
+
+.LeaSearchInput {
+  height: 40px;
+  box-sizing: border-box;
+  /* Change 2 — responsive: was min-width:260px fixed; now flex+clamp so it shrinks on narrow viewports */
+  flex: 1;
+  min-width: clamp(180px, 30%, 340px);
+  max-width: 340px;
+  border: 1px solid #EDEDED;
+  border-radius: 8px;
+  padding: 0 16px 0 38px;
+  font-size: 14px;
+  background: #FDFDFD;
+  color: #030303;
+  outline: none;
+  transition: 0.2s;
+}
+
+.LeaCategoriesSearchInput {
+  width: 100%;        
+  box-sizing: border-box; 
+  height: 40px;
+  border: 1px solid #EDEDED;
+  border-radius: 8px;
+  padding: 0 16px 0 38px;
+  font-size: 14px;
+  background: #FDFDFD;
+  color: #030303;
+  outline: none;
+  transition: 0.2s;
+}
+
+.LeaSearchInput:focus, .LeaCategoriesSearchInput:focus {
+  border-color: #1A1A2E;
+  box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.15);
+}
+
+.LeaFilterPanel {
+  background: #FDFDFD;
+  border: 1px solid #EDEDED;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.LeaFilterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.LeaFilterGroup label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(31, 41, 55, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.LeaFilterGroup select {
+  height: 40px;
+  min-height: 40px;
+  box-sizing: border-box;
+  border: 1px solid #EDEDED;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 13px;
+  line-height: normal;
+  font-family: var(--font-body);
+  color: #1F2937;
+  background: #FDFDFD;
+  outline: none;
+  cursor: pointer;
+  min-width: clamp(100px, 20%, 150px);
+  max-width: 150px;
+  width: 100%;
+  transition: 0.2s;
+}
+
+.LeaFilterGroup select:focus {
+  border-color: #1A1A2E;
+  box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.15);
+}
+
+.LeaVerifDateInput {
+  height: 40px;
+  min-height: 40px;
+  box-sizing: border-box;
+  border: 1px solid #EDEDED;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 13px;
+  line-height: normal;
+  background: #FDFDFD;
+  outline: none;
+  cursor: pointer;
+  transition: 0.2s;
+  /* Change 2 — responsive: was min-width:140px fixed; now flex+clamp */
+  min-width: clamp(100px, 15%, 140px);
+  max-width: 140px;
+  width: 100%;
+  color: #1F2937;
+  font-family: var(--font-body);
+}
+
+.LeaVerifDateInput:focus {
+  border-color: #1A1A2E;
+  box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.15);
+}
+
+.LeaVerifFilterIcon {
+  color: #1F2937;
+  opacity: 0.6;
+}
+
+.LeaVerifEmptyList {
+  background: #FDFDFD;
+  border: 1.5px dashed #EDEDED;
+  border-radius: 10px;
+  padding: 24px 14px;
+  text-align: center;
+  color: #1F2937;
+}
+
+.LeaVerifEmptyText {
+  font-size: 12px;
+  opacity: 0.7;
+  margin: 0;
+}
+
+.LeaVerifSectionCard,
+.leaVerifSectionCard {
+  background: #FDFDFD;
+  border: 1.5px solid #EDEDED;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.LeaVerifSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #EDEDED;
+}
+
+.LeaVerifSectionHeader h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #030303;
+  margin: 0;
+}
+
+.LeaVerifBlueIcon { color: #1A1A2E; }
+
+.LeaVerifDocsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.LeaVerifDocCard {
+  background: #EDEDED;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.LeaVerifDocIcon {
+  color: #1A1A2E;
+  flex-shrink: 0;
+}
+
+.LeaVerifDocInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.LeaVerifDocName {
+  font-size: 12px;
+  font-weight: 600;
+  color: #030303;
+  margin: 0 0 1px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.LeaVerifDocMeta {
+  font-size: 10.5px;
+  color: #1F2937;
+  opacity: 0.6;
+}
+
+.LeaVerifDocActions {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.LeaVerifDocActionBtn {
+  background: #FDFDFD;
+  border: 1px solid #EDEDED;
+  color: #13213C;
+  padding: 5px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.LeaVerifDocActionBtn:hover {
+  background: #1A1A2E;
+  color: #FDFDFD;
+}
+
+.LeaVerifNoDocsText {
+  font-size: 12.5px;
+  color: #1F2937;
+  opacity: 0.6;
+  margin: 0;
+}
+
+/* Status badge variants */
+.status-draft {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.status-incomplete {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+/* Table Row Action Buttons Wrapper */
+.TableActionsCell {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Table Row Action Buttons */
+.BtnTableEdit {
+    background: #16264C;
+    color: #FDFDFD;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.2s, transform 0.2s ease;
+}
+
+.BtnTableEdit:hover {
+    background: #F59E0B;
+    color: #030303;
+    transform: scale(1.08);
+}
+
+.BtnTableDelete {
+    background: transparent;
+    color: #EF4444;
+    border: 1px solid #fca5a5;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.BtnTableDelete:hover {
+    background: #fef2f2;
+    color: #DC2626;
+    border-color: #f87171;
+    transform: scale(1.08);
+}
+
+.BtnTableEdit svg,
+.BtnTableDelete svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+
+/* Empty State Styling */
+.EmptyStateContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    background: #FDFDFD;
+    border: 1px solid #d8d8d8;
+    border-radius: 12px;
+    text-align: center;
+    margin-top: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    width: 100%;
+    max-width: 1150px;
+    justify-self: center;
+}
+
+.EmptyStateIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(27, 67, 50, 0.08);
+  color: #1B2746;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.EmptyStateTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #13213C;
+    margin: 0 0 8px 0;
+}
+
+.EmptyStateMessage {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 0 16px 0;
+    max-width: 420px;
+    line-height: 1.5;
+}
+
+.EmptyStateLink {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1B2746;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.EmptyStateLink:hover {
+    color: #FCA311;
+}
+
+/* tab separator between process tabs and tracking tabs */
+.TabSeparator {
+  width: 1px;
+  background-color: rgba(19, 33, 60, 0.12);
+  margin: 6px 4px;
+  align-self: stretch;
+}
+
+/* badge for operation in progress status */
+.OperationInProgressBadge {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+  border: 1px solid #f59e0b !important;
+  color: #d97706 !important;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  text-align: center;
+}
+
+/* badge for dismissed status */
+.DismissedBadge {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid #10b981 !important;
+  color: #059669 !important;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  text-align: center;
+}
+
+/* badge for completed/takedown complete status */
+.CompletedBadge {
+  background-color: rgba(107, 114, 128, 0.1) !important;
+  border: 1px solid #6b7280 !important;
+  color: #4b5563 !important;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  text-align: center;
+}
+
+/* badge for rejected status */
+.RejectedBadge {
+  background-color: rgba(249, 115, 22, 0.1) !important;
+  border: 1px solid #f97316 !important;
+  color: #ea580c !important;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  text-align: center;
+}
+
+/* box showing FDA rejection reason */
+.RejectionReasonBox {
+  background-color: rgba(249, 115, 22, 0.1);
+  border: 1.5px solid #f97316;
+  border-radius: 10px;
+  padding: 16px;
+  margin: 15px 0;
+  font-family: 'Inter', sans-serif;
+}
+
+/* read only field operation notes for dismissed cases */
+.ReadOnlyNotes {
+  border-radius: 10px;
+  width: 100%;
+  height: 80px;
+  padding: 10px;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  color: #4b5563;
+  cursor: not-allowed;
+  font-family: 'Inter', sans-serif;
+}
+
+/* modal overlay background */
+.ModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(3, 3, 3, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+/* modal content box */
+.ModalBox {
+  background: #FDFDFD;
+  border-radius: 12px;
+  padding: 32px;
+  width: 450px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  font-family: 'Inter', sans-serif;
+}
+
+.ModalBox h3 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #13213C;
+  margin-bottom: 12px;
+}
+
+.ModalBox p {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+/* modal action buttons row */
+.ModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* FDA-STYLE UNIFIED FLOATING TOAST NOTIFICATION SYSTEM FOR LEA-CIDG */
+.LeaToastAlert,
+.SuccessAlert {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #030303 !important;
+  color: #FDFDFD !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  animation: slideInRight 0.3s ease-out forwards;
+  width: max-content;
+  max-width: min(420px, calc(100vw - 32px));
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.LeaToast_success,
+.SuccessAlert:not([style*="background-color"]) {
+  border-left: 4px solid #1B4332;
+}
+
+.LeaToast_info {
+  border-left: 4px solid #13213C;
+}
+
+.LeaToast_warning {
+  border-left: 4px solid #D97706;
+}
+
+.LeaToast_danger,
+.LeaToast_error,
+.SuccessAlert[style*="background-color"] {
+  border-left: 4px solid #B91C1C !important;
+}
+
+.LeaToastIconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.LeaToast_success .LeaToastIconWrap {
+  color: #2D6A4F;
+}
+
+.LeaToast_info .LeaToastIconWrap {
+  color: #60A5FA;
+}
+
+.LeaToast_warning .LeaToastIconWrap {
+  color: #F59E0B;
+}
+
+.LeaToast_danger .LeaToastIconWrap,
+.LeaToast_error .LeaToastIconWrap {
+  color: #EF4444;
+}
+
+.LeaToastBody {
+  flex: 1;
+}
+
+.LeaToastMessage,
+.SuccessAlert p {
+  margin: 0 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  color: #FDFDFD !important;
+}
+
+.LeaToastCloseBtn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.LeaToastCloseBtn:hover {
+  color: #FDFDFD;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* styles the text showing which FDA officer verified the request */
+.VerifiedByText {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #6b7280;
+  margin: 4px 0;
+  font-weight: 500;
+}
+
+/* dismissed cases full-width table container — wraps the filter bar and table */
+.DismissedTableContainer {
+
+  border-radius: 12px;
+  padding: 20px 24px 28px 24px;
+  width: 100%;
+}
+
+/* dismissed cases filter controls row — holds date range and category filters */
+.DismissedFilters {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #f7f7f7;
+  border: 1px solid #d8d8d8;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+
+/* dismissed cases table — full width data grid for closed complaints */
+.DismissedTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.DismissedTable th {
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 11px;
+  color: #888;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #EDEDED;
+  background: #f7f7f7;
+  text-transform: uppercase;
+}
+
+.DismissedTable td {
+  padding: 13px 14px;
+  font-size: 13px;
+  color: #030303;
+  border-bottom: 1px solid #EDEDED;
+}
+
+.DismissedTable tr:hover {
+  background: #f5f5f5;
+}
+
+/* reason closed badge — product was confirmed registered with FDA */
+.ReasonRegistered {
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px solid #10b981;
+  color: #059669;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* reason closed badge — case was rejected by FDA and acknowledged by LEA */
+.ReasonRejected {
+  background-color: rgba(249, 115, 22, 0.1);
+  border: 1px solid #f97316;
+  color: #ea580c;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  white-space: nowrap;
+}
+.ReasonCompleted {
+   border: 1px solid #1d4ed8;
+  color: #1d4ed8;
+  background-color: rgba(37, 99, 235, 0.1);
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  white-space: nowrap;
+
+}
+
+/* WALK-IN COMPLAINTS IMPROVEMENTS */
+.LeaWalkinComplaintsMain .status-ready-to-send {
+    background: #FFF7D6 !important;
+    color: #B7791F !important;
+}
+.LeaWalkinComplaintsMain .status-pending {
+    background: #DBEAFE !important;
+    color: #1D4ED8 !important;
+}
+.LeaWalkinComplaintsMain .status-confirmed-registered {
+    background: #DCFCE7 !important;
+    color: #15803D !important;
+}
+.LeaWalkinComplaintsMain .status-confirmed-unregistered {
+    background: #FEE2E2 !important;
+    color: #B91C1C !important;
+}
+.LeaWalkinComplaintsMain .status-rejected {
+    background: #FFE4E6 !important;
+    color: #BE123C !important;
+}
+.LeaWalkinComplaintsMain .status-recalled {
+    background: #F3F4F6 !important;
+    color: #4B5563 !important;
+}
+
+.LeaWalkinComplaintsMain .BtnEdit {
+    background: transparent;
+    border: 1.5px solid #13213C;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #13213C;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+}
+.LeaWalkinComplaintsMain .BtnEdit:hover {
+    background: #EDEDED;
+}
+.LeaWalkinComplaintsMain .BtnEdit svg {
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.LeaDashboardMain {
+  display: flex;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.LeaContentContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* LeaMainfeed background is set to #f5f5f5 at the top of this file */
+
+/* 4 Top Stats Cards Grid */
+.LeaStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.LeaStatCard {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 18px 20px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 118px;
+}
+
+.statTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.statLabel {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+.statIconSquare {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.statIconSquare.navy {
+  background: #EBF3F8;
+  color: #07476F;
+}
+
+.statIconSquare.teal {
+  background: #EBF7F6;
+  color: #0D7685;
+}
+
+.statIconSquare.green {
+  background: #ECFDF5;
+  color: #16A34A;
+}
+
+.statValue {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 4px 0;
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+
+.statBottomRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.statTrendGreen {
+  color: #16A34A;
+  font-weight: 600;
+}
+
+.statNoteText {
+  color: #64748B;
+  font-weight: 400;
+}
+
+/* Charts Grid Row */
+.LeaChartsLeftCol,  
+.LeaChartsRightCol {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.LeaChartsRow {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 16px;
+}
+
+.LeaChartCard {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 22px 24px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+.PipelineCard {
+  margin-top: 0;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.chartHeader h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.chartSubtitle {
+  margin: 3px 0 0;
+  color: #64748B;
+  font-size: 0.82rem;
+}
+
+/* Legend Inline Top Right of Line Chart */
+.chartLegendInline {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.legendItemInline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.92rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.legendDotNavy {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #07476F;
+  display: inline-block;
+}
+
+.legendDotTeal {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #14B8A6;
+  display: inline-block;
+}
+
+.legendDotGreen {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #059669;
+  display: inline-block;
+}
+
+/* Interactive SVG Line Chart */
+.svgChartWrapper {
+  width: 100%;
+  height: 260px;
+  position: relative;
+  margin-top: 10px;
+}
+
+.interactiveLineSvg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.yAxisText {
+  font-size: 13px;
+  fill: #64748B;
+  text-anchor: end;
+  font-weight: 500;
+}
+
+.xAxisText {
+  font-size: 13px;
+  fill: #64748B;
+  text-anchor: middle;
+  font-weight: 500;
+}
+
+.lineTooltipClean {
+  background: #0F172A;
+  color: #FFFFFF;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+}
+
+.ttDay {
+  font-weight: 700;
+  color: #94A3B8;
+  margin-bottom: 2px;
+}
+
+.ttRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ttRow.navy strong { color: #38BDF8; }
+.ttRow.teal strong { color: #2DD4BF; }
+
+.interactiveBarSvg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.barTooltipClean {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+}
+
+.ttWeek {
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.barTooltipClean .ttRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.barTooltipClean .ttRow.navy {
+  color: #0f172a;
+}
+
+.barTooltipClean .ttRow.green {
+  color: #059669;
+}
+
+/* Awaiting FDA verification card */
+.AwaitingFDACard {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex: 1;
+  gap: 12px;
+}
+
+.awaitingBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #FFFBEB;
+  border: 1px solid #FCD34D;
+  color: #D97706;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.awaitingList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.awaitingListItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+}
+
+.awaitingListItem:hover {
+  border-color: #CBD5E1;
+  background: #F8FAFC;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.awaitingItemLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.awaitingItemTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.awaitingItemSubtitle {
+  font-size: 0.85rem;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.awaitingItemRight {
+  display: flex;
+  align-items: center;
+}
+
+.walkinTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  color: #0284c7;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Recent walk-in complaints table */
+.RecentComplaintsCard {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 22px 24px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  margin-top: 20px;
+}
+
+.recentComplaintsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.recentComplaintsHeader h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.openFullTableBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.openFullTableBtn:hover {
+  color: #07476F;
+}
+
+.openFullTableBtn:hover .arrowIcon {
+  transform: translateX(3px);
+}
+
+.arrowIcon {
+  transition: transform 0.2s ease;
+  font-size: 1rem;
+}
+
+.RecentComplaintsTableWrapper {
+  overflow-x: auto;
+}
+
+.RecentComplaintsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.RecentComplaintsTable th {
+  padding: 14px 18px;
+  text-align: left;
+  font-size: 0.85rem;
+  color: #64748B;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-bottom: 1.5px solid #F1F5F9;
+  text-transform: uppercase;
+  background: transparent;
+}
+
+.RecentComplaintsTable td {
+  padding: 18px;
+  font-size: 0.95rem;
+  color: #0F172A;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.RecentComplaintsTable tr:last-child td {
+  border-bottom: none;
+}
+
+.RecentComplaintsTable tr:hover {
+  background: #F8FAFC;
+}
+
+.CaseIdCol {
+  font-weight: 600;
+  color: #475569;
+}
+
+.ProductCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ProductNameText {
+  font-weight: 700;
+  color: #0F172A;
+  font-size: 0.95rem;
+}
+
+.ManufacturerText {
+  font-size: 0.85rem;
+  color: #64748B;
+}
+
+.ComplainantCol {
+  color: #334155;
+  font-weight: 500;
+}
+
+.LoggedCol {
+  color: #64748B;
+  font-size: 0.8rem;
+}
+
+.DashboardStatusBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.badge-pending-verification {
+  background: #FFFBEB;
+  color: #D97706;
+  border: 1px solid #FCD34D;
+}
+
+.badge-verified {
+  background: #ECFDF5;
+  color: #047857;
+  border: 1px solid #A7F3D0;
+}
+
+.badge-forwarded-to-lea {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1px solid #BFDBFE;
+}
+
+/* Dashboard responsiveness */
+@media (max-width: 1024px) {
+  .LeaStatsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .LeaChartsRow {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .AwaitingFDACard {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .LeaStatsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .LeaMainfeed {
+    padding: 16px 20px;
+  }
+
+  .svgChartWrapper {
+    height: 160px;
+  }
+}
+
+/* Donut Chart Card & SVG */
+.DonutCard {
+  justify-content: space-between;
+}
+
+.donutChartContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 15px 0 20px;
+}
+
+.donutSvgClean {
+  width: 180px;
+  height: 180px;
+  overflow: visible;
+}
+
+/* 2-Column Donut Legend Grid */
+.donutLegendGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 24px;
+  margin-top: auto;
+}
+
+.legendCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legendRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  padding: 3px 6px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+
+.legendRow.active {
+  background: #F1F5F9;
+}
+
+.legendLabelGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dotIndicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.regionName {
+  color: #334155;
+  font-weight: 500;
+}
+
+.regionPercent {
+  color: #0F172A;
+  font-weight: 700;
+}
+
+/* ============================================================================ */
+/* ROW ACTION DROPDOWN (View + More Actions) — used in lea-save-drafts.jsx      */
+/* Ported 1:1 from fda-css.css's .FdaDropdown* classes, Fda->Lea prefix swap    */
+/* ============================================================================ */
+
+.LeaDropdownWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.LeaViewBtn,
+.LeaDropdownTrigger {
+  background: #FDFDFD;
+  border: 1.5px solid #EDEDED;
+  color: #1F2937;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.LeaViewBtn:hover {
+  background: #13213C;
+  color: #FDFDFD;
+  border-color: #13213C;
+}
+
+.LeaDropdownTrigger:hover {
+  background: #EDEDED;
+  color: #030303;
+}
+
+.LeaDropdownWrapper.active-open {
+  z-index: 50;
+}
+
+.LeaDropdownMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: #FDFDFD;
+  border: 1px solid #EDEDED;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  z-index: 100;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.LeaDropdownMenu.open-upward {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+.LeaDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #1F2937;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+}
+
+.LeaDropdownItem:hover {
+  background: #EDEDED;
+  color: #13213C;
+}
+
+/* ADDED — LEA-side doc preview modal, same layout as the FDA version.
+   height: 85vh (not just max-height) is required for the flex:1 preview
+   elements below to actually get a real height to grow into. */
+.LeaVerifDocModalContainer {
+  background: #FDFDFD;
+  border-radius: 12px;
+  max-width: 1100px;
+  width: 92vw;
+  height: 90vh;
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+}
+
+/* ADDED — body grows to fill space between header and footer */
+.LeaVerifDocModalBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.LeaVerifDocModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #EDEDED;
+}
+
+.LeaVerifDocModalTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.LeaVerifDocModalTitleGroup h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #030303;
+  margin: 0 0 2px 0;
+}
+
+.LeaVerifDocModalMeta {
+  font-size: 11.5px;
+  color: #1F2937;
+  opacity: 0.6;
+  margin: 0;
+}
+
+.LeaVerifDocPlaceholderPreview {
+  background: #EDEDED;
+  border: 1.5px dashed #1B4332;
+  border-radius: 8px;
+  padding: 32px 16px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.LeaVerifDocPreviewIcon {
+  color: #1B4332;
+  margin-bottom: 10px;
+}
+
+/* ADDED — flex:1 so image/PDF fills whatever height LeaVerifDocModalBody gives them */
+.LeaVerifDocImagePreview {
+  max-width: 100%;
+  max-height: 100%;
+  flex: 1;
+  min-height: 0;
+  margin: 0 auto;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.LeaVerifDocPdfPreview {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  border: none;
+  border-radius: 8px;
+}
+
+.LeaVerifPreviewTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #030303;
+  margin: 0 0 4px 0;
+}
+
+.LeaVerifPreviewText {
+  font-size: 12.5px;
+  color: #1F2937;
+  opacity: 0.8;
+  margin: 0 0 10px 0;
+}
+
+/* ADDED — close (X) button on the doc preview modal header, matches
+   LeaVerifDocActionBtn's icon-button pattern but transparent/borderless
+   since it sits in the header, not a card */
+.LeaVerifIconButton {
+  background: transparent;
+  border: none;
+  color: #1F2937;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.LeaVerifIconButton:hover {
+  opacity: 1;
+  background: #EDEDED;
+}
+
+/* ADDED — footer bar for the doc preview modal (Close / Download buttons) */
+.LeaVerifModalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #EDEDED;
+}
+
+/* ADDED — "Close Preview" button, same shape/weight as BtnCancelModal
+   used elsewhere in this file, kept separate since it lives in a
+   different footer layout (flex-end, not space-between) */
+.LeaVerifBtnOutline {
+  padding: 10px 20px;
+  border: 1.5px solid #d8d8d8;
+  border-radius: 8px;
+  background: #FDFDFD;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #030303;
+  transition: background 0.2s;
+}
+
+.LeaVerifBtnOutline:hover {
+  background: #EDEDED;
+}
+
+/* ADDED — "Download Attachment" button, reuses the same navy/amber
+   pattern as SendReqBtn/LogButton elsewhere in this file, for LEA
+   theme consistency (FDA side uses green — LEA uses navy) */
+.LeaVerifBtnPrimary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #13213C;
+  color: #FDFDFD;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.LeaVerifBtnPrimary:hover {
+  background: #FCA311;
+  color: #030303;
+}
+
+/* LEA Verification Request — FDA Response Details Styling */
+.LeaVerifResponseStatusHeader {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-start;
+  padding-bottom: 8px;
+  margin-bottom: 2px;
+}
+
+.LeaVerifResponseStatusHeader svg {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  padding: 3px;
+  flex-shrink: 0;
+}
+
+.LeaVerifRegisteredHeader svg {
+  background-color: #D1FAE5 !important;
+  color: #10B981 !important;
+}
+
+.LeaVerifUnregisteredHeader svg {
+  background-color: #FEE2E2 !important;
+  color: #EF4444 !important;
+}
+
+.LeaVerifRejectedHeader svg {
+  background-color: #FEE2E2 !important;
+  color: #EF4444 !important;
+}
+
+.ResponseBox.ResponseRegistered {
+  height: auto;
+  min-height: 110px;
+  border: 1.5px solid #10B981;
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+.ResponseBox.ResponseUnregistered {
+  height: auto;
+  min-height: 110px;
+  border: 1.5px solid #EF4444;
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+.ResponseBox.ResponseRejected {
+  height: auto;
+  min-height: 110px;
+  border: 1.5px solid #f97316;
+  background-color: rgba(249, 115, 22, 0.05);
+}
+
+.LeaVerifResultFieldsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* Each individual FDA response detail — its own clean bordered box */
+.LeaVerifResultField {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  min-width: 0;
+}
+
+/* Registered variant — very subtle green tint on the box border */
+.ResponseRegistered .LeaVerifResultField {
+  border-color: rgba(16, 185, 129, 0.25);
+  background: #ffffff;
+}
+
+/* Unregistered variant — very subtle red tint on the box border */
+.ResponseUnregistered .LeaVerifResultField {
+  border-color: rgba(239, 68, 68, 0.2);
+  background: #ffffff;
+}
+
+/* Rejected variant — very subtle orange tint on the box border */
+.ResponseRejected .LeaVerifResultField {
+  border-color: rgba(249, 115, 22, 0.2);
+  background: #ffffff;
+}
+
+.LeaVerifFullWidthField {
+  grid-column: 1 / -1;
+}
+
+.LeaVerifFieldLabel {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7a8796;
+  margin-bottom: 6px;
+}
+
+/* Label tint for registered boxes */
+.ResponseRegistered .LeaVerifFieldLabel {
+  color: #059669;
+}
+
+/* Label tint for unregistered boxes */
+.ResponseUnregistered .LeaVerifFieldLabel {
+  color: #dc2626;
+}
+
+/* Label tint for rejection-related field grid */
+.ResponseRejected .LeaVerifFieldLabel {
+  color: #ea580c;
+}
+
+.LeaVerifFieldValue {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #13213C;
+  margin: 0;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+/* Rejection detail grid — reuses the same grid pattern for the Rejected state */
+.LeaVerifRejectionFieldsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+@media (max-width: 768px) {
+  .LeaVerifResultFieldsGrid,
+  .LeaVerifRejectionFieldsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Highlighted Acknowledgement Notice */
+.LeaVerifAckNotice {
+  background: #f0f4f9;
+  border: 1px solid #d8e2ed;
+  border-left: 4px solid #13213C;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 18px 0 12px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.LeaVerifAckNotice p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+/* ADDED — Word document (.docx) preview container rendered via Mammoth */
+.LeaVerifDocDocxPreview {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  display: block;
+}
+
+.LeaVerifDocxContent {
+  width: 100%;
+  max-width: 100%;
+  background: #FFFFFF;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 24px 32px;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1F2937;
+}
+
+.LeaVerifDocxContent h1,
+.LeaVerifDocxContent h2,
+.LeaVerifDocxContent h3,
+.LeaVerifDocxContent h4 {
+  color: #13213C;
+  font-weight: 700;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+}
+
+.LeaVerifDocxContent p {
+  margin-bottom: 1em;
+}
+
+.LeaVerifDocxContent table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.LeaVerifDocxContent th,
+.LeaVerifDocxContent td {
+  border: 1px solid #D1D5DB;
+  padding: 8px 12px;
+  font-size: 12.5px;
+}
