@@ -374,18 +374,20 @@ def delete_superadmin(
     deleted_admin_email = admin.email
     deleted_admin_previous_status = "suspended" if (admin.status == UserStatus.ACTIVE and not admin.is_active) else "invited"
 
+    notification_service.create_notification_for_all_superadmins(
+            db=db,
+            event_type=NotificationEventType.ACCOUNT_DELETED,
+            title="Superadmin deleted",
+            message=f"{deleted_admin_email}'s superadmin account has been deleted.",
+            related_user_id=deleted_admin_id,
+        )
+    
+
     db.query(AccountInvitationToken).filter(AccountInvitationToken.user_id == admin_id).delete()
     db.delete(admin)
     db.commit()
 
-    notification_service.create_notification_for_all_superadmins(
-        db=db,
-        event_type=NotificationEventType.ACCOUNT_DELETED,
-        title="Superadmin deleted",
-        message=f"{deleted_admin_email}'s superadmin account has been deleted.",
-        related_user_id=deleted_admin_id,
-    )
-
+    
     write_audit_log(
         db,
         user=current_user,

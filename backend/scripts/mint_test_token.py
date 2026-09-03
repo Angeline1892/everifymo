@@ -1,3 +1,4 @@
+# backend/scripts/mint_test_token.py
 """Generate a valid, real JWT for an already-seeded test account,
 WITHOUT going through the actual login/OTP endpoints (which don't
 exist yet for FDA/LEA accounts).

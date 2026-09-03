@@ -164,29 +164,43 @@ def notify_lea_new_walkin_complaint(db: Session, complaint, current_user) -> Non
 
 # ── SLA reminder notifications (priority-based, triggered by polling) ────
 
-def notify_fda_sla_reminder_1(db: Session, complaint, priority: str, remaining_str: str) -> None:
+def notify_fda_sla_reminder_1(db: Session, complaint, priority: str, remaining_str: str, is_late: bool = False) -> None:
     priority_name = priority.capitalize()
     fda_user_ids = _get_fda_user_ids_for_region(db, complaint.region_id)
+    if is_late:
+        message = (
+            f"CASE ID: {complaint.case_reference} should have already received a response. "
+            f"Priority: {priority_name} — the response deadline has passed."
+        )
+    else:
+        message = (
+            f"CASE ID: {complaint.case_reference} is approaching its response deadline. "
+            f"Priority: {priority_name} — respond within {remaining_str}."
+        )
     _bulk_create_personnel_notifications(
         db, fda_user_ids, complaint.complaint_id,
         title="Response Needed Soon",
-        message=(
-            f"CASE ID: {complaint.case_reference} is approaching its response deadline. "
-            f"Priority: {priority_name} — respond within {remaining_str}."
-        ),
+        message=message,
     )
 
 
-def notify_fda_sla_reminder_2(db: Session, complaint, priority: str, remaining_str: str) -> None:
+def notify_fda_sla_reminder_2(db: Session, complaint, priority: str, remaining_str: str, is_late: bool = False) -> None:
     priority_name = priority.capitalize()
     fda_user_ids = _get_fda_user_ids_for_region(db, complaint.region_id)
+    if is_late:
+        message = (
+            f"CASE ID: {complaint.case_reference} should have already received a response. "
+            f"Priority: {priority_name} — the response deadline has passed."
+        )
+    else:
+        message = (
+            f"CASE ID: {complaint.case_reference} is very close to its response deadline. "
+            f"Priority: {priority_name} — respond within {remaining_str}."
+        )
     _bulk_create_personnel_notifications(
         db, fda_user_ids, complaint.complaint_id,
         title="Deadline Approaching — Respond Now",
-        message=(
-            f"CASE ID: {complaint.case_reference} is very close to its response deadline. "
-            f"Priority: {priority_name} — respond within {remaining_str}."
-        ),
+        message=message,
     )
 
 

@@ -590,7 +590,7 @@ function normalizeFdaLog(raw) {
 
 function SuperAdminAuditLog() {
   // Filters & State mapping query parameters
-  const [activeTab, setActiveTab] = useState('All'); // 'All', 'FDA', 'LEA-CIDG', 'Superadmin'
+  const [activeTab, setActiveTab] = useState('FDA'); // 'FDA', 'LEA-CIDG', 'Superadmin', 'System'
   const [searchQuery, setSearchQuery] = useState('');
   const [actionFilter, setActionFilter] = useState('All');
   const [regionFilter, setRegionFilter] = useState('All');
@@ -996,7 +996,7 @@ function SuperAdminAuditLog() {
             {/* Filter Tabs */}
             <div className="AuditTabsContainer">
               <div className="AuditTabsButton">
-                {['All', 'FDA', 'LEA-CIDG', 'Superadmin', 'System'].map((tab) => {
+                {['FDA', 'LEA-CIDG', 'Superadmin', 'System'].map((tab) => {
                   const count = getTabCount(tab);
                   return (
                     <button
@@ -1004,7 +1004,7 @@ function SuperAdminAuditLog() {
                       className={`AuditTabButton ${activeTab === tab ? 'active' : ''}`}
                       onClick={() => handleTabClick(tab)}
                     >
-                      {tab === 'All' ? 'All Activities' : tab}
+                      {tab}
                       {count !== null && <span className="AuditTabCount">{count}</span>}
                     </button>
                   );

@@ -1,213 +1,90 @@
 // desktopfrontend/src/pages/component/all-notifications.jsx
-import React, { useState, useMemo } from 'react';
-import { 
-  CheckCheck, 
-  Check, 
-  ShieldCheck, 
-  AlertTriangle, 
-  ClipboardList, 
-  UserCheck, 
-  ShieldAlert, 
-  Database, 
-  FileText, 
-  Activity, 
-  Bell, 
-  Clock, 
-  CheckCircle2
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import {
+  CheckCheck,
+  ShieldCheck,
+  AlertTriangle,
+  ClipboardList,
+  UserCheck,
+  ShieldAlert,
+  FileText,
+  Activity,
+  Bell,
+  Clock,
+  CheckCircle2,
+  Lock,
+  KeyRound,
+  Loader2
 } from 'lucide-react';
 import Sidebar from './sidebar';
 import TopBar from './top-bar';
+import { apiFetch } from '../../utils/apiFetch';
 
 // Load layouts for the respective workspaces
 import '../fdafolder/fda-css.css';
 import '../leacidgfolder/lea-css.css';
 import '../superadminfolder/superadmin-css.css';
 
-/**
- * Helper function to determine the authenticated user's role/agency consistently across workspaces.
- */
-const getAuthenticatedUserRole = () => {
-  const rawAgency = (
-    localStorage.getItem('agency') || 
-    localStorage.getItem('role') || 
-    'FDA'
-  ).toString().trim().toUpperCase();
+// Event types with no real DB row — computed fresh on every backend read
+// (see superadmin_notification_service.py). Clicking these can't call the
+// mark-as-read endpoint. Mirrors the same list in top-bar.jsx.
+const COMPUTED_EVENT_TYPES = ['invite_not_activated', 'invite_expired'];
 
-  if (rawAgency.includes('SUPER')) {
-    return 'SUPERADMIN';
-  }
-  if (rawAgency === 'LEA' || rawAgency === 'CIDG' || rawAgency.includes('LEA') || rawAgency.includes('CIDG')) {
-    return 'LEA';
-  }
-  return 'FDA';
+const PAGE_SIZE = 20;
+
+/**
+ * Determines the authenticated role/agency. Kept in sync with
+ * getAuthenticatedRole() in top-bar.jsx so both surfaces always agree on
+ * which notification endpoint to call.
+ */
+const getAuthenticatedRole = () => {
+  const raw = (
+    localStorage.getItem('agency') ||
+    localStorage.getItem('role') ||
+    'fda'
+  ).toString().trim().toLowerCase();
+
+  if (raw.includes('super')) return 'superadmin';
+  if (raw === 'lea' || raw === 'cidg' || raw.includes('lea') || raw.includes('cidg')) return 'lea';
+  return 'fda';
 };
 
-/**
- * Realistic Mock Notifications for EverifyMo application.
- */
-const INITIAL_NOTIFICATIONS = [
-  // --- TODAY ---
-  {
-    id: 'notif-1',
-    title: 'New Consumer Walk-in Complaint Filed',
-    message: 'Complaint Reference #CMP-2026-0891 filed regarding suspected unregistered health supplement sold in retail pharmacy.',
-    time: '15 minutes ago',
-    dateStr: 'Today at 11:20 AM',
-    group: 'today',
-    isRead: false,
-    category: 'Complaint',
-    iconType: 'complaint'
-  },
-  {
-    id: 'notif-2',
-    title: 'FDA Public Health Advisory Issued',
-    message: 'Advisory #2026-042 published for immediate dissemination: Batch verification required on counterfeit cosmetic product lines.',
-    time: '1 hour ago',
-    dateStr: 'Today at 10:35 AM',
-    group: 'today',
-    isRead: false,
-    category: 'Advisory',
-    iconType: 'advisory'
-  },
-  {
-    id: 'notif-3',
-    title: 'Verification Request Status Confirmed',
-    message: 'LEA-CIDG confirmed physical inspection on Target Entity in Manila District for Case #VER-2026-0182.',
-    time: '3 hours ago',
-    dateStr: 'Today at 8:45 AM',
-    group: 'today',
-    isRead: false,
-    category: 'Verification',
-    iconType: 'verification'
-  },
-  {
-    id: 'notif-4',
-    title: 'Browser Extension Report Forwarded',
-    message: 'Automated complaint #EXT-2026-1049 submitted from browser extension with seller URL details and digital storefront evidence.',
-    time: '5 hours ago',
-    dateStr: 'Today at 6:30 AM',
-    group: 'today',
-    isRead: true,
-    category: 'Extension',
-    iconType: 'report'
-  },
+function timeAgo(dateString) {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffSec = Math.floor((now - date) / 1000);
 
-  // --- YESTERDAY ---
-  {
-    id: 'notif-5',
-    title: 'Personnel Account Activated',
-    message: 'Investigator M. Santos completed email verification and successfully joined the FDA Inspection Division.',
-    time: 'Yesterday',
-    dateStr: 'Yesterday at 4:30 PM',
-    group: 'yesterday',
-    isRead: false,
-    category: 'Personnel',
-    iconType: 'user'
-  },
-  {
-    id: 'notif-6',
-    title: 'Joint Takedown Operation Update',
-    message: 'Operation Phase 2 initiated for counterfeit medicine distribution warehouse in Northern Luzon Sector.',
-    time: 'Yesterday',
-    dateStr: 'Yesterday at 1:15 PM',
-    group: 'yesterday',
-    isRead: false,
-    category: 'Operation',
-    iconType: 'takedown'
-  },
-  {
-    id: 'notif-7',
-    title: 'Security Alert: Failed Login Threshold Exceeded',
-    message: 'Multiple failed authentication attempts detected from IP 192.168.1.104. Session temporarily restricted for audit analysis.',
-    time: 'Yesterday',
-    dateStr: 'Yesterday at 9:05 AM',
-    group: 'yesterday',
-    isRead: true,
-    category: 'Audit Log',
-    iconType: 'audit'
-  },
+  if (diffSec < 60) return 'Just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} minute${diffMin !== 1 ? 's' : ''} ago`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} hour${diffHour !== 1 ? 's' : ''} ago`;
+  const diffDay = Math.floor(diffHour / 24);
+  return `${diffDay} day${diffDay !== 1 ? 's' : ''} ago`;
+}
 
-  // --- PREVIOUS 7 DAYS ---
-  {
-    id: 'notif-8',
-    title: 'Registered Product Database Updated',
-    message: '14 new registered pharmaceutical products and verification certificates were added to the FDA central directory.',
-    time: '3 days ago',
-    dateStr: 'Aug 29, 2026 at 2:40 PM',
-    group: 'previous_7_days',
-    isRead: true,
-    category: 'Database',
-    iconType: 'database'
-  },
-  {
-    id: 'notif-9',
-    title: 'Superadmin Invitation Accepted',
-    message: 'Invitation for CIDG Regional Unit Administrator has been accepted and authorized in the administrative registry.',
-    time: '4 days ago',
-    dateStr: 'Aug 28, 2026 at 11:10 AM',
-    group: 'previous_7_days',
-    isRead: true,
-    category: 'Personnel',
-    iconType: 'user'
-  },
-  {
-    id: 'notif-10',
-    title: 'Monthly Enforcement Report Generated',
-    message: 'Monthly analytics and inter-agency takedown summary for August 2026 is ready for review and export.',
-    time: '5 days ago',
-    dateStr: 'Aug 27, 2026 at 5:00 PM',
-    group: 'previous_7_days',
-    isRead: true,
-    category: 'Report',
-    iconType: 'report'
-  },
-  {
-    id: 'notif-11',
-    title: 'Case Verification Status: Action Required',
-    message: 'Supplementary laboratory analysis report requested for Walk-in Case #CMP-2026-0740 before disposition.',
-    time: '6 days ago',
-    dateStr: 'Aug 26, 2026 at 10:15 AM',
-    group: 'previous_7_days',
-    isRead: true,
-    category: 'Verification',
-    iconType: 'verification'
-  },
+function formatFullDate(dateString) {
+  return new Date(dateString).toLocaleString(undefined, {
+    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+  });
+}
 
-  // --- OLDER ---
-  {
-    id: 'notif-12',
-    title: 'Case File #CF-2026-041 Marked Closed',
-    message: 'Physical takedown and legal resolution concluded. Final disposition report submitted to FDA regulatory legal unit.',
-    time: 'Aug 20, 2026',
-    dateStr: 'Aug 20, 2026 at 3:20 PM',
-    group: 'older',
-    isRead: true,
-    category: 'Complaint',
-    iconType: 'complaint'
-  },
-  {
-    id: 'notif-13',
-    title: 'Scheduled System Backup Completed',
-    message: 'Automated encrypted database snapshot and inter-agency audit archive synchronization completed successfully.',
-    time: 'Aug 15, 2026',
-    dateStr: 'Aug 15, 2026 at 2:00 AM',
-    group: 'older',
-    isRead: true,
-    category: 'System',
-    iconType: 'system'
-  },
-  {
-    id: 'notif-14',
-    title: 'Inter-Agency Security Policy Enforced',
-    message: 'Two-factor authentication and role re-verification requirements applied across all active personnel sessions.',
-    time: 'Aug 08, 2026',
-    dateStr: 'Aug 08, 2026 at 9:00 AM',
-    group: 'older',
-    isRead: true,
-    category: 'Audit Log',
-    iconType: 'audit'
-  }
-];
+// Groups a notification into today / yesterday / previous_7_days / older,
+// based on its real created_at timestamp.
+function getDateGroup(dateString) {
+  const now = new Date();
+  const date = new Date(dateString);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday);
+  startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+  const startOf7DaysAgo = new Date(startOfToday);
+  startOf7DaysAgo.setDate(startOf7DaysAgo.getDate() - 7);
+
+  if (date >= startOfToday) return 'today';
+  if (date >= startOfYesterday) return 'yesterday';
+  if (date >= startOf7DaysAgo) return 'previous_7_days';
+  return 'older';
+}
 
 const GROUP_METADATA = [
   { key: 'today', label: 'Today' },
@@ -216,77 +93,188 @@ const GROUP_METADATA = [
   { key: 'older', label: 'Older' }
 ];
 
+// ── Superadmin: event_type -> icon / category / color theme ─────────────
+// Covers every value in NotificationEventType (notification_enums.py).
+const SUPERADMIN_EVENT_META = {
+  account_locked:              { icon: 'lock',   category: 'Security',   theme: 'bg-red' },
+  account_unlocked:            { icon: 'lock',   category: 'Security',   theme: 'bg-teal' },
+  failed_login_warning:        { icon: 'audit',  category: 'Security',   theme: 'bg-red' },
+  superadmin_invited:          { icon: 'user',   category: 'Personnel',  theme: 'bg-blue' },
+  personnel_invited:           { icon: 'user',   category: 'Personnel',  theme: 'bg-blue' },
+  registration_accomplished:   { icon: 'user',   category: 'Personnel',  theme: 'bg-teal' },
+  superadmin_password_created: { icon: 'key',    category: 'Personnel',  theme: 'bg-teal' },
+  resend_link_requested:       { icon: 'system', category: 'Invitation', theme: 'bg-amber' },
+  password_changed:            { icon: 'key',    category: 'Account',    theme: 'bg-indigo' },
+  account_info_updated:        { icon: 'report', category: 'Account',    theme: 'bg-indigo' },
+  account_suspended:           { icon: 'audit',  category: 'Account',    theme: 'bg-purple' },
+  account_reactivated:         { icon: 'audit',  category: 'Account',    theme: 'bg-teal' },
+  account_activated:           { icon: 'user',   category: 'Personnel',  theme: 'bg-teal' },
+  account_deleted:             { icon: 'audit',  category: 'Account',    theme: 'bg-red' },
+  invite_not_activated:        { icon: 'system', category: 'Invitation', theme: 'bg-amber' },
+  invite_expired:              { icon: 'system', category: 'Invitation', theme: 'bg-red' },
+};
+
+// ── LEA/FDA personnel: rows carry no event_type field (see Notification
+// model / notification_service.py), so category is inferred from keywords
+// in the backend-generated title text instead. ─────────────────────────
+function getPersonnelMeta(title) {
+  const t = (title || '').toLowerCase();
+  if (t.includes('complaint logged')) return { icon: 'complaint', category: 'Complaint', theme: 'bg-orange' };
+  if (t.includes('rejected')) return { icon: 'verification', category: 'Verification', theme: 'bg-red' };
+  if (t.includes('verification request')) return { icon: 'verification', category: 'Verification', theme: 'bg-teal' };
+  if (t.includes('response received') || t.includes('acknowledged')) return { icon: 'verification', category: 'Verification', theme: 'bg-blue' };
+  if (t.includes('case closed')) return { icon: 'complaint', category: 'Case', theme: 'bg-slate' };
+  if (t.includes('takedown')) return { icon: 'takedown', category: 'Operation', theme: 'bg-amber' };
+  if (t.includes('deadline') || t.includes('response needed')) return { icon: 'audit', category: 'SLA', theme: 'bg-red' };
+  return { icon: 'system', category: 'General', theme: 'bg-slate' };
+}
+
 function getNotificationIcon(type) {
   switch (type) {
-    case 'complaint':
-      return <ClipboardList size={16} />;
-    case 'advisory':
-      return <AlertTriangle size={16} />;
-    case 'verification':
-      return <ShieldCheck size={16} />;
-    case 'user':
-      return <UserCheck size={16} />;
-    case 'takedown':
-      return <Activity size={16} />;
-    case 'audit':
-      return <ShieldAlert size={16} />;
-    case 'database':
-      return <Database size={16} />;
-    case 'report':
-      return <FileText size={16} />;
+    case 'complaint': return <ClipboardList size={16} />;
+    case 'advisory': return <AlertTriangle size={16} />;
+    case 'verification': return <ShieldCheck size={16} />;
+    case 'user': return <UserCheck size={16} />;
+    case 'takedown': return <Activity size={16} />;
+    case 'audit': return <ShieldAlert size={16} />;
+    case 'report': return <FileText size={16} />;
+    case 'lock': return <Lock size={16} />;
+    case 'key': return <KeyRound size={16} />;
     case 'system':
-    default:
-      return <Bell size={16} />;
+    default: return <Bell size={16} />;
   }
 }
 
-function getCategoryTheme(type) {
-  switch (type) {
-    case 'complaint':
-      return { bg: 'rgba(234, 88, 12, 0.1)', color: '#C2410C', badge: 'bg-orange' };
-    case 'advisory':
-      return { bg: 'rgba(220, 38, 38, 0.1)', color: '#DC2626', badge: 'bg-red' };
-    case 'verification':
-      return { bg: 'rgba(13, 148, 136, 0.12)', color: '#0D9488', badge: 'bg-teal' };
-    case 'user':
-      return { bg: 'rgba(59, 130, 246, 0.1)', color: '#2563EB', badge: 'bg-blue' };
-    case 'takedown':
-      return { bg: 'rgba(217, 119, 6, 0.12)', color: '#B45309', badge: 'bg-amber' };
-    case 'audit':
-      return { bg: 'rgba(124, 58, 237, 0.1)', color: '#7C3AED', badge: 'bg-purple' };
-    case 'database':
-      return { bg: 'rgba(16, 185, 129, 0.12)', color: '#059669', badge: 'bg-green' };
-    case 'report':
-      return { bg: 'rgba(79, 70, 229, 0.1)', color: '#4F46E5', badge: 'bg-indigo' };
-    case 'system':
-    default:
-      return { bg: 'rgba(100, 116, 139, 0.12)', color: '#475569', badge: 'bg-slate' };
-  }
+function getCategoryTheme(themeKey) {
+  const map = {
+    'bg-orange': { bg: 'rgba(234, 88, 12, 0.1)', color: '#C2410C', badge: 'bg-orange' },
+    'bg-red': { bg: 'rgba(220, 38, 38, 0.1)', color: '#DC2626', badge: 'bg-red' },
+    'bg-teal': { bg: 'rgba(13, 148, 136, 0.12)', color: '#0D9488', badge: 'bg-teal' },
+    'bg-blue': { bg: 'rgba(59, 130, 246, 0.1)', color: '#2563EB', badge: 'bg-blue' },
+    'bg-amber': { bg: 'rgba(217, 119, 6, 0.12)', color: '#B45309', badge: 'bg-amber' },
+    'bg-purple': { bg: 'rgba(124, 58, 237, 0.1)', color: '#7C3AED', badge: 'bg-purple' },
+    'bg-indigo': { bg: 'rgba(79, 70, 229, 0.1)', color: '#4F46E5', badge: 'bg-indigo' },
+    'bg-slate': { bg: 'rgba(100, 116, 139, 0.12)', color: '#475569', badge: 'bg-slate' },
+  };
+  return map[themeKey] || map['bg-slate'];
 }
 
 export default function AllNotifications() {
-  const currentRole = getAuthenticatedUserRole();
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const currentRole = getAuthenticatedRole(); // 'fda' | 'lea' | 'superadmin'
+  const isSuperadmin = currentRole === 'superadmin';
+  const notificationsBasePath = isSuperadmin ? '/notifications' : '/personnel-notifications';
+
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'unread' | 'read'
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Normalizes both backend shapes (superadmin rows carry event_type;
+  // LEA/FDA rows don't) into one common shape the rest of the component uses.
+  const normalizeNotification = useCallback((n) => {
+    if (isSuperadmin) {
+      const meta = SUPERADMIN_EVENT_META[n.event_type] || { icon: 'system', category: 'General', theme: 'bg-slate' };
+      return {
+        id: n.notification_id,
+        title: n.title,
+        message: n.message,
+        isRead: n.is_read,
+        createdAt: n.created_at,
+        eventType: n.event_type,
+        iconType: meta.icon,
+        category: meta.category,
+        theme: meta.theme,
+      };
+    }
+    const meta = getPersonnelMeta(n.title);
+    return {
+      id: n.notification_id,
+      title: n.title,
+      message: n.message,
+      isRead: n.is_read,
+      createdAt: n.created_at,
+      eventType: null,
+      iconType: meta.icon,
+      category: meta.category,
+      theme: meta.theme,
+    };
+  }, [isSuperadmin]);
+
+  const loadPage = useCallback((pageOffset, replace) => {
+    const setBusy = replace ? setLoading : setLoadingMore;
+    setBusy(true);
+    apiFetch(`${notificationsBasePath}?limit=${PAGE_SIZE}&offset=${pageOffset}`)
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = await res.json();
+        const mapped = data.notifications.map(normalizeNotification);
+        setNotifications((prev) => (replace ? mapped : [...prev, ...mapped]));
+        setUnreadCount(data.unread_count);
+        setHasMore(mapped.length === PAGE_SIZE);
+        setOffset(pageOffset + mapped.length);
+      })
+      .catch((err) => console.error('Failed to load notifications:', err))
+      .finally(() => setBusy(false));
+  }, [notificationsBasePath, normalizeNotification]);
+
+  useEffect(() => {
+    loadPage(0, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notificationsBasePath]);
+
+  const handleLoadMore = () => {
+    if (loadingMore || !hasMore) return;
+    loadPage(offset, false);
+  };
+
+  const handleMarkAllAsRead = () => {
+    apiFetch(`${notificationsBasePath}/read-all`, { method: 'PATCH' })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = await res.json();
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+        setUnreadCount(data.unread_count);
+      })
+      .catch((err) => console.error('Failed to mark all as read:', err));
+  };
+
+  const handleMarkRead = (notif) => {
+    // Computed entries (superadmin invite_not_activated / invite_expired)
+    // have no real DB row — nothing to mark read, they resolve on their own.
+    if (isSuperadmin && COMPUTED_EVENT_TYPES.includes(notif.eventType)) return;
+    if (notif.isRead) return;
+
+    apiFetch(`${notificationsBasePath}/${notif.id}/read`, { method: 'PATCH' })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = await res.json();
+        setNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n)));
+        setUnreadCount(data.unread_count);
+      })
+      .catch((err) => console.error('Failed to mark notification as read:', err));
+  };
 
   // Workspace Layout configuration matching existing FDA / LEA / Superadmin dashboards
   const layoutConfig = useMemo(() => {
     switch (currentRole) {
-      case 'SUPERADMIN':
+      case 'superadmin':
         return {
           sidebarType: 'SUPER_ADMIN',
           mainContainerClass: 'SuperadminMainContainer',
           contentContainerClass: 'SuperadminContentContainer',
           mainFeedClass: 'SuperadminMainfeed',
         };
-      case 'LEA':
+      case 'lea':
         return {
           sidebarType: 'LEA',
           mainContainerClass: 'LeaDashboardMain',
           contentContainerClass: 'LeaContentContainer',
           mainFeedClass: 'LeaMainfeed',
         };
-      case 'FDA':
+      case 'fda':
       default:
         return {
           sidebarType: 'FDA',
@@ -297,52 +285,23 @@ export default function AllNotifications() {
     }
   }, [currentRole]);
 
-  // Counts
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-
-  // Filtered list
+  // Filtered list — filters only what's currently loaded on the page.
   const filteredNotifications = useMemo(() => {
-    if (activeFilter === 'unread') {
-      return notifications.filter(n => !n.isRead);
-    }
-    if (activeFilter === 'read') {
-      return notifications.filter(n => n.isRead);
-    }
+    if (activeFilter === 'unread') return notifications.filter((n) => !n.isRead);
+    if (activeFilter === 'read') return notifications.filter((n) => n.isRead);
     return notifications;
   }, [notifications, activeFilter]);
 
-  // Group filtered notifications by section
+  // Group filtered notifications by section, using real created_at.
   const groupedNotifications = useMemo(() => {
-    const groups = {
-      today: [],
-      yesterday: [],
-      previous_7_days: [],
-      older: []
-    };
-
-    filteredNotifications.forEach(notif => {
-      if (groups[notif.group]) {
-        groups[notif.group].push(notif);
-      } else {
-        groups.older.push(notif);
-      }
+    const groups = { today: [], yesterday: [], previous_7_days: [], older: [] };
+    filteredNotifications.forEach((notif) => {
+      groups[getDateGroup(notif.createdAt)].push(notif);
     });
-
     return groups;
   }, [filteredNotifications]);
 
-  // Handlers
-  const handleToggleRead = (id) => {
-    setNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, isRead: !n.isRead } : n)
-    );
-  };
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-  };
-
-  const agencyClass = `agency-${currentRole.toLowerCase()}`;
+  const agencyClass = `agency-${currentRole}`;
 
   return (
     <>
@@ -532,7 +491,6 @@ export default function AllNotifications() {
           background-color: #f8fafc;
         }
 
-        /* Exact unread background color from top-bar.jsx modal: rgba(252, 163, 17, 0.05) */
         .NotifRowItem.unread {
           background-color: rgba(252, 163, 17, 0.05);
         }
@@ -589,7 +547,6 @@ export default function AllNotifications() {
         .NotifCategoryTag.bg-blue { background: rgba(59, 130, 246, 0.1); color: #2563EB; }
         .NotifCategoryTag.bg-amber { background: rgba(217, 119, 6, 0.12); color: #B45309; }
         .NotifCategoryTag.bg-purple { background: rgba(124, 58, 237, 0.1); color: #7C3AED; }
-        .NotifCategoryTag.bg-green { background: rgba(16, 185, 129, 0.12); color: #059669; }
         .NotifCategoryTag.bg-indigo { background: rgba(79, 70, 229, 0.1); color: #4F46E5; }
         .NotifCategoryTag.bg-slate { background: rgba(100, 116, 139, 0.12); color: #475569; }
 
@@ -608,7 +565,6 @@ export default function AllNotifications() {
           gap: 4px;
         }
 
-        /* Exact unread dot badge from top-bar.jsx modal: #FCA311 */
         .NotifBadgeDot {
           width: 8px;
           height: 8px;
@@ -619,25 +575,44 @@ export default function AllNotifications() {
           top: 20px;
         }
 
-        .NotifRowActionBtn {
-          background: transparent;
-          border: none;
-          color: #94A3B8;
-          font-size: 11.5px;
-          font-weight: 500;
-          cursor: pointer;
-          padding: 2px 6px;
-          border-radius: 4px;
-          transition: all 0.15s ease;
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          margin-left: 8px;
+        /* Load more */
+        .NotifLoadMoreRow {
+          display: flex;
+          justify-content: center;
+          padding: 4px 0 8px;
         }
 
-        .NotifRowActionBtn:hover {
-          background: #F1F5F9;
-          color: #475569;
+        .NotifLoadMoreBtn {
+          padding: 9px 20px;
+          border-radius: 8px;
+          border: 1.5px solid #E2E8F0;
+          background: #FFFFFF;
+          color: #334155;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-family: inherit;
+        }
+
+        .NotifLoadMoreBtn:hover:not(:disabled) {
+          background: #F8FAFC;
+          border-color: #CBD5E1;
+        }
+
+        .NotifLoadMoreBtn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .NotifSpinner {
+          animation: NotifSpin 0.9s linear infinite;
+          color: #94A3B8;
+        }
+
+        @keyframes NotifSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
 
         /* Empty State */
@@ -761,8 +736,12 @@ export default function AllNotifications() {
                 </button>
               </div>
 
-              {/* Notification Groups */}
-              {filteredNotifications.length === 0 ? (
+              {loading ? (
+                <div className="NotifEmptyState">
+                  <Loader2 size={28} className="NotifSpinner" />
+                  <p className="NotifEmptyDesc">Loading notifications…</p>
+                </div>
+              ) : filteredNotifications.length === 0 ? (
                 <div className="NotifEmptyState">
                   <div className="NotifEmptyIcon">
                     <CheckCircle2 size={28} />
@@ -777,84 +756,77 @@ export default function AllNotifications() {
                   </p>
                 </div>
               ) : (
-                <div className="NotifSectionsContainer">
-                  {GROUP_METADATA.map((groupMeta) => {
-                    const groupItems = groupedNotifications[groupMeta.key] || [];
-                    if (groupItems.length === 0) return null;
+                <>
+                  <div className="NotifSectionsContainer">
+                    {GROUP_METADATA.map((groupMeta) => {
+                      const groupItems = groupedNotifications[groupMeta.key] || [];
+                      if (groupItems.length === 0) return null;
 
-                    return (
-                      <div key={groupMeta.key} className="NotifGroupSection">
-                        <div className="NotifGroupHeader">
-                          <h2 className="NotifGroupTitle">{groupMeta.label}</h2>
-                          <span className="NotifGroupCount">{groupItems.length}</span>
-                          <div className="NotifGroupDivider" />
-                        </div>
+                      return (
+                        <div key={groupMeta.key} className="NotifGroupSection">
+                          <div className="NotifGroupHeader">
+                            <h2 className="NotifGroupTitle">{groupMeta.label}</h2>
+                            <span className="NotifGroupCount">{groupItems.length}</span>
+                            <div className="NotifGroupDivider" />
+                          </div>
 
-                        {/* Continuous Closed Container per Group */}
-                        <div className="NotifGroupCard">
-                          {groupItems.map((notif) => {
-                            const theme = getCategoryTheme(notif.iconType);
-                            const IconComp = getNotificationIcon(notif.iconType);
+                          <div className="NotifGroupCard">
+                            {groupItems.map((notif) => {
+                              const theme = getCategoryTheme(notif.theme);
 
-                            return (
-                              <div
-                                key={notif.id}
-                                className={`NotifRowItem ${notif.isRead ? '' : 'unread'}`}
-                                onClick={() => handleToggleRead(notif.id)}
-                                title="Click to toggle read / unread"
-                              >
+                              return (
                                 <div
-                                  className="NotifRowIconBox"
-                                  style={{ background: theme.bg, color: theme.color }}
+                                  key={notif.id}
+                                  className={`NotifRowItem ${notif.isRead ? '' : 'unread'}`}
+                                  onClick={() => handleMarkRead(notif)}
+                                  title={notif.isRead ? '' : 'Click to mark as read'}
                                 >
-                                  {IconComp}
-                                </div>
-
-                                <div className="NotifContent">
-                                  <div className="NotifItemTitle">
-                                    <span>{notif.title}</span>
-                                    <span className={`NotifCategoryTag ${theme.badge}`}>
-                                      {notif.category}
-                                    </span>
+                                  <div
+                                    className="NotifRowIconBox"
+                                    style={{ background: theme.bg, color: theme.color }}
+                                  >
+                                    {getNotificationIcon(notif.iconType)}
                                   </div>
 
-                                  <div className="NotifItemMsg">{notif.message}</div>
+                                  <div className="NotifContent">
+                                    <div className="NotifItemTitle">
+                                      <span>{notif.title}</span>
+                                      <span className={`NotifCategoryTag ${theme.badge}`}>
+                                        {notif.category}
+                                      </span>
+                                    </div>
 
-                                  <div className="NotifItemTime">
-                                    <Clock size={11} />
-                                    <span>{notif.dateStr}</span>
-                                    <button
-                                      type="button"
-                                      className="NotifRowActionBtn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleToggleRead(notif.id);
-                                      }}
-                                    >
-                                      {notif.isRead ? (
-                                        <>
-                                          <Check size={12} />
-                                          <span>Mark unread</span>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <CheckCheck size={12} />
-                                          <span>Mark read</span>
-                                        </>
-                                      )}
-                                    </button>
+                                    <div className="NotifItemMsg">{notif.message}</div>
+
+                                    <div className="NotifItemTime">
+                                      <Clock size={11} />
+                                      <span>{formatFullDate(notif.createdAt)} · {timeAgo(notif.createdAt)}</span>
+                                    </div>
                                   </div>
-                                </div>
 
-                                {!notif.isRead && <div className="NotifBadgeDot" />}
-                              </div>
-                            );
-                          })}
+                                  {!notif.isRead && <div className="NotifBadgeDot" />}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+
+                  {hasMore && activeFilter === 'all' && (
+                    <div className="NotifLoadMoreRow">
+                      <button
+                        type="button"
+                        className="NotifLoadMoreBtn"
+                        onClick={handleLoadMore}
+                        disabled={loadingMore}
+                      >
+                        {loadingMore ? 'Loading…' : 'Load more notifications'}
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
 
             </div>

@@ -562,13 +562,39 @@ h6 {
   align-items: start;
 }
 
-.FdaProductTableCard {
-  overflow: visible !important;
+/* FdaProductTableCard — overflow: visible removed.
+   The base .FdaTableCard rule (overflow: hidden) now applies,
+   which correctly clips the table to the card's border-radius
+
+/* FdaProductTableWrapper — was overflow: visible !important which caused
+   the 10-column product table to bleed past the card and into the viewport.
+   Changed to overflow-x: auto so the table scrolls inside the card. */
+.FdaProductTableWrapper {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  max-height: none !important;
 }
 
-.FdaProductTableWrapper {
-  overflow: visible !important;
-  max-height: none !important;
+/* Wider min-width for the 10-column Registered/Unregistered product table.
+   Scoped to .FdaProductTableWrapper so the 7-column saved-drafts table
+   keeps its own (narrower) min-width from .FdaTable. */
+.FdaProductTableWrapper .FdaTable {
+  min-width: 1000px;
+}
+
+/* ---- Saved Drafts table responsive scroll container (fda-saved-draft.jsx) ----
+   Explicit overflow-x: auto on the wrapper div (even though the base
+   .FdaTableWrapper rule already sets it) to make the intent clear and
+   prevent any future override from accidentally breaking scroll.
+   min-width scoped to this wrapper so the 7-column table stays readable
+   at narrow Electron window widths without wrapping text. */
+.FdaSavedDraftTableWrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.FdaSavedDraftTableWrapper .FdaTable {
+  min-width: 900px;
 }
 
 /* BULK ACTIONS BAR */
@@ -5157,13 +5183,11 @@ h6 {
   animation: FdaSavedDraftToastIn 0.25s ease-out forwards;
 }
 
-/* Saved Drafts — override shared table clipping so the row dropdown can float freely */
-.FdaSavedDraftTableCard {
-  overflow: visible !important;
-}
+
 
 .FdaSavedDraftTableWrapper {
-  overflow: visible !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
   max-height: none !important;
 }
 
@@ -5569,4 +5593,12 @@ h6 {
   border: 1px solid #D1D5DB;
   padding: 8px 12px;
   font-size: 12.5px;
+}
+
+/* toast based color (if no email) */
+.FdaVerifToast_warning {
+  border-left-color: #D97706;
+}
+.FdaVerifToast_warning .FdaVerifToastIconWrap {
+  color: #D97706;
 }

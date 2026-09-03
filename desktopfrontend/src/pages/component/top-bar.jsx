@@ -214,9 +214,9 @@ function TopBar({ topbarType, role, agency }) {
     localStorage.removeItem('role');
 
     if (normalizedAgency === 'superadmin') {
-        navigate('/superadmin-login');
+        navigate('/universal-login?tab=superadmin');
     } else {
-        navigate('/login');
+        navigate('/universal-login');
     }
 };
 

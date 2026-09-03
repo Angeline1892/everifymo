@@ -1,6 +1,7 @@
 // ADDED — useEffect added alongside existing useState to support backend data fetching.
 // ADDED — useRef added to track whether data has ever loaded (used for one-time skeleton gate).
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../component/sidebar";
 import TopBar from "../component/top-bar";
@@ -55,6 +56,7 @@ function FDASavedDraft() {
   // CHANGED — was keyed on dummy caseId string; now keyed on draft_id (UUID)
   // returned by the backend so each row's dropdown is uniquely identified.
   const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
 
   // Delete modal — unchanged structure; draftToDelete now holds a real draft
   // object with draft_id instead of the dummy shape.
@@ -202,9 +204,38 @@ function FDASavedDraft() {
 
   // CHANGED — was keyed on dummy caseId; now uses draft_id (UUID from backend)
   // so each row's MoreVertical dropdown toggles independently by its real key.
-  const toggleDropdown = (draftId) => {
-    setOpenDropdownId((prev) => (prev === draftId ? null : draftId));
+  // Uses element rect to position the portal dropdown menu so it escapes scroll clipping.
+  const toggleDropdown = (draftId, e) => {
+    if (openDropdownId === draftId) {
+      setOpenDropdownId(null);
+    } else {
+      if (e && e.currentTarget) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const openUpward = spaceBelow < 120;
+        setDropdownPos({
+          top: openUpward ? Math.max(8, rect.top - 84) : rect.bottom + 4,
+          left: Math.max(8, rect.right - 190),
+        });
+      }
+      setOpenDropdownId(draftId);
+    }
   };
+
+  // Close dropdown on outside click or window scroll
+  useEffect(() => {
+    if (!openDropdownId) return;
+    const handleOutsideClick = (event) => {
+      if (
+        !event.target.closest(".FdaDropdownMenu") &&
+        !event.target.closest(".FdaDropdownTrigger")
+      ) {
+        setOpenDropdownId(null);
+      }
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, [openDropdownId]);
 
   // CHANGED — was navigate(..., { state: { openDraftId: draft.caseId,
   // draftRecord: draft } }) using the dummy caseId and a fake reconstructed
@@ -550,31 +581,44 @@ function FDASavedDraft() {
                             <button
                               className="FdaDropdownTrigger"
                               // CHANGED — was toggleDropdown(draft.caseId);
-                              // now uses draft_id (real primary key).
-                              onClick={() => toggleDropdown(draft.draft_id)}
+                              // now uses draft_id (real primary key) and passes event for positioning.
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleDropdown(draft.draft_id, e);
+                              }}
                               id={`fda-draft-menu-${draft.draft_id}`}
                             >
                               <MoreVertical size={15} />
                             </button>
 
-                            {/* CHANGED — was openDropdownId === draft.caseId;
-                                                            now compared against draft.draft_id. */}
-                            {openDropdownId === draft.draft_id && (
-                              <div className="FdaDropdownMenu">
-                                <button
-                                  className="FdaDropdownItem"
-                                  onClick={() => handleContinueEditing(draft)}
+                            {/* Rendered via portal to escape table scroll container clipping */}
+                            {openDropdownId === draft.draft_id &&
+                              createPortal(
+                                <div
+                                  className="FdaDropdownMenu"
+                                  style={{
+                                    position: "fixed",
+                                    top: `${dropdownPos.top}px`,
+                                    left: `${dropdownPos.left}px`,
+                                    zIndex: 9999,
+                                    width:`150px`,
+                                  }}
                                 >
-                                  <PenLine size={14} /> Continue Editing
-                                </button>
-                                <button
-                                  className="FdaDropdownItem"
-                                  onClick={() => handleDeleteClick(draft)}
-                                >
-                                  <Trash2 size={14} /> Delete Draft
-                                </button>
-                              </div>
-                            )}
+                                  <button
+                                    className="FdaDropdownItem"
+                                    onClick={() => handleContinueEditing(draft)}
+                                  >
+                                    <PenLine size={14} /> Continue Editing
+                                  </button>
+                                  <button
+                                    className="FdaDropdownItem"
+                                    onClick={() => handleDeleteClick(draft)}
+                                  >
+                                    <Trash2 size={14} /> Delete Draft
+                                  </button>
+                                </div>,
+                                document.body
+                              )}
                           </div>
                         </td>
                       </tr>

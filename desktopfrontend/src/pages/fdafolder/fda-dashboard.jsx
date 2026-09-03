@@ -19,6 +19,7 @@ function FDADashboard() {
     const [hoveredTakedownIndex, setHoveredTakedownIndex] = useState(null);
     const [reports, setReports] = useState([]);
     const [awaitingVerificationCases, setAwaitingVerificationCases] = useState([]);
+    const [completedUnregisteredProducts, setCompletedUnregisteredProducts] = useState([]);
 
     const [registeredCount, setRegisteredCount] = useState(0);
     const [unregisteredCount, setUnregisteredCount] = useState(0);
@@ -61,6 +62,12 @@ function FDADashboard() {
                         status: "Pending Verification",
                         leaConfirmation: true
                     })));
+                }
+
+                const unregCompletedRes = await apiFetch('/verification-requests/completed?verification_result=unregistered&page=1&page_size=500');
+                if (unregCompletedRes.ok) {
+                    const unregCompletedData = await unregCompletedRes.json();
+                    setCompletedUnregisteredProducts(unregCompletedData.items || []);
                 }
             } catch (err) {
                 console.error("Error fetching dashboard data:", err);
@@ -113,23 +120,34 @@ function FDADashboard() {
         const walkIn = normalizedReports.filter(r => r.source === 'Walk-in').length;
         const takedownCompleted = normalizedReports.filter(r => r.status === 'Takedown Completed').length;
 
+        return {
+            browserExtension,
+            walkIn,
+            takedownsCompleted: takedownCompleted,
+            total
+        };
+    }, [normalizedReports]);
+
+    const unregisteredCategoryStats = useMemo(() => {
+        const total = completedUnregisteredProducts.length;
+
         const categoryCounts = {
             "Cosmetics": 0,
             "Food": 0,
             "Drugs": 0,
-            "Med Device": 0
+            "Medical Devices": 0
         };
 
-        normalizedReports.forEach(report => {
-            const cat = report.category;
+        completedUnregisteredProducts.forEach(item => {
+            const cat = item.product_category;
             if (cat === "Cosmetics") {
                 categoryCounts["Cosmetics"] += 1;
             } else if (cat === "Food" || cat === "Supplement") {
                 categoryCounts["Food"] += 1;
             } else if (cat === "Pharmaceutical" || cat === "Drugs") {
                 categoryCounts["Drugs"] += 1;
-            } else if (cat === "Medical Device" || cat === "Med Device") {
-                categoryCounts["Med Device"] += 1;
+            } else if (cat === "Medical Device" || cat === "Med Device" || cat === "Devices" || cat === "Medical Devices") {
+                categoryCounts["Medical Devices"] += 1;
             }
         });
 
@@ -137,17 +155,14 @@ function FDADashboard() {
             { label: 'Cosmetics', value: categoryCounts['Cosmetics'], color: '#2563eb' },
             { label: 'Food', value: categoryCounts['Food'], color: '#10b981' },
             { label: 'Drugs', value: categoryCounts['Drugs'], color: '#06b6d4' },
-            { label: 'Med Device', value: categoryCounts['Med Device'], color: '#f59e0b' }
+            { label: 'Medical Devices', value: categoryCounts['Medical Devices'], color: '#f59e0b' }
         ];
 
         return {
-            browserExtension,
-            walkIn,
-            takedownsCompleted: takedownCompleted,
             total,
             categoryMix
         };
-    }, [normalizedReports]);
+    }, [completedUnregisteredProducts]);
 
     const recentComplaints = useMemo(() => {
         return [...normalizedReports]
@@ -216,21 +231,21 @@ function FDADashboard() {
     const getBarHeight = (val) => (val / maxTakedownVal) * 150;
 
     const categoryGradient = useMemo(() => {
-        return reportStats.categoryMix.reduce((acc, item) => {
+        return unregisteredCategoryStats.categoryMix.reduce((acc, item) => {
             const previous = acc.ranges[acc.ranges.length - 1]?.end ?? 0;
-            const size = reportStats.total > 0 ? Math.round((item.value / reportStats.total) * 100) : 0;
+            const size = unregisteredCategoryStats.total > 0 ? Math.round((item.value / unregisteredCategoryStats.total) * 100) : 0;
             const start = previous;
             const end = start + size;
             acc.ranges.push({ color: item.color, start, end });
             return acc;
         }, { ranges: [] }).ranges;
-    }, [reportStats]);
+    }, [unregisteredCategoryStats]);
 
     const donutStyle = useMemo(() => ({
-        background: reportStats.total > 0 && categoryGradient.length > 0
+        background: unregisteredCategoryStats.total > 0 && categoryGradient.length > 0
             ? `conic-gradient(${categoryGradient.map(seg => `${seg.color} ${seg.start}% ${seg.end}%`).join(', ')})`
             : '#e2e8f0'
-    }), [categoryGradient, reportStats.total]);
+    }), [categoryGradient, unregisteredCategoryStats.total]);
 
     const chartConfig = useMemo(() => ({
         width: 640,
@@ -700,14 +715,14 @@ function FDADashboard() {
                                 <div className="FdaCategorySubtitle">Unregistered product reports</div>
                                 <div className="FdaDonutChartWrapper">
                                     <div className="FdaDonutChart" style={donutStyle}>
-                                        <div className="FdaDonutCenter">{reportStats.total}</div>
+                                        <div className="FdaDonutCenter">{unregisteredCategoryStats.total}</div>
                                     </div>
                                     <div className="FdaCategoryLegend">
-                                        {reportStats.categoryMix.map((item) => (
+                                        {unregisteredCategoryStats.categoryMix.map((item) => (
                                             <div key={item.label} className="FdaCategoryLegendItem">
                                                 <span className="FdaLegendMarker" style={{ background: item.color }} />
                                                 <span>{item.label}</span>
-                                                <strong>{reportStats.total > 0 ? Math.round((item.value / reportStats.total) * 100) : 0}%</strong>
+                                                <strong>{unregisteredCategoryStats.total > 0 ? Math.round((item.value / unregisteredCategoryStats.total) * 100) : 0}%</strong>
                                             </div>
                                         ))}
                                     </div>

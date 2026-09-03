@@ -82,15 +82,17 @@ def check_and_send_sla_reminders(db: Session, current_user) -> None:
         priority = request.priority
         elapsed = now - request.requested_at
         deadline_at = request.requested_at + SLA_DEADLINES[priority]
-        already_past_deadline = now >= deadline_at  # ADDED
+        already_past_deadline = now >= deadline_at
 
         if (
             request.sla_reminder_1_sent_at is None
             and elapsed >= SLA_REMINDER_1_THRESHOLDS[priority]
         ):
             if _try_claim_checkpoint(db, request.request_id, "sla_reminder_1_sent_at", now):
-                if not already_past_deadline:  # ADDED — skip sending if deadline already blown
-                    notify_fda_sla_reminder_1(db, complaint, priority, _format_remaining(deadline_at, now))
+                notify_fda_sla_reminder_1(
+                    db, complaint, priority, _format_remaining(deadline_at, now),
+                    is_late=already_past_deadline,
+                )
                 db.commit()
             else:
                 db.rollback()
@@ -100,8 +102,10 @@ def check_and_send_sla_reminders(db: Session, current_user) -> None:
             and elapsed >= SLA_REMINDER_2_THRESHOLDS[priority]
         ):
             if _try_claim_checkpoint(db, request.request_id, "sla_reminder_2_sent_at", now):
-                if not already_past_deadline:  # ADDED — skip sending if deadline already blown
-                    notify_fda_sla_reminder_2(db, complaint, priority, _format_remaining(deadline_at, now))
+                notify_fda_sla_reminder_2(
+                    db, complaint, priority, _format_remaining(deadline_at, now),
+                    is_late=already_past_deadline,
+                )
                 db.commit()
             else:
                 db.rollback()
@@ -115,7 +119,8 @@ def check_and_send_sla_reminders(db: Session, current_user) -> None:
                 db.commit()
             else:
                 db.rollback()
-                
+
+
 def _format_remaining(deadline_at: datetime, now: datetime) -> str:
     remaining = deadline_at - now
     total_minutes = max(int(remaining.total_seconds() // 60), 0)

@@ -59,16 +59,14 @@ function getSourceLabel(source) {
 function mapTabToSource(tabName) {
   if (tabName === 'Browser Extension') return 'extension';
   if (tabName === 'Walk-in') return 'walk_in';
-  return null; // 'All'
+  return null; 
 }
 
-// Display-label mapping for categories. Kept from the mock-data era —
-// harmless no-op fallback (returns the category unchanged) if the real
-// product_category values don't match these specific mock labels.
 const CATEGORY_LABELS = {
-  Supplement: 'Foods',
+  Cosmetics: 'Cosmetics',
   Food: 'Food',
-  Pharmaceutical: 'Drugs',
+  Devices: 'Medical Devices',
+  Drugs: 'Drugs',
 };
 
 function getCategoryLabel(category) {
@@ -88,8 +86,8 @@ const WALKIN_STATUS_MAP = {
 const EXTENSION_STATUS_MAP = {
   "under_review": "Under Review",
   "takedown_requested": "Takedown Requested",
-  "completed": "Takedown Completed",
-  "dismissed": "Case Closed",
+  "completed": "Completed",
+  "dismissed": "Dismissed",
 };
 
 function getWorkflowStatus(status, source) {
@@ -106,9 +104,9 @@ function FDAViewReports() {
   const [reportsError, setReportsError] = useState('');
 
   // SEARCH AND TABS STATE
-  const [activeTab, setActiveTab] = useState('All');
+  const [activeTab, setActiveTab] = useState('Walk-in');
   const [searchQuery, setSearchQuery] = useState('');
-  const tabs = ['All', 'Browser Extension', 'Walk-in'];
+  const tabs = ['Walk-in', 'Browser Extension'];
   const location = useLocation();
 
   useEffect(() => {
@@ -287,7 +285,8 @@ useEffect(() => {
   const handleTabClick = (tabName) => {
     if (activeTab === tabName) return;
     setCurrentPage(1); // Reset page on tab switch
-    
+    setFilterStatus('All'); // status labels differ per tab — don't carry a selection that may not exist on the other tab
+
     if (!document.startViewTransition) {
       setActiveTab(tabName);
       return;
@@ -303,7 +302,7 @@ useEffect(() => {
   // goes through mapTabToSource since backend uses 'extension'/'walk_in'.
   const filteredReports = reports.filter(report => {
     const tabSource = mapTabToSource(activeTab);
-    const matchesTab = activeTab === 'All' || report.source === tabSource;
+    const matchesTab = report.source === tabSource;
 
     const query = searchQuery.toLowerCase();
     const matchesSearch = report.product_title.toLowerCase().includes(query) ||
@@ -329,7 +328,7 @@ useEffect(() => {
 
       if (!matchesSearch || !matchesCategory || !matchesStatus) return false;
 
-      if (tabName === 'All') return true;
+      
       return report.source === mapTabToSource(tabName);
     }).length;
   };
@@ -376,7 +375,8 @@ useEffect(() => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `fda_consumer_reports_${new Date().toISOString().slice(0, 10)}.csv`);
+    const tabSlug = activeTab === 'Browser Extension' ? 'extension' : 'walkin';
+    link.setAttribute("download", `fda_${tabSlug}_reports_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -400,18 +400,17 @@ useEffect(() => {
     }
   };
 
-  // UNIQUE FILTER OPTIONS COMPUTATION
-  // CHANGED — reads product_category instead of category
-  const categoriesList = ["All", ...Array.from(new Set(reports.map(r => r.product_category).filter(Boolean)))];
-  const statusesList = [
-    "All",
-    "Under Review",
-    "Forwarded to LEA",
-    "Takedown Requested",
-    "Operation in Progress",
-    "Takedown Completed",
-    "Case Closed"
-  ];
+    // UNIQUE FILTER OPTIONS COMPUTATION
+  const categoriesList = ["All", "Cosmetics", "Food", "Devices", "Drugs"];
+
+  // CHANGED — now depends on activeTab. Walk-in and Extension use the
+  // SAME raw status values but different display labels for some of
+  // them (completed -> "Takedown Completed" vs "Completed", dismissed
+  // -> "Case Closed" vs "Dismissed"), so a single shared list would let
+  // someone pick a label that can never match anything on the other tab.
+  const statusesList = activeTab === 'Browser Extension'
+    ? ["All", "Under Review", "Takedown Requested", "Completed", "Dismissed"]
+    : ["All", "Under Review", "Forwarded to LEA", "Operation in Progress", "Takedown Completed", "Case Closed"];
 
   return (
     <div className="FdaDashboardMain">

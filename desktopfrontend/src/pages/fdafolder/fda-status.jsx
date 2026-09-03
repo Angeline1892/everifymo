@@ -54,6 +54,8 @@ const DISMISS_PRESETS = [
   "Insufficient evidence to proceed.",
 ];
 
+const FINAL_STATUSES = ["completed", "dismissed"];
+
 const CASES_PER_PAGE = 10;
 const HISTORY_PER_PAGE = 25;
 
@@ -93,14 +95,24 @@ function FdaStatus() {
   const [historyPage, setHistoryPage] = useState(1);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [toastError, setToastError] = useState(null);
+  const [isToastWarning, setIsToastWarning] = useState(false);
 
   useEffect(() => {
     if (!toastError) return;
+    const duration = isToastWarning ? 8000 : 4000;
     const timer = setTimeout(() => {
       setToastError(null);
-    }, 4000);
+      setIsToastWarning(false);
+    }, duration);
     return () => clearTimeout(timer);
-  }, [toastError]);
+  }, [toastError, isToastWarning]);
+
+  function getAvailableStatusOptions(currentStatus) {
+    if (currentStatus === "takedown_requested") {
+      return STATUS_OPTIONS.filter((opt) => opt.value !== "under_review");
+    }
+    return STATUS_OPTIONS;
+  }
 
   const selectedComplaint =
     complaints.find((c) => c.complaintId === selectedComplaintId) || null;
@@ -137,9 +149,9 @@ function FdaStatus() {
   const filteredComplaints = complaints.filter((c) => {
     const query = searchQuery.toLowerCase();
     const matchesSearch =
-      c.caseReference.toLowerCase().includes(query) ||
-      c.productTitle.toLowerCase().includes(query) ||
-      c.manufacturer.toLowerCase().includes(query);
+      (c.caseReference || "").toLowerCase().includes(query) ||
+      (c.productTitle || "").toLowerCase().includes(query) ||
+      (c.manufacturer || "").toLowerCase().includes(query);
     const matchesStatus = filterStatus === "All" || c.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -159,8 +171,15 @@ function FdaStatus() {
   const handlePushUpdate = async () => {
     if (!selectedComplaint) return;
 
+    if (newStatus === selectedComplaint.status) {
+      setIsToastWarning(false);
+      setToastError("Please select a different status before pushing an update.");
+      return;
+    }
+
     const outgoingMessage = getOutgoingMessage();
     if (newStatus === "dismissed" && !outgoingMessage) {
+      setIsToastWarning(false);
       setToastError("Please choose or write a reason for dismissing this complaint.");
       return;
     }
@@ -212,6 +231,11 @@ function FdaStatus() {
           )
         );
   
+        if (updatedComplaint.notificationWarning) {
+          setIsToastWarning(true);
+          setToastError(updatedComplaint.notificationWarning);
+        }
+
         const entry = {
           historyId: `h${Date.now()}`,
           caseReference: selectedComplaint.caseReference,
@@ -225,6 +249,7 @@ function FdaStatus() {
         setStatusHistory((prev) => [entry, ...prev]);
         setHistoryPage(1);
       } catch (err) {
+        setIsToastWarning(false);
         alert("Network error — please check your connection and try again.");
       }
     };
@@ -369,8 +394,26 @@ function FdaStatus() {
             </div>
 
             {/* RIGHT: selected complaint detail + form */}
-            {selectedComplaint && (
-              <div className="FdaDetailPanel">
+            <div className="FdaDetailPanel">
+              {!selectedComplaint ? (
+                <div className="FdaVerifEmptyDetails">
+                  <Mail size={44} className="FdaVerifEmptyDetailsIcon" />
+                  <h3>No Complaint Selected</h3>
+                  <p>Select a complaint from the left list to review details and push a status update.</p>
+                </div>
+              ) : (
+              <>
+                {!selectedComplaint.reporterEmail && (
+                  <div className="FdaNoticeBanner" style={{ marginTop: 16, marginBottom: 10 }}>
+                    <Mail size={18} />
+                    <div className="FdaNoticeBannerText">
+                      This complaint has no email on file (likely a guest submission or a deleted account).
+                      The consumer will not receive an email notification when you push this update.
+                    </div>
+                  </div>
+                  
+                )}
+                
                 <div className="FdaDetailPanelHeader">
                   <div>
                     <small>{selectedComplaint.caseReference}</small>
@@ -385,108 +428,130 @@ function FdaStatus() {
                   </div>
                 </div>
 
-                <div className="FdaFormRow">
-                  <div className="FdaFormGroup">
-                    <label>New status</label>
-                    <select
-                      className="FdaStatusSelect"
-                      style={{ width: "100%" }}
-                      value={newStatus}
-                      onChange={(e) => setNewStatus(e.target.value)}
-                    >
-                      {STATUS_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="FdaFormGroup">
-                    <label>Reporter on record</label>
-                    <div className="FdaReporterField">
-                      <Mail size={14} />
-                      {selectedComplaint.reporterUsername} · {selectedComplaint.reporterEmail}
+                {FINAL_STATUSES.includes(selectedComplaint.status) ? (
+                  <div className="FdaNoticeBanner" style={{ marginTop: 16 }}>
+                    <ShieldCheck size={18} />
+                    <div className="FdaNoticeBannerText">
+                      This complaint is marked as {STATUS_LABELS[selectedComplaint.status]} and is final —
+                      its status can no longer be changed.
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <>
+                  <div className="FdaFormRow">
+                    <div className="FdaFormGroup">
+                      <label>New status</label>
+                      <select
+                        className="FdaStatusSelect"
+                        style={{ width: "100%" }}
+                        value={newStatus}
+                        onChange={(e) => setNewStatus(e.target.value)}
+                      >
+                        {getAvailableStatusOptions(selectedComplaint.status).map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="FdaFormGroup">
+                      <label>Reporter on record</label>
+                      <div className="FdaReporterField">
+                        <Mail size={14} />
+                        {selectedComplaint.reporterUsername} · {selectedComplaint.reporterEmail}
+                      </div>
+                    </div>
+                  </div>
 
-                {newStatus === "completed" && (
-                  <div className="FdaCompletedNotice">{COMPLETED_MESSAGE}</div>
-                )}
+                  {newStatus === "completed" && (
+                    <div className="FdaCompletedNotice">{COMPLETED_MESSAGE}</div>
+                  )}
 
-                {newStatus === "dismissed" && (
-                  <div className="FdaMessageBox">
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "rgba(31,41,55,0.6)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
-                      Reason for dismissal
-                    </label>
-                    <select
-                      value={dismissPreset}
-                      onChange={(e) => {
-                        setDismissPreset(e.target.value);
-                        setDismissNote(e.target.value);
+                  {newStatus === "dismissed" && (
+                    <div className="FdaMessageBox">
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "rgba(31,41,55,0.6)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
+                        Reason for dismissal
+                      </label>
+                      <select
+                        value={dismissPreset}
+                        onChange={(e) => {
+                          setDismissPreset(e.target.value);
+                          setDismissNote(e.target.value);
+                        }}
+                      >
+                        <option value="">Choose a common reason (optional)...</option>
+                        {DISMISS_PRESETS.map((reason) => (
+                          <option key={reason} value={reason}>{reason}</option>
+                        ))}
+                      </select>
+                      <textarea
+                        placeholder="Write or edit the reason the consumer will see..."
+                        value={dismissNote}
+                        onChange={(e) => setDismissNote(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  <div className="FdaNoticeBanner">
+                    <BellRing size={18} />
+                    <div className="FdaNoticeBannerText">
+                      Pushing this update automatically syncs it to the consumer's browser extension
+                      and sends them an in-app + email notification. This isn't optional per update.
+                    </div>
+                  </div>
+
+                  <div className="FdaNotificationPreview">
+                    <label>Notification preview</label>
+                    <div className="FdaNotifPreviewCard">
+                      <div className="FdaNotifPreviewIcon"><ShieldCheck size={16} /></div>
+                      <div>
+                        <div className="FdaNotifPreviewTop">
+                          <strong>FDA Complaint Update</strong>
+                          <span className="FdaBadge" style={getStatusBadgeStyle(newStatus)}>
+                            {STATUS_LABELS[newStatus]}
+                          </span>
+                        </div>
+                        <div className="FdaNotifPreviewMeta">
+                          {selectedComplaint.productTitle} · {selectedComplaint.caseReference}
+                        </div>
+                        <div className="FdaNotifPreviewMsg">
+                          {getOutgoingMessage() ||
+                            `Your report has been received and is now marked as "${STATUS_LABELS[newStatus]}".`}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="FdaPushRow">
+                    <button
+                      className="BtnPushUpdate"
+                      onClick={() => {
+                        if (!selectedComplaint) return;
+                        
+                        if (newStatus === selectedComplaint.status) {
+                          setIsToastWarning(false);
+                          setToastError("Please select a different status before pushing an update.");
+                          return;
+                        }
+
+                        const outgoingMessage = getOutgoingMessage();
+                        if (newStatus === "dismissed" && !outgoingMessage) {
+                          setIsToastWarning(false);
+                          setToastError("Please choose or write a reason for dismissing this complaint.");
+                          return;
+                        }
+                        setToastError(null);
+                        setIsToastWarning(false);
+                        setShowConfirmModal(true);
                       }}
                     >
-                      <option value="">Choose a common reason (optional)...</option>
-                      {DISMISS_PRESETS.map((reason) => (
-                        <option key={reason} value={reason}>{reason}</option>
-                      ))}
-                    </select>
-                    <textarea
-                      placeholder="Write or edit the reason the consumer will see..."
-                      value={dismissNote}
-                      onChange={(e) => setDismissNote(e.target.value)}
-                    />
+                      <Send size={15} />
+                      Push update
+                    </button>
                   </div>
+                </>
                 )}
-
-                <div className="FdaNoticeBanner">
-                  <BellRing size={18} />
-                  <div className="FdaNoticeBannerText">
-                    Pushing this update automatically syncs it to the consumer's browser extension
-                    and sends them an in-app + email notification. This isn't optional per update.
-                  </div>
-                </div>
-
-                <div className="FdaNotificationPreview">
-                  <label>Notification preview</label>
-                  <div className="FdaNotifPreviewCard">
-                    <div className="FdaNotifPreviewIcon"><ShieldCheck size={16} /></div>
-                    <div>
-                      <div className="FdaNotifPreviewTop">
-                        <strong>FDA Complaint Update</strong>
-                        <span className="FdaBadge" style={getStatusBadgeStyle(newStatus)}>
-                          {STATUS_LABELS[newStatus]}
-                        </span>
-                      </div>
-                      <div className="FdaNotifPreviewMeta">
-                        {selectedComplaint.productTitle} · {selectedComplaint.caseReference}
-                      </div>
-                      <div className="FdaNotifPreviewMsg">
-                        {getOutgoingMessage() ||
-                          `Your report has been received and is now marked as "${STATUS_LABELS[newStatus]}".`}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="FdaPushRow">
-                  <button
-                    className="BtnPushUpdate"
-                    onClick={() => {
-                      if (!selectedComplaint) return;
-                      const outgoingMessage = getOutgoingMessage();
-                      if (newStatus === "dismissed" && !outgoingMessage) {
-                        setToastError("Please choose or write a reason for dismissing this complaint.");
-                        return;
-                      }
-                      setToastError(null);
-                      setShowConfirmModal(true);
-                    }}
-                  >
-                    <Send size={15} />
-                    Push update
-                  </button>
-                </div>
-              </div>
-            )}
+              </>
+              )}
+            </div>
           </div>
 
           {/* RECENT STATUS PUSHES */}
@@ -611,16 +676,22 @@ function FdaStatus() {
 
           {/* FLOATING TOAST ALERT NOTIFICATION */}
           {toastError && (
-            <div className="FdaVerifToastAlert FdaVerifToast_danger" role="alert">
+            <div
+              className={`FdaVerifToastAlert ${isToastWarning ? "FdaVerifToast_warning" : "FdaVerifToast_danger"}`}
+              role="alert"
+            >
               <div className="FdaVerifToastIconWrap">
-                <XCircle size={18} />
+                {isToastWarning ? <BellRing size={18} /> : <XCircle size={18} />}
               </div>
               <div className="FdaVerifToastBody">
                 <p className="FdaVerifToastMessage">{toastError}</p>
               </div>
               <button
                 className="FdaVerifToastCloseBtn"
-                onClick={() => setToastError(null)}
+                onClick={() => {
+                  setToastError(null);
+                  setIsToastWarning(false);
+                }}
                 aria-label="Close notification"
               >
                 <X size={14} />

@@ -682,11 +682,14 @@ width: 100%;
 .stat-pending { border-top: 3px solid #d97706; }
 .stat-pending .UMStatValue { color: #d97706; }
 
-.stat-activation { border-top: 3px solid #2563eb; }
-.stat-activation .UMStatValue { color: #2563eb; }
+.stat-invited { border-top: 3px solid #0284c7; }
+.stat-invited .UMStatValue { color: #0284c7; }
 
-.stat-suspended { border-top: 3px solid #dc2626; }
-.stat-suspended .UMStatValue { color: #dc2626; }
+.stat-expired { border-top: 3px solid #dc2626; }
+.stat-expired .UMStatValue { color: #dc2626; }
+
+.stat-locked { border-top: 3px solid #b91c1c; }
+.stat-locked .UMStatValue { color: #b91c1c; }
 
 /* ── Table ── */
 .UMTableWrapper {
@@ -793,10 +796,10 @@ width: 100%;
   border: 1px solid #fde68a;
 }
 
-.badge-for-activation {
-  background: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
+.badge-invited {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
 }
 
 .badge-active {
@@ -814,6 +817,12 @@ width: 100%;
 .badge-expired {
   background: #fee2e2;
   color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.badge-locked {
+  background: #fee2e2;
+  color: #991b1b;
   border: 1px solid #fecaca;
 }
 
@@ -1740,43 +1749,6 @@ width: 100%;
   box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
 }
 
-/* Status Badges */
-.UMStatusBadge.UserMgmtBadgeInvited,
-.UMStatusBadge.UserMgmtBadgePendingApproval,
-.UMStatusBadge.UserMgmtBadgeActive,
-.UMStatusBadge.UserMgmtBadgeSuspended {
-  padding: 6px 14px;
-  border-radius: 9999px;
-  font-weight: 700;
-  font-size: 12px;
-  border-width: 1px;
-  border-style: solid;
-}
-
-.UserMgmtBadgeInvited {
-  background: #F3F4F6;
-  color: #4B5563;
-  border-color: #D1D5DB;
-}
-
-.UserMgmtBadgePendingApproval {
-  background: #FEF3C7;
-  color: #92400E;
-  border-color: #FCD34D;
-}
-
-.UserMgmtBadgeActive {
-  background: #DCFCE7;
-  color: #166534;
-  border-color: #86EFAC;
-}
-
-.UserMgmtBadgeSuspended {
-  background: #FEE2E2;
-  color: #991B1B;
-  border-color: #FCA5A5;
-}
-
 /* Stats Cards Top Borders */
 .UserMgmtStatInvited {
   border-top: 3px solid #64748b;
@@ -2455,8 +2427,8 @@ width: 100%;
 .sam-stat-pending { border-top: 3.5px solid #d97706; }
 .sam-stat-pending .SAMStatValue { color: #d97706; }
 
-.sam-stat-suspended { border-top: 3.5px solid #475569; }
-.sam-stat-suspended .SAMStatValue { color: #475569; }
+.sam-stat-suspended { border-top: 3.5px solid #dc2626; }
+.sam-stat-suspended .SAMStatValue { color: #dc2626; }
 
 .sam-stat-invited { border-top: 3.5px solid #0284c7; }
 .sam-stat-invited .SAMStatValue { color: #0284c7; }
@@ -2686,9 +2658,9 @@ width: 100%;
 }
 
 .sam-badge-suspended {
-  background: #f1f5f9;
-  color: #334155;
-  border: 1px solid #cbd5e1;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
 }
 
 .sam-badge-expired {

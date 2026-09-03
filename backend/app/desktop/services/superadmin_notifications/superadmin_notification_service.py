@@ -179,8 +179,10 @@ def get_notifications(
     )
     stored_out = [NotificationOut.model_validate(row) for row in stored]
 
-    computed = _get_stale_invite_notifications(db, recipient_id) + \
-        _get_expired_invite_notifications(db, recipient_id)
+    computed = []
+    if offset == 0:
+        computed = _get_stale_invite_notifications(db, recipient_id) + \
+            _get_expired_invite_notifications(db, recipient_id)
 
     combined = stored_out + computed
     combined.sort(key=lambda n: n.created_at, reverse=True)

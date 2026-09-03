@@ -11,10 +11,13 @@ function SuperadminInviteStatus() {
   const queryParams = new URLSearchParams(location.search);
   const initialStatus = location.state?.status || queryParams.get('status') || 'invalid';
   const inviteToken = location.state?.token || queryParams.get('token') || '';
+  const resendAlreadyRequested = location.state?.resend_already_requested || false;
 
   const [linkStatus] = useState(initialStatus);
-  const [requested, setRequested] = useState(false);
-  const [resendNotice, setResendNotice] = useState('');
+  const [requested, setRequested] = useState(resendAlreadyRequested);
+  const [resendNotice, setResendNotice] = useState(
+    resendAlreadyRequested ? 'A resend has already been requested for this invitation.' : ''
+  );
   const [resendSending, setResendSending] = useState(false);
 
   const handleRequestNewInvite = async () => {
@@ -62,14 +65,14 @@ function SuperadminInviteStatus() {
       accentColor: '#0D9488',
     },
     expired: {
-      icon: <ClockAlert size={32} color="#D97706" />,
-      iconBg: '#FEF3C7',
+      icon: <ClockAlert size={32} color="#0D9488" />,
+      iconBg: '#CCFBF1',
       title: 'Invitation Expired',
       message: 'Your Superadmin invitation link has expired. Invitation links are only valid for 2 days. Please request a new invitation from your administrator.',
       showButton: !requested,
       buttonLabel: resendSending ? 'Sending Request…' : 'Request New Invitation',
       buttonAction: handleRequestNewInvite,
-      accentColor: '#D97706',
+      accentColor: '#0D9488',
     },
     used: {
       icon: <CircleCheckBig size={32} color="#0D9488" />,
@@ -78,7 +81,7 @@ function SuperadminInviteStatus() {
       message: 'This invitation has already been accepted and used to set up a Superadmin account. You can proceed to log in to the Superadmin portal.',
       showButton: true,
       buttonLabel: 'Go to Superadmin Login',
-      buttonAction: () => navigate('/superadmin-login'),
+      buttonAction: () => navigate('/universal-login?tab=superadmin'),
       accentColor: '#0D9488',
     },
     invalid: {

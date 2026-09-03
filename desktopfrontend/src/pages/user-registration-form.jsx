@@ -204,7 +204,7 @@ if (!hasValidInviteData) {
               <button
                 className="RegSubmitBtn"
                 style={{ marginTop: 20, maxWidth: 220 }}
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/universal-login')}
               >
                 Back to Login
               </button>

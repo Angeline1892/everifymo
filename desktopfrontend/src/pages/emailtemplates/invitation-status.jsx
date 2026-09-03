@@ -8,10 +8,12 @@ function DeepLinkStatus() {
     const location = useLocation()
     const navigate = useNavigate()
 
-    const { status: linkStatus, invite_token } = location.state || {}
+    const { status: linkStatus, invite_token, resend_already_requested } = location.state || {}
 
-    const [requested, setRequested] = useState(false)
-    const [resendNotice, setResendNotice] = useState('')
+    const [requested, setRequested] = useState(!!resend_already_requested)
+    const [resendNotice, setResendNotice] = useState(
+        resend_already_requested ? 'A resend has already been requested for this invitation.' : ''
+    )
     const [resendSending, setResendSending] = useState(false)
 
     function handleRequestResend() {
@@ -48,14 +50,14 @@ function DeepLinkStatus() {
 
     const statusContent = {
         expired: {
-            icon: <ClockAlert size={32} color="#D97706" />,
-            iconBg: '#FEF3C7',
+            icon: <ClockAlert size={32} color="#0D9488" />,
+            iconBg: '#CCFBF1',
             title: 'Invitation Link Expired',
             message: 'Your registration link has expired. Invitation links are only valid for a limited time. Please request a new invitation from your administrator.',
             showButton: !requested,
             buttonLabel: resendSending ? 'Sending Request…' : 'Request New Invitation',
             buttonAction: handleRequestResend,
-            accentColor: '#D97706',
+            accentColor: '#0D9488',
         },
         invalid: {
             icon: <Link size={32} color="#DC2626" />,
@@ -72,7 +74,7 @@ function DeepLinkStatus() {
             message: 'Your registration has already been completed. You do not need to register again. Please wait for your administrator to activate your account, or login if your account is already active.',
             showButton: true,
             buttonLabel: 'Go to Login',
-            buttonAction: () => navigate('/login'),
+            buttonAction: () => navigate('/universal-login'),
             accentColor: '#0D9488',
         },
     }

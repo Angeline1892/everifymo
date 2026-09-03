@@ -1,5 +1,6 @@
 // desktopfrontend/src/pages/fdafolder/fda-product-db.jsx
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
@@ -27,9 +28,10 @@ import { apiFetch } from '../../utils/apiFetch';
 // NOTE: Items per page for table pagination
 const ITEMS_PER_PAGE = 10;
 
-// Reusable View + Dropdown action control (Superadmin-style pattern)
+// Reusable View + Dropdown action control (Superadmin-style pattern with Portal)
 function FdaActionDropdown({ id, activeDropdownId, setActiveDropdownId, onView, children }) {
   const [openUpward, setOpenUpward] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const triggerRef = useRef(null);
   const isOpen = activeDropdownId === id;
 
@@ -38,7 +40,12 @@ function FdaActionDropdown({ id, activeDropdownId, setActiveDropdownId, onView, 
     if (!isOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      setOpenUpward(spaceBelow < 150);
+      const upward = spaceBelow < 150;
+      setOpenUpward(upward);
+      setMenuPos({
+        top: upward ? Math.max(8, rect.top - 120) : rect.bottom + 4,
+        left: Math.max(8, rect.right - 190),
+      });
     }
     setActiveDropdownId(isOpen ? null : id);
   };
@@ -65,11 +72,22 @@ function FdaActionDropdown({ id, activeDropdownId, setActiveDropdownId, onView, 
         <MoreVertical size={16} />
       </button>
 
-      {isOpen && (
-        <div className={`FdaDropdownMenu ${openUpward ? 'open-upward' : ''}`}>
-          {children}
-        </div>
-      )}
+      {isOpen &&
+        createPortal(
+          <div
+            className={`FdaDropdownMenu ${openUpward ? 'open-upward' : ''}`}
+            style={{
+              position: 'fixed',
+              top: `${menuPos.top}px`,
+              left: `${menuPos.left}px`,
+              zIndex: 9999,
+              width:`150px`,
+            }}
+          >
+            {children}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
@@ -167,7 +185,10 @@ function FDAProductDB() {
 
   useEffect(() => {
     function handleOutsideClick(event) {
-      if (!event.target.closest('.FdaDropdownWrapper')) {
+      if (
+        !event.target.closest('.FdaDropdownWrapper') &&
+        !event.target.closest('.FdaDropdownMenu')
+      ) {
         setActiveDropdownId(null);
       }
     }

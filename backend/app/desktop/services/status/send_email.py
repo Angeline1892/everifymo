@@ -16,17 +16,43 @@ desktop_mail_conf = ConnectionConfig(
     USE_CREDENTIALS=True,
 )
 
-def render_status_update_email(product_title: str, case_reference: str, new_status_label: str, change_note: str | None) -> str:
+STATUS_STYLE_MAP = {
+    "completed": "",             
+    "under_review": "is-warning",
+    "takedown_requested": "is-warning",
+    "dismissed": "is-critical",
+}
+
+def get_status_modifier_class(status_code: str) -> str:
+    return STATUS_STYLE_MAP.get(status_code, "")
+
+def render_status_update_email(
+    product_title: str,
+    case_reference: str,
+    new_status_label: str,
+    new_status_code: str,
+    change_note: str | None,
+) -> str:
     html = TEMPLATE_PATH.read_text(encoding="utf-8")
     html = html.replace("{{PRODUCT_TITLE}}", product_title)
     html = html.replace("{{CASE_REFERENCE}}", case_reference)
     html = html.replace("{{NEW_STATUS_LABEL}}", new_status_label)
+    html = html.replace("{{STATUS_MODIFIER_CLASS}}", get_status_modifier_class(new_status_code))
     note_block = f"<p>{change_note}</p>" if change_note else ""
     html = html.replace("{{CHANGE_NOTE_BLOCK}}", note_block)
     return html
 
-async def send_status_update_email(to_email: str, product_title: str, case_reference: str, new_status_label: str, change_note: str | None = None):
-    html_body = render_status_update_email(product_title, case_reference, new_status_label, change_note)
+async def send_status_update_email(
+    to_email: str,
+    product_title: str,
+    case_reference: str,
+    new_status_label: str,
+    new_status_code: str,
+    change_note: str | None = None,
+):
+    html_body = render_status_update_email(
+        product_title, case_reference, new_status_label, new_status_code, change_note
+    )
 
     message = MessageSchema(
         subject="Update on your complaint",

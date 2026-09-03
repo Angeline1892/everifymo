@@ -301,6 +301,10 @@ function LeaVerificationRequest() {
   // CHANGED — no longer blanks right panel on every card click (BUG 2 fix)
   const fetchComplaintDetail = async (complaintId) => {
     const token = localStorage.getItem('access_token');
+
+    setProductCode('');
+    setPriority('standard');
+    setComplaintStatement('');
     // Only show the loading message if nothing is currently displayed —
     // otherwise keep the previous case visible while this one loads.
     if (!selectedComplaint) {
@@ -542,6 +546,33 @@ function LeaVerificationRequest() {
       .finally(() => setInitiatedDetailLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedInitiatedId]);
+
+  // Fetch extra detail fields (product_code, complaint_statement) for the selected
+  // Awaiting FDA request — the lean list response from GET /verification-requests/awaiting-fda
+  // does not include these fields. Merges them into selectedAwaitingFda so the right panel
+  // can display them. Silently falls back to '—' if the fetch fails.
+  useEffect(() => {
+    if (!selectedAwaitingFda?.request_id) return;
+    const token = localStorage.getItem('access_token');
+    fetch(`${API_BASE}/verification-requests/${selectedAwaitingFda.request_id}`, {
+      headers: { authorization: `Bearer ${token}` },
+    })
+      .then(async (res) => {
+        if (!res.ok) return;
+        return res.json();
+      })
+      .then((data) => {
+        if (data) {
+          setSelectedAwaitingFda((prev) => ({
+            ...prev,
+            product_code: data.product_code,
+            complaint_statement: data.complaint_statement,
+          }));
+        }
+      })
+      .catch(() => {}); // fields will display '—' as fallback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAwaitingFda?.request_id]);
 
   // ADDED (Part 1) — server-side fetch for Closed Cases tab.
   // Search input is debounced (300ms); all other filter/page changes fire immediately.
@@ -1583,12 +1614,42 @@ function LeaVerificationRequest() {
                                 <label>SOURCE</label>
                                 <p>{GetSourceLabel(selectedAwaitingFda.source)}</p>
                               </div>
+
+                                                            <div>
+                                <label>SOURCE</label>
+                                <p>{GetSourceLabel(selectedAwaitingFda.source)}</p>
+                              </div>
                             </div>
                           </>
                         ) : (
                           <p style={{ color: '#7a8796', fontSize: '13px' }}>Select a case from the list to view details.</p>
                         )}
                       </div>
+
+                      {selectedAwaitingFda && (
+                        <div className="VerificationRequestInfo">
+                          <h3>Verification Request</h3>
+                          <div className="VerificationRequestGrid">
+                            <div>
+                              <label>PRODUCT CODE</label>
+                              <p>{(selectedAwaitingFda.product_code && String(selectedAwaitingFda.product_code).trim()) || '—'}</p>
+                            </div>
+
+                            <div>
+                              <label>PRIORITY</label>
+                              <p>{selectedAwaitingFda.priority ? selectedAwaitingFda.priority.charAt(0).toUpperCase() + selectedAwaitingFda.priority.slice(1) : '—'}</p>
+                            </div>
+
+                            <div className="VerificationNotes">
+                              <label>NOTES TO FDA VERIFIER</label>
+                              <p style={{ fontWeight: 500, fontSize: '13px', lineHeight: '1.5', wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>
+                                {((selectedAwaitingFda.complaint_statement || selectedAwaitingFda.notes_to_fda) &&
+                                  String(selectedAwaitingFda.complaint_statement || selectedAwaitingFda.notes_to_fda).trim()) || '—'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       <div className='UpdateForResponse'>
                         <div className='StatusTitle'>

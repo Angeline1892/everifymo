@@ -263,9 +263,9 @@ function ProfileSetting() {
     localStorage.removeItem('role');
 
     if (currentRole === 'SUPERADMIN') {
-      navigate('/superadmin-login');
+      navigate('/universal-login?tab=superadmin');
     } else {
-      navigate('/login');
+      navigate('/universal-login');
     }
   }
 
@@ -1199,8 +1199,7 @@ const styles = `
 
   .ProfileContainer {
     width: 100%;
-    padding: 24px;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Inter', ...;
     color: var(--p-slate);
     box-sizing: border-box;
     animation: ProfileFadeIn 0.35s ease-out;
@@ -1873,9 +1872,7 @@ const styles = `
     line-height: 1.5;
   }
     @media (max-width: 640px) {
-  .ProfileContainer {
-    padding: 16px;
-  }
+
 
   .ProfileCard {
     padding: 20px;

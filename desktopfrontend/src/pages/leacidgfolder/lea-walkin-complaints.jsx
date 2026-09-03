@@ -3,6 +3,7 @@ import './lea-css.css'
 import Sidebar from '../component/sidebar'
 import TopBar from '../component/top-bar'
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import mammoth from 'mammoth'
 import { Eye, MoreVertical, Pencil, Trash2, X, Paperclip, FileText, Image as ImageIcon, Download } from 'lucide-react'
@@ -54,6 +55,31 @@ function WcGetStatusLabel(status) {
     }
 }
 
+function formatPurchaseDate(dateStr) {
+    if (!dateStr) return '—';
+    try {
+        const parts = String(dateStr).split('-');
+        if (parts.length === 3) {
+            const [year, month, day] = parts;
+            const d = new Date(Number(year), Number(month) - 1, Number(day));
+            if (!isNaN(d.getTime())) {
+                return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            }
+        }
+        const d = new Date(dateStr);
+        return !isNaN(d.getTime()) ? d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : String(dateStr);
+    } catch {
+        return String(dateStr);
+    }
+}
+
+function formatAmountPaid(amount) {
+    if (amount === null || amount === undefined || amount === '') return '—';
+    const num = Number(amount);
+    if (isNaN(num)) return String(amount);
+    return `₱${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function LeaWalkinComplaints() {
     // BACKEND:
     // Load complaints from API.
@@ -90,6 +116,7 @@ function LeaWalkinComplaints() {
     const [viewModal, setViewModal] = useState(false)
     const [selectedComplaint, setSelectedComplaint] = useState(null)
     const [openMenuId, setOpenMenuId] = useState(null)
+    const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
     const [singleDeleteTarget, setSingleDeleteTarget] = useState(null)
     const [showSingleDeleteModal, setShowSingleDeleteModal] = useState(false)
     const menuRef = useRef(null)
@@ -236,6 +263,13 @@ function LeaWalkinComplaints() {
                     statement: data.nature_of_complaint,
                     attached_files: data.attached_files,
                     status: data.status,
+                    email: data.email,
+                    contact_number: data.contact_number,
+                    address: data.address,
+                    id_type: data.id_type,
+                    place_of_purchase: data.place_of_purchase,
+                    date_of_purchase: data.date_of_purchase,
+                    amount_paid: data.amount_paid,
                 } : prev))
             })
             .catch((err) => console.error('Failed to load complaint detail:', err))
@@ -246,9 +280,22 @@ function LeaWalkinComplaints() {
         setSelectedComplaint(null)
     }
 
-    // Three-dot dropdown: toggle open/close per row
-    const handleToggleMenu = (id) => {
-        setOpenMenuId((prev) => (prev === id ? null : id))
+    // Three-dot dropdown: toggle open/close per row, capturing position for portal
+    const handleToggleMenu = (id, e) => {
+        if (openMenuId === id) {
+            setOpenMenuId(null)
+        } else {
+            if (e && e.currentTarget) {
+                const rect = e.currentTarget.getBoundingClientRect()
+                const spaceBelow = window.innerHeight - rect.bottom
+                const openUpward = spaceBelow < 120
+                setMenuPos({
+                    top: openUpward ? Math.max(8, rect.top - 90) : rect.bottom + 4,
+                    left: Math.max(8, rect.right - 190),
+                })
+            }
+            setOpenMenuId(id)
+        }
     }
 
     // Single-row delete via dropdown
@@ -284,7 +331,10 @@ function LeaWalkinComplaints() {
     useEffect(() => {
         if (openMenuId === null) return
         const handleOutsideClick = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) {
+            if (
+                !e.target.closest('.WcMenuWrapper') &&
+                !e.target.closest('.WcDropdownMenu')
+            ) {
                 setOpenMenuId(null)
             }
         }
@@ -464,32 +514,46 @@ function LeaWalkinComplaints() {
                                                         <div className='WcMenuWrapper'>
                                                             <button
                                                                 className='WcBtnIconMore'
-                                                                onClick={() => handleToggleMenu(complaint.id)}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    handleToggleMenu(complaint.id, e)
+                                                                }}
                                                                 aria-label='More actions'
                                                             >
                                                                 <MoreVertical size={16} />
                                                             </button>
-                                                            {openMenuId === complaint.id && (
-                                                                <div className='WcDropdownMenu'>
-                                                                    <button
-                                                                        className='WcDropdownItem WcDropdownItem--edit'
-                                                                        onClick={() => {
-                                                                            setOpenMenuId(null)
-                                                                            handleEditComplaint(complaint)
+                                                            {openMenuId === complaint.id &&
+                                                                createPortal(
+                                                                    <div
+                                                                        className='WcDropdownMenu'
+                                                                        style={{
+                                                                            position: 'fixed',
+                                                                            top: `${menuPos.top}px`,
+                                                                            left: `${menuPos.left}px`,
+                                                                            zIndex: 9999,
+                                                                            width: `150px`,
                                                                         }}
                                                                     >
-                                                                        <Pencil size={14} />
-                                                                        Edit Complaint
-                                                                    </button>
-                                                                    <button
-                                                                        className='WcDropdownItem WcDropdownItem--delete'
-                                                                        onClick={() => handleDropdownDeleteClick(complaint)}
-                                                                    >
-                                                                        <Trash2 size={14} />
-                                                                        Delete Complaint
-                                                                    </button>
-                                                                </div>
-                                                            )}
+                                                                        <button
+                                                                            className='WcDropdownItem WcDropdownItem--edit'
+                                                                            onClick={() => {
+                                                                                setOpenMenuId(null)
+                                                                                handleEditComplaint(complaint)
+                                                                            }}
+                                                                        >
+                                                                            <Pencil size={14} />
+                                                                            Edit Complaint
+                                                                        </button>
+                                                                        <button
+                                                                            className='WcDropdownItem WcDropdownItem--delete'
+                                                                            onClick={() => handleDropdownDeleteClick(complaint)}
+                                                                        >
+                                                                            <Trash2 size={14} />
+                                                                            Delete Complaint
+                                                                        </button>
+                                                                    </div>,
+                                                                    document.body
+                                                                )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -543,11 +607,18 @@ function LeaWalkinComplaints() {
                                     <div className='ModalSummary'>
                                         <div>
                                             <p><strong>Case ID:</strong> <br></br>{selectedComplaint.id}</p>
-                                            <p><strong>Manufacturer:</strong><br></br> {selectedComplaint.manufacturer}</p>
-                                            <p><strong>Category:</strong><br></br> {selectedComplaint.category}</p>
+                                            <p><strong>Manufacturer:</strong><br></br> {selectedComplaint.manufacturer || '—'}</p>
+                                            <p><strong>Category:</strong><br></br> {selectedComplaint.category || '—'}</p>
+                                            <p><strong>Place of Purchase:</strong><br></br> {detailLoading ? 'Loading…' : (selectedComplaint.place_of_purchase || '—')}</p>
+                                            <p><strong>Date of Purchase:</strong><br></br> {detailLoading ? 'Loading…' : formatPurchaseDate(selectedComplaint.date_of_purchase)}</p>
+                                            <p><strong>Amount Paid:</strong><br></br> {detailLoading ? 'Loading…' : formatAmountPaid(selectedComplaint.amount_paid)}</p>
                                         </div>
                                         <div>
-                                            <p><strong>Complainant:</strong><br></br> {selectedComplaint.complainant}</p>
+                                            <p><strong>Complainant:</strong><br></br> {selectedComplaint.complainant || '—'}</p>
+                                            <p><strong>Contact Number:</strong><br></br> {detailLoading ? 'Loading…' : (selectedComplaint.contact_number || '—')}</p>
+                                            <p><strong>Email:</strong><br></br> {detailLoading ? 'Loading…' : (selectedComplaint.email || '—')}</p>
+                                            <p><strong>Address:</strong><br></br> {detailLoading ? 'Loading…' : (selectedComplaint.address || '—')}</p>
+                                            <p><strong>ID Presented:</strong><br></br> {detailLoading ? 'Loading…' : (selectedComplaint.id_type || '—')}</p>
                                             <p><strong>Logged:</strong><br></br> {selectedComplaint.logged}</p>
                                             <p><strong>Status:</strong> <br></br>
                                                 <span className={`WcStatusBadge ${WcGetStatusClass(selectedComplaint.status)}`}>

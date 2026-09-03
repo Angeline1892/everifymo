@@ -224,7 +224,7 @@ def list_completed_verification_requests(
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
     page: int = Query(1, ge=1),
-    page_size: int = Query(5, ge=1, le=50),
+    page_size: int = Query(5, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):

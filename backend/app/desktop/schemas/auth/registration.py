@@ -20,6 +20,7 @@ class ValidateTokenResponse(BaseModel):
     role: str | None = None
     region_id: UUID | None = None
     region_name: str | None = None
+    resend_already_requested: bool = False
 
 
 class RegistrationCompleteRequest(BaseModel):

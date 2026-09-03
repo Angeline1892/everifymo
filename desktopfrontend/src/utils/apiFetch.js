@@ -51,13 +51,16 @@ export async function apiFetch(path, options = {}) {
     headers: buildHeaders(accessToken, options),
   });
 
-  if (response.status === 401) {
+   if (response.status === 401) {
     const newToken = await refreshAccessToken();
     if (!newToken) {
+      const agency = localStorage.getItem('agency');
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('agency');
-      window.location.href = '/';
+      window.location.href = agency === 'superadmin'
+        ? '/universal-login?tab=superadmin'
+        : '/universal-login';
       throw new Error('Session expired. Please log in again.');
     }
     response = await fetch(`${BASE_URL}${path}`, {

@@ -63,7 +63,7 @@ function DeepLinkListener() {
               navigate('/create-new-password', { state: { token } });
             } else {
               navigate('/superadmin-invite-status', {
-                state: { status: data.status, token },
+                state: { ...data, token },
               });
             }
             return;
@@ -72,7 +72,7 @@ function DeepLinkListener() {
           if (data.status === 'valid') {
             navigate('/user-registration', { state: { ...data, invite_token: token } });
           } else {
-            navigate('/invitation-status', { state: { status: data.status, invite_token: token } });
+            navigate('/invitation-status', { state: { ...data, invite_token: token } });
           }
         });
     });
@@ -92,7 +92,7 @@ export default function App() {
 
         {/* AUTH ROUTES */}
         <Route path='/login' element={<Login />} />
-        <Route path='/superadmin-login' element={<SuperAdminLogin />} />
+        <Route path='/superadmin-login' element={<Login />} />
         <Route path='/forgot-password' element={<ForgotPassword />} />
         <Route path='/change-password' element={<ChangePassword />} />
         <Route path='/create-new-password' element={<CreateNewPassword />} />

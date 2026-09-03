@@ -43,9 +43,9 @@ function ForgotPassword() {
 
     const handleBackToLogin = () => {
         if (from === 'superadmin') {
-            navigate('/');
+            navigate('/universal-login?tab=superadmin');
         } else {
-            navigate('/login');
+            navigate('/universal-login');
         }
     };
 

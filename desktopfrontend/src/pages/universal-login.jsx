@@ -1,32 +1,22 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, AlertCircle, Users, ShieldCheck } from 'lucide-react'
 import FDALogo from '../images/FDA.png'
 import PNPLogo from '../images/pnp-cidg.jpg'
 import { API_BASE_URL } from '../utils/apiConfig'
 
-// ============================================================================
-// FRONTEND MOCK CREDENTIALS FOR TESTING & DEMONSTRATION
-// ============================================================================
-const MOCK_CREDENTIALS = {
-  personnel: {
-    email: 'test.personnel@gmail.com',
-    password: '12345678',
-  },
-  superadmin: {
-    email: 'test.superadmin@gmail.com',
-    password: '12345678',
-  },
-  fixedOtp: '123456',
-};
 
-const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
+
+const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/i;
 
 function UniversalLogin() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Which tab is active: 'personnel' | 'superadmin'
-  const [universalLoginActiveTab, setUniversalLoginActiveTab] = useState('personnel');
+  // Supports being deep-linked to a specific tab via ?tab=superadmin
+  const initialTab = searchParams.get('tab') === 'superadmin' ? 'superadmin' : 'personnel';
+  const [universalLoginActiveTab, setUniversalLoginActiveTab] = useState(initialTab);
 
   // Tracks whether either child form is on its OTP screen
   const [isShowingOtp, setIsShowingOtp] = useState(false);
@@ -806,7 +796,7 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
   const [personnelLoginError, setPersonnelLoginError] = useState('');
   const [personnelRememberMe, setPersonnelRememberMe] = useState(false);
   const [personnelErrors, setPersonnelErrors] = useState({});
-  const [isMockAccount, setIsMockAccount] = useState(false);
+
 
   function rememberedEmailKey(forAgency) {
     return forAgency ? `remembered_email_user_${forAgency}` : null;
@@ -883,12 +873,7 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
 
   async function handlePersonnelResendOtp() {
     setPersonnelLoginError('');
-    if (isMockAccount) {
-      setPersonnelTimer(300);
-      setPersonnelOtp(new Array(6).fill(''));
-      setTimeout(() => personnelOtpRefs.current[0]?.focus(), 0);
-      return;
-    }
+
 
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -931,8 +916,8 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
     setPersonnelEmail(val);
     if (!val.trim()) {
       setPersonnelErrors((prev) => ({ ...prev, email: '' }));
-    } else if (!GMAIL_REGEX.test(val.trim())) {
-      setPersonnelErrors((prev) => ({ ...prev, email: 'Please enter a valid Gmail address.' }));
+    } else if (!EMAIL_REGEX.test(val.trim())) {
+      setPersonnelErrors((prev) => ({ ...prev, email: 'Please enter a valid email address.' }));
     } else {
       setPersonnelErrors((prev) => ({ ...prev, email: '' }));
     }
@@ -960,8 +945,8 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
 
       if (!personnelEmail.trim()) {
         newErrors.email = 'Email is required.';
-      } else if (!GMAIL_REGEX.test(personnelEmail.trim())) {
-        newErrors.email = 'Please enter a valid Gmail address.';
+      } else if (!EMAIL_REGEX.test(personnelEmail.trim())) {
+        newErrors.email = 'Please enter a valid email address.';
       }
 
       if (!personnelPassword.trim()) {
@@ -975,27 +960,7 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
       setPersonnelErrors({});
 
       const cleanEmail = personnelEmail.trim().toLowerCase();
-      const isMock = cleanEmail === MOCK_CREDENTIALS.personnel.email.toLowerCase();
 
-      // MOCK PERSONNEL AUTH FLOW
-      if (isMock) {
-        if (personnelPassword !== MOCK_CREDENTIALS.personnel.password) {
-          setPersonnelLoginError('Invalid email or password.');
-          return;
-        }
-
-        const key = rememberedEmailKey(personnelAgency);
-        if (key) {
-          if (personnelRememberMe) localStorage.setItem(key, personnelEmail.trim());
-          else localStorage.removeItem(key);
-        }
-
-        setIsMockAccount(true);
-        setPersonnelIsOtpSent(true);
-        setPersonnelTimer(300);
-        setPersonnelLoginError('');
-        return;
-      }
 
       // REAL BACKEND LOGIN API CALL
       try {
@@ -1016,7 +981,7 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
           else localStorage.removeItem(key);
         }
 
-        setIsMockAccount(false);
+
         setPersonnelIsOtpSent(true);
         setPersonnelTimer(300);
         setPersonnelLoginError('');
@@ -1031,25 +996,7 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
         return;
       }
 
-      // MOCK OTP VERIFICATION
-      if (isMockAccount) {
-        if (otpCode === MOCK_CREDENTIALS.fixedOtp) {
-          localStorage.setItem('access_token', 'mock_access_token');
-          localStorage.setItem('refresh_token', 'mock_refresh_token');
-          localStorage.setItem('agency', personnelAgency);
 
-          if (personnelAgency === 'fda') {
-            navigate('/fdafolder/fda-dashboard');
-          } else {
-            navigate('/leacidgfolder/lea-dashboard');
-          }
-        } else {
-          setPersonnelLoginError('Invalid verification code. Please try again.');
-          setPersonnelOtp(new Array(6).fill(''));
-          setTimeout(() => personnelOtpRefs.current[0]?.focus(), 0);
-        }
-        return;
-      }
 
       // REAL BACKEND OTP VERIFICATION
       try {
@@ -1138,7 +1085,7 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
               <input
                 type="email"
                 id="universal-login-personnel-email"
-                placeholder="youremail@gmail.com"
+                placeholder="you@example.com"
                 value={personnelEmail}
                 onChange={handlePersonnelEmailChange}
                 required
@@ -1284,7 +1231,7 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
   const [adminLoginError, setAdminLoginError] = useState('');
   const [adminRememberMe, setAdminRememberMe] = useState(false);
   const [adminErrors, setAdminErrors] = useState({});
-  const [isMockAccount, setIsMockAccount] = useState(false);
+
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
 
   const REMEMBERED_EMAIL_KEY = 'remembered_email_superadmin';
@@ -1369,12 +1316,7 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
 
   async function handleAdminResendOtp() {
     setAdminLoginError('');
-    if (isMockAccount) {
-      setAdminTimer(300);
-      setAdminOtp(new Array(6).fill(''));
-      setTimeout(() => adminOtpRefs.current[0]?.focus(), 0);
-      return;
-    }
+
 
     try {
       const response = await fetch(`${API_BASE_URL}/auth/superadmin/login`, {
@@ -1420,8 +1362,8 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
     setAdminEmail(val);
     if (!val.trim()) {
       setAdminErrors((prev) => ({ ...prev, email: '' }));
-    } else if (!GMAIL_REGEX.test(val.trim())) {
-      setAdminErrors((prev) => ({ ...prev, email: 'Please enter a valid Gmail address.' }));
+    } else if (!EMAIL_REGEX.test(val.trim())) {
+      setAdminErrors((prev) => ({ ...prev, email: 'Please enter a valid email address.' }));
     } else {
       setAdminErrors((prev) => ({ ...prev, email: '' }));
     }
@@ -1440,8 +1382,8 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
 
       if (!adminEmail.trim()) {
         newErrors.email = 'Email is required.';
-      } else if (!GMAIL_REGEX.test(adminEmail.trim())) {
-        newErrors.email = 'Please enter a valid Gmail address.';
+      } else if (!EMAIL_REGEX.test(adminEmail.trim())) {
+        newErrors.email = 'Please enter a valid email address.';
       }
 
       if (!adminPassword.trim()) {
@@ -1455,29 +1397,7 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
       setAdminErrors({});
 
       const cleanEmail = adminEmail.trim().toLowerCase();
-      const isMock = cleanEmail === MOCK_CREDENTIALS.superadmin.email.toLowerCase();
-
-      // MOCK SUPERADMIN AUTH FLOW
-      if (isMock) {
-        if (adminPassword !== MOCK_CREDENTIALS.superadmin.password) {
-          setAdminLoginError('Invalid email or password.');
-          return;
-        }
-
-        if (adminRememberMe) {
-          localStorage.setItem(REMEMBERED_EMAIL_KEY, adminEmail.trim());
-        } else {
-          localStorage.removeItem(REMEMBERED_EMAIL_KEY);
-        }
-
-        setIsMockAccount(true);
-        setAdminIsOtpSent(true);
-        setAdminTimer(300);
-        setAdminLoginError('');
-        setLockoutSeconds(0);
-        return;
-      }
-
+     
       // REAL BACKEND SUPERADMIN LOGIN API CALL
       try {
         const response = await fetch(`${API_BASE_URL}/auth/superadmin/login`, {
@@ -1502,7 +1422,7 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
           localStorage.removeItem(REMEMBERED_EMAIL_KEY);
         }
 
-        setIsMockAccount(false);
+
         setAdminIsOtpSent(true);
         setAdminTimer(300);
         setAdminLoginError('');
@@ -1518,20 +1438,7 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
         return;
       }
 
-      // MOCK SUPERADMIN OTP VERIFICATION
-      if (isMockAccount) {
-        if (otpCode === MOCK_CREDENTIALS.fixedOtp) {
-          localStorage.setItem('access_token', 'mock_access_token');
-          localStorage.setItem('refresh_token', 'mock_refresh_token');
-          localStorage.setItem('agency', 'superadmin');
-          navigate('/superadminfolder/superadmin-user-management');
-        } else {
-          setAdminLoginError('Invalid verification code. Please try again.');
-          setAdminOtp(new Array(6).fill(''));
-          setTimeout(() => adminOtpRefs.current[0]?.focus(), 0);
-        }
-        return;
-      }
+
 
       // REAL BACKEND OTP VERIFICATION
       try {
@@ -1591,7 +1498,7 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
               <input
                 id="universal-login-admin-email"
                 type="email"
-                placeholder="youremail@gmail.com"
+                placeholder="you@example.com"
                 value={adminEmail}
                 onChange={handleAdminEmailChange}
                 required

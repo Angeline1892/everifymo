@@ -94,7 +94,7 @@ function CreateNewPassword() {
     }
 
   function handleGoToLogin() {
-    navigate('/superadmin-login');
+    navigate('/universal-login?tab=superadmin');
   }
 
 

@@ -61,6 +61,7 @@ def validate_token(invite_token: str, db: Session = Depends(get_db)):
             status=TokenStatus.expired,
             message="This invitation link has expired. Please request a new one.",
             role=role,
+            resend_already_requested=token_row.resend_requested_at is not None,
         )
 
     region_row = db.query(Region).filter(Region.region_id == user_row.region_id).first()
