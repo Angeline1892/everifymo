@@ -1,39 +1,62 @@
-import { BrowserWindow as e, app as t } from "electron";
-import { fileURLToPath as n } from "url";
-import r from "path";
+import { BrowserWindow, app } from "electron";
+import { fileURLToPath } from "url";
+import path from "path";
 //#region src/electron/main.js
-var i = r.dirname(n(import.meta.url)), a = null, o = null;
-function s() {
-	a = new e({
+var __dirname = path.dirname(fileURLToPath(import.meta.url));
+var mainWindow = null;
+var pendingDeepLink = null;
+function createWindow() {
+	mainWindow = new BrowserWindow({
 		width: 1280,
 		height: 800,
 		minWidth: 800,
 		minHeight: 600,
 		webPreferences: {
-			nodeIntegration: !1,
-			contextIsolation: !0,
-			preload: r.join(i, "preload.cjs")
+			nodeIntegration: false,
+			contextIsolation: true,
+			preload: path.join(__dirname, "preload.cjs")
 		}
-	}), a.webContents.openDevTools(), a.webContents.on("did-finish-load", () => {
-		o &&= (a.webContents.send("deep-link-token", o), null);
-	}), process.env.VITE_DEV_SERVER_URL ? a.loadURL(process.env.VITE_DEV_SERVER_URL) : a.loadFile(r.join(i, "../../dist/index.html"));
+	});
+	mainWindow.webContents.openDevTools();
+	mainWindow.webContents.on("did-finish-load", () => {
+		if (pendingDeepLink) {
+			mainWindow.webContents.send("deep-link-token", pendingDeepLink);
+			pendingDeepLink = null;
+		}
+	});
+	if (process.env.VITE_DEV_SERVER_URL) mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+	else mainWindow.loadFile(path.join(__dirname, "../../dist/index.html"));
 }
-console.log("argv:", process.argv), console.log("execPath:", process.execPath), process.env.VITE_DEV_SERVER_URL ? t.setAsDefaultProtocolClient("everifymo", process.execPath, [r.resolve(process.argv[1])]) : t.setAsDefaultProtocolClient("everifymo"), t.requestSingleInstanceLock() ? (t.on("second-instance", (e, t) => {
-	let n = t.find((e) => e.startsWith("everifymo://"));
-	n && c(n);
-}), t.whenReady().then(() => {
-	s();
-	let e = process.argv.find((e) => e.startsWith("everifymo://"));
-	e && c(e);
-})) : t.quit(), t.on("open-url", (e, t) => {
-	c(t);
+console.log("argv:", process.argv);
+console.log("execPath:", process.execPath);
+if (process.env.VITE_DEV_SERVER_URL) app.setAsDefaultProtocolClient("everifymo", process.execPath, [path.resolve(process.argv[1])]);
+else app.setAsDefaultProtocolClient("everifymo");
+if (!app.requestSingleInstanceLock()) app.quit();
+else {
+	app.on("second-instance", (event, argv) => {
+		const url = argv.find((arg) => arg.startsWith("everifymo://"));
+		if (url) handleDeepLink(url);
+	});
+	app.whenReady().then(() => {
+		createWindow();
+		const launchUrl = process.argv.find((arg) => arg.startsWith("everifymo://"));
+		if (launchUrl) handleDeepLink(launchUrl);
+	});
+}
+app.on("open-url", (event, url) => {
+	handleDeepLink(url);
 });
-function c(e) {
-	let t = new URL(e).searchParams.get("token");
-	a ? (a.isMinimized() && a.restore(), a.show(), a.focus(), a.webContents.send("deep-link-token", t)) : o = t;
+function handleDeepLink(url) {
+	const token = new URL(url).searchParams.get("token");
+	if (mainWindow) {
+		if (mainWindow.isMinimized()) mainWindow.restore();
+		mainWindow.show();
+		mainWindow.focus();
+		mainWindow.webContents.send("deep-link-token", token);
+	} else pendingDeepLink = token;
 }
-t.on("window-all-closed", () => {
-	process.platform !== "darwin" && t.quit();
+app.on("window-all-closed", () => {
+	if (process.platform !== "darwin") app.quit();
 });
 //#endregion
 export {};
