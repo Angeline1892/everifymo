@@ -2,6 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone, timedelta
 
 from app.database.sessions import get_db, set_bypass_rls
@@ -111,6 +112,30 @@ def complete_registration(data: RegistrationCompleteRequest, http_request: Reque
     # Token is good — find the stub account this invite belongs to
     user_row = db.query(User).filter(User.user_id == token_row.user_id).first()
 
+    # Check employee_id uniqueness up front so we can give a clean error
+    # instead of relying on the DB constraint to catch it after the fact
+    existing_employee_id = db.query(User).filter(
+        User.employee_id == data.employee_id,
+        User.user_id != user_row.user_id,
+    ).first()
+    if existing_employee_id:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Employee ID '{data.employee_id}' is already in use.",
+        )
+
+    # Same idea for contact_number — no DB constraint backs this one up,
+    # so this pre-check is the only thing preventing duplicates
+    existing_contact_number = db.query(User).filter(
+        User.contact_number == data.contact_number,
+        User.user_id != user_row.user_id,
+    ).first()
+    if existing_contact_number:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Contact number '{data.contact_number}' is already in use.",
+        )
+
     # Fill in everything the officer typed into the registration form
     user_row.first_name = data.first_name
     user_row.last_name = data.last_name          
@@ -127,7 +152,18 @@ def complete_registration(data: RegistrationCompleteRequest, http_request: Reque
     token_row.used_at = datetime.now(timezone.utc)
 
     # Save both changes together — either both go through, or neither does
-    db.commit()   
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        constraint = str(e.orig)
+        if "users_employee_id_key" in constraint:
+            detail = f"Employee ID '{data.employee_id}' is already in use."
+        elif "users_contact_number_key" in constraint:
+            detail = f"Contact number '{data.contact_number}' is already in use."
+        else:
+            detail = "A record with these details already exists."
+        raise HTTPException(status_code=409, detail=detail)
 
     notification_service.create_notification_for_all_superadmins(
         db=db,
