@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (overlaySlot) await loadPartial('partials/overlays.html', 'overlay-slot');
 
     initProfileOverlay();
-    initNotifications();
     initExitButton();
     renderProfileContent();
     initProfileActions();
@@ -25,53 +24,19 @@ function showProfileView(viewId) {
     view.classList.toggle('hidden', view.id !== viewId);
   });
 }
-
 function initProfileOverlay() {
   const dropdownBtn = document.getElementById('profile-dropdown-btn');
   const profileOverlay = document.getElementById('profile-overlay');
-  const notifOverlay = document.getElementById('notification-overlay');
   const pageContent = document.getElementById('blur-target');
   const dropdownImg = dropdownBtn ? dropdownBtn.querySelector('img') : null;
 
   if (!dropdownBtn || !profileOverlay) return;
 
   dropdownBtn.addEventListener('click', () => {
-    if (notifOverlay) notifOverlay.classList.remove('visible');
-
     const isOpen = profileOverlay.classList.toggle('visible');
     if (pageContent) pageContent.classList.toggle('blurred', isOpen);
     if (dropdownImg) dropdownImg.classList.toggle('open', isOpen); // this flips the arrow image
   });
-}
-
-function initNotifications() {
-  const notifBtn = document.getElementById('notif-btn');
-  const notifOverlay = document.getElementById('notification-overlay');
-  const profileOverlay = document.getElementById('profile-overlay');
-  const pageContent = document.getElementById('blur-target');
-  const badgeDot = document.getElementById('notif-badge');
-
-  if (!notifBtn || !notifOverlay) return;
-
-  notifBtn.addEventListener('click', () => {
-    if (profileOverlay) profileOverlay.classList.remove('visible');
-    const isOpen = notifOverlay.classList.toggle('visible');
-    if (pageContent) pageContent.classList.toggle('blurred', isOpen);
-  });
-
-  renderNotifications();
-
-  const markAllBtn = document.getElementById('mark-all-read');
-  if (markAllBtn) {
-    markAllBtn.addEventListener('click', (e) => {
-      e.preventDefault(); // this stops the <a href="#"> from jumping the page to the top
-      markAllNotificationsRead();
-      renderNotifications(); // this re-render so items visually update to "read" style
-      updateNotifBadge();
-    });
-  }
-
-  updateNotifBadge();
 }
 
 function initPasswordToggles() {
@@ -91,48 +56,6 @@ function initPasswordToggles() {
       btn.setAttribute('aria-label', willShow ? 'Hide password' : 'Show password');
     });
   });
-}
-
-function renderNotifications() {
-  const listEl = document.getElementById('notification-list');
-  if (!listEl || typeof getNotifications !== 'function') return;
-
-  const notifications = getNotifications();
-
-  listEl.innerHTML = notifications.map((n, index) => `
-    <div class="notification-item ${n.read ? '' : 'unread'}" data-notif-index="${index}">
-      <p class="notification-message">${n.message}</p>
-      <span class="notification-time">${n.time}</span>
-    </div>
-  `).join('');
-
-  document.querySelectorAll('.notification-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const index = Number(item.dataset.notifIndex);
-      const notification = notifications[index];
-      if (!notification || !notification.target) return;
-
-      const destination = notification.target.type === 'status'
-        ? 'complaint-status.html'
-        : 'history.html';
-
-      // this works whether this page is a popup (needs a new tab) or already a full page (can navigate directly)
-      if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
-        chrome.tabs.create({ url: chrome.runtime.getURL(`pages/${destination}`) });
-      } else {
-        window.location.href = destination;
-      }
-    });
-  });
-}
-
-function updateNotifBadge() {
-  const badgeDot = document.getElementById('notif-badge');
-  if (!badgeDot || typeof getNotifications !== 'function') return;
-
-  const notifications = getNotifications();
-  const hasUnread = notifications.some(n => !n.read);
-  badgeDot.classList.toggle('hidden', !hasUnread);
 }
 
 function initExitButton() {
@@ -279,9 +202,8 @@ function initProfileActions() {
 function applyGuestHeaderVisibility() {
   const loggedIn = typeof isUserLoggedIn === 'function' ? isUserLoggedIn() : false;
 
-  const notifBtn = document.getElementById('notif-btn');
   const dropdownBtn = document.getElementById('profile-dropdown-btn');
 
-  if (notifBtn) notifBtn.classList.toggle('hidden', !loggedIn);
   if (dropdownBtn) dropdownBtn.classList.toggle('hidden', !loggedIn);
 }
+

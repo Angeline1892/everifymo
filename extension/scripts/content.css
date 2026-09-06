@@ -750,3 +750,82 @@
   background: rgba(0, 0, 0, 0.06);
   color: #333;
 }
+
+/* scripts/content.css */
+.hidden {
+  display: none !important;
+}
+
+/* ============================================
+   MODAL FONT-SIZE INCREASE (adviser feedback)
+   Grouped by prior size, bumped one step up —
+   mirrors the same pass applied to global.css.
+============================================ */
+
+/* 11px -> 12px */
+#everifymo-modal #state-registered .top-matches-subtitle,
+#everifymo-modal #state-registered .legend-label,
+#everifymo-modal #state-unregistered .top-matches-subtitle-red,
+#everifymo-modal #state-unregistered .legend-label-red {
+  font-size: 12px;
+}
+
+/* 12px -> 13px */
+#everifymo-modal .rf-notice-text,
+#everifymo-modal .rf-field-label,
+#everifymo-modal .rf-attach-text,
+#everifymo-modal #state-registered .registered-product,
+#everifymo-modal #state-registered .top-matches-title,
+#everifymo-modal #state-registered .rank-badge,
+#everifymo-modal #state-registered .match-title,
+#everifymo-modal #state-suspicious .not-found-product,
+#everifymo-modal #state-suspicious .further-checking-text,
+#everifymo-modal #state-suspicious .quick-check-tip,
+#everifymo-modal #state-unregistered .unregistered-message,
+#everifymo-modal #state-unregistered .top-matches-title-red,
+#everifymo-modal #state-unregistered .rank-badge-red,
+#everifymo-modal #state-unregistered .match-title-red {
+  font-size: 13px;
+}
+
+/* 13px -> 14px */
+#everifymo-modal .rf-notice-title,
+#everifymo-modal .rf-input,
+#everifymo-modal .rf-btn-cancel,
+#everifymo-modal .rf-btn-submit,
+#everifymo-modal #state-suspicious .further-checking-title,
+#everifymo-modal #state-suspicious .quick-check-title,
+#everifymo-modal #state-registered .match-percent,
+#everifymo-modal #state-unregistered .match-percent-red,
+#everifymo-modal #state-unregistered .btn-report-red,
+#everifymo-modal #state-unregistered .btn-skip-red,
+#everifymo-modal #state-suspicious .btn-report-orange,
+#everifymo-modal #state-suspicious .btn-skip-orange,
+#everifymo-modal #state-registered .btn-report-green,
+#everifymo-modal #state-registered .btn-skip-green {
+  font-size: 14px;
+}
+
+/* 14px -> 15px */
+#everifymo-modal #state-suspicious .not-found-title {
+  font-size: 15px;
+}
+
+/* 16px -> 17px */
+#everifymo-modal #state-registered .registered-title,
+#everifymo-modal #state-unregistered .unregistered-title {
+  font-size: 17px;
+}
+
+/* Missing rule — loading state text had no size set at all */
+#everifymo-modal .state-message {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #777777;
+  text-align: center;
+}
+
+#everifymo-modal .mo-extension-name {
+  font-size: 1.15rem;
+}
+
