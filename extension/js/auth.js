@@ -99,17 +99,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const authModes = {
     signin: {
       title: 'Signing in is optional',
-      text: 'You can still verify products and submit complaints as a guest. Sign in or Sign up to view your verification history, complaints, and report status.',
+      text: 'You can still verify products as a guest. Sign in or Sign up to file complaints, and to view your verification history, complaints, and report status.',
       buttonLabel: 'Sign In',
       documentTitle: 'E-VERIFY | Sign In'
     },
     signup: {
       title: 'Signing up is optional',
-      text: 'You can still verify products and submit complaints as a guest. Sign in or Sign up to view your verification history, complaints, and report status.',
+      text: 'You can still verify products as a guest. Sign in or Sign up to file complaints, and to view your verification history, complaints, and report status.',
       buttonLabel: 'Sign Up',
       documentTitle: 'E-VERIFY | Sign Up'
     }
   };
+
 
   // Wipes every validation error message and red "invalid" outline back to clean
   const clearErrors = () => {

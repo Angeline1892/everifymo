@@ -19,7 +19,7 @@ console.log('Background received message:', message);
         const data = await response.json().catch(() => null);
         console.log('Backend response:', data);
         
-        const status = data?.status || 'unregistered';
+        const status = data?.verdict === 'no_match' ? 'suspicious' : data?.verdict || 'unregistered';
 
         // Store the extracted product info in chrome.storage
         chrome.storage.local.set({

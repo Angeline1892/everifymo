@@ -84,23 +84,8 @@ def clean_title(text):
     # Remove special characters and punctuation
     text = re.sub(r'[^a-zA-Z0-9\s]', ' ', text)
 
-    # Remove repeated characters
-    #text = re.sub(r'(.)\1{2,}', r'\1', text)
-
     # Normalize whitespace
     text = re.sub(r'\s+', ' ', text).strip()
-
-
-    '''# Remove duplicate words
-    seen = set()
-    unique_words = []
-
-    for word in text.split():
-        if word not in seen:
-            unique_words.append(word)
-            seen.add(word)
-
-    text = " ".join(unique_words)'''
 
     return text
 
@@ -110,9 +95,6 @@ def main():
     file_path = datasets_dir / "registered.csv"
     df = pd.read_csv(file_path, low_memory=False)
 
-    # Check columns
-    print("Columns:")
-    print(df.columns.tolist())
 
     # Change this if needed after checking the output above
     TITLE_COLUMN = "PRODUCT_NAME"
@@ -124,11 +106,6 @@ def main():
     df[BRAND_COLUMN] = df[BRAND_COLUMN].apply(clean_title)
     df[COMPANY_COLUMN] = df[COMPANY_COLUMN].apply(clean_title)
 
-    # Preview
-    print(df[[TITLE_COLUMN]].head())
-    print(df[[BRAND_COLUMN]].head())
-    print(df[[COMPANY_COLUMN]].head())
-
     # Save cleaned dataset
     output_path = asset_dir / "Registered_cleaned.csv"
     df.to_csv(output_path, index=False)
@@ -137,8 +114,6 @@ def main():
     with open(asset_dir / "Registered_cleaned.pkl", 'wb') as f:
         pickle.dump(df, f)
 
-    print("\nCleaning completed!")
-    print("Saved to:", output_path)
 
     #### Cleaning of Unregistered Product to build BM25 index ####
 
@@ -146,18 +121,12 @@ def main():
     file_path = datasets_dir / "unregistered.csv"
     df = pd.read_csv(file_path)
 
-    # Check columns
-    print("Columns:")
-    print(df.columns.tolist())
-
     # Change this if needed after checking the output above
     UN_TITLE_COLUMN = "Product Title"
 
     # Apply the cleaning function to the specified column
     df[UN_TITLE_COLUMN] = df[UN_TITLE_COLUMN].apply(clean_title)
 
-    # Preview
-    print(df[[UN_TITLE_COLUMN]].head())
 
     # Save cleaned dataset
     output_path = asset_dir / "Unregistered_cleaned.csv"
@@ -167,7 +136,6 @@ def main():
         pickle.dump(df, f)
 
     print("\nCleaning completed!")
-    print("Saved to:", output_path)
 
 
 

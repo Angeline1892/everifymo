@@ -14,25 +14,40 @@ unregistered = pd.read_pickle(asset_dir / "Unregistered_cleaned.pkl")
 
 registered['full_product_info'] = (
     registered['BRAND_NAME'].fillna('') + ' ' +
-    registered['PRODUCT_NAME'].fillna('') + ' ' +
-    registered['COMPANY_NAME'].fillna('')
+    registered['PRODUCT_NAME'].fillna('')
 )
 
 registered['tokens'] = registered['full_product_info'].str.split()
 unregistered['tokens'] = unregistered['Product Title'].str.split()
 
-pd.set_option('display.max_colwidth', None)
-print(registered[['tokens']].head())
-print(unregistered[['tokens']].head())
+with open(asset_dir / "Registered_cleaned.pkl", 'wb') as f:
+    pickle.dump(registered, f)
+
+with open(asset_dir / "Unregistered_cleaned.pkl", 'wb') as f:
+    pickle.dump(unregistered, f)
+
+#### ========== Build the BM25 index ============= ####
 
 
-#### Build the BM25 index ####
-###!pip install rank-bm25
-
-#create document indexes for registered#
+#create document indexes for registered
 tokenized_reg_corpus = registered['tokens'].tolist()
+
+# Filter out NaN values from the tokenized_reg_corpus
+tokenized_reg_corpus = [doc if isinstance(doc, list) else [] for doc in tokenized_reg_corpus]
 bm25_registered = BM25Okapi(tokenized_reg_corpus)
 
 #save bm25 as pickle
 with open(asset_dir / "bm25_registered.pkl", 'wb') as f:
     pickle.dump(bm25_registered, f)
+
+
+
+#for unregistered products titles
+tokenized_unreg_corpus = unregistered['tokens'].tolist()
+
+# Filter out NaN values from the tokenized_unreg_corpus
+tokenized_unreg_corpus = [doc if isinstance(doc, list) else [] for doc in tokenized_unreg_corpus]
+bm25_unregistered = BM25Okapi(tokenized_unreg_corpus)
+
+with open(asset_dir / "bm25_unregistered.pkl", 'wb') as f:
+    pickle.dump(bm25_unregistered, f)

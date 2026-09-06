@@ -4,25 +4,27 @@ import numpy as np
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 
-
-# Load the SBERT model
-model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-
-#Create a precomputed sbert embeddings
 BASE_DIR = Path(__file__).resolve().parent
 asset_dir = BASE_DIR.parent / "assets"
 asset_dir.mkdir(parents=True, exist_ok=True)
 
+SBERT_MODEL_PATH = Path(__file__).resolve().parent
+sbert_dir = SBERT_MODEL_PATH.parent / "finetuned_sbert"
+
+finetuned_model = SentenceTransformer(str(sbert_dir))
+
 registered = pd.read_pickle(asset_dir / "Registered_cleaned.pkl")
+unregistered = pd.read_pickle(asset_dir / "Unregistered_cleaned.pkl")
 
-if 'full_product_info' in registered.columns:
-    texts = registered['full_product_info'].fillna('').astype(str).tolist()
-else:
-    texts = registered['PRODUCT_NAME'].fillna('').astype(str).tolist()
+sbert_registered_embeddings_finetuned = finetuned_model.encode(
+    registered['full_product_info'].fillna('').astype(str).tolist(),
+    show_progress_bar=True
+)
 
-registered_embeddings = model.encode(texts)
+sbert_unregistered_embeddings_finetuned = finetuned_model.encode(
+    unregistered['Product Title'].fillna('').astype(str).tolist(),
+    show_progress_bar=True
+)
 
-#save registered_embeddings as npy
-np.save(asset_dir / "registered_embeddings.npy", registered_embeddings)
-
-print(registered_embeddings.shape)
+np.save(asset_dir / "sbert_registered_embeddings_finetuned.npy", sbert_registered_embeddings_finetuned)
+np.save(asset_dir / "sbert_unregistered_embeddings_finetuned.npy", sbert_unregistered_embeddings_finetuned)
