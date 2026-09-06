@@ -4,8 +4,8 @@ import { apiGetComplaints, apiGetStatus, getVerificationHistory } from "../utils
 
 const COMPLAINT_STATUS_LABELS = { completed: 'COMPLETED', dismissed: 'DISMISSED' };
 const VERIFICATION_STATUS_LABELS = { registered: 'REGISTERED', suspicious: 'SUSPICIOUS', unregistered: 'UNREGISTERED' };
-const COMPLAINT_ICONS = { completed: 'check_green_icon.png', dismissed: 'x_icon.png' };
-const VERIFICATION_ICONS = { registered: 'check_green_icon.png', suspicious: 'sus_icon.png', unregistered: 'x_icon.png' };
+const COMPLAINT_ICONS = { completed: 'check_green_icon.png', dismissed: 'unregistered_icon.png' };
+const VERIFICATION_ICONS = { registered: 'check_green_icon.png', suspicious: 'suspicious_icon.png', unregistered: 'unregistered_icon.png' };
 
 let currentHistoryTab = 'complaints';
 
