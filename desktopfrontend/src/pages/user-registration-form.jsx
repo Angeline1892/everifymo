@@ -138,25 +138,38 @@ function UserRegistration() {
       position: form.position,
     }),
   })
-    .then((res) => {
-    if (!res.ok) {
-      throw new Error('Submission failed')
-    }
-    return res.json()
-  })
-  .then(() => setSubmitted(true))
-  .catch((error) => {
-    console.error(error)
-    // For now, at minimum, avoid silently pretending success
-    alert('Something went wrong submitting your registration. Please try again.')
-  })
+    .then(async (res) => {
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(body.detail || 'Submission failed');
+        err.status = res.status;
+        err.detail = body.detail;
+        throw err;
+      }
+      return body;
+    })
+    .then(() => setSubmitted(true))
+    .catch((error) => {
+      console.error(error);
 
-
-  .finally(() => setIsSubmitting(false)); // NEW — re-enable on both success and failure
- 
-}
-
-
+      if (error.status === 409 && error.detail) {
+        // Duplicate employee_id or contact_number — route to the right field
+        if (error.detail.toLowerCase().includes('employee id')) {
+          setErrors((prev) => ({ ...prev, employeeId: error.detail }));
+        } else if (error.detail.toLowerCase().includes('contact number')) {
+          setErrors((prev) => ({ ...prev, contactNumber: error.detail }));
+        } else {
+          alert(error.detail);
+        }
+      } else if (error.detail) {
+        // 400/404 from the backend (expired/invalid token, etc.)
+        alert(error.detail);
+      } else {
+        alert('Something went wrong submitting your registration. Please try again.');
+      }
+    })
+    .finally(() => setIsSubmitting(false));
+  }
 
 
 // add this block BEFORE the `if (submitted)` block:

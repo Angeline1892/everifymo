@@ -54,14 +54,27 @@ body {
 }
 
 /* CARD */
-.auth-card,
-.report-complaint-card, .history-card {
+/* Auth stays narrower — a wide login form looks wrong even on a real website
+   (compare Gmail, Notion, etc. — auth screens are always centered and compact).
+   Everything else becomes a full "page" width. */
+.auth-card {
   width: 100%;
-  max-width: 560px;
+  max-width: 640px;
   min-height: 500px;
   background: #FDFDFD;
   border-radius: 16px;
-  padding: 40px;
+  padding: 48px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.report-complaint-card,
+.history-card {
+  width: 100%;
+  max-width: 1040px;
+  min-height: 500px;
+  background: #FDFDFD;
+  border-radius: 16px;
+  padding: 48px 56px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
 }
 
@@ -75,11 +88,11 @@ body {
 .about-card {
   margin: 0;
   width: 100%;
-  max-width: 560px;
+  max-width: 1040px;
   background: #FDFDFD;
   border-radius: 16px;
+  padding: 48px 56px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-  overflow: hidden;     
 }
 
 /* HEADER ROW */
@@ -117,25 +130,6 @@ body {
   filter: blur(4px);
   pointer-events: none;
   transition: filter 0.2s ease;
-}
-
-/* TABS HEADER */
-.header-row-about-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  padding: 0;
-  position: relative;      
-  line-height: 0;            
-}
-
-.header-left-about-page {
-  padding: 0;
-  margin: 0;
-  width: 100%;
-  position: relative;
-  line-height: 0;
 }
 
 /* NAVIGATION ROW*/
@@ -211,41 +205,6 @@ body {
 .hidden { 
   display: none !important;  
 }
-
-/* ABOUT PAGE */
-.about-pageheader-image {
-  width: 560px;              
-  height: 315px;             
-  object-fit: cover;        
-  display: block;            
-  margin: 0;
-  padding: 0;
-  border-radius: 0 0 20px 20px;
-  flex-shrink: 0; 
-  object-position: center;                  
-}
-
-.about-header-buttons {
-  position: absolute;
-  display: flex;
-  flex-direction: row;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  gap: 10px;
-}
-
-.notif-badge {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 8px;
-  height: 8px;
-  background: #b91c1c;
-  border-radius: 50%;
-}
-
-.notif-badge.hidden { display: none; }
 
 /* PROFILE OVERLAY */
 .profile-view {
@@ -413,80 +372,21 @@ body {
   display: none;
 }
 
-/* NOTIFICATION OVERLAY */
-
-.notification-item {
-  padding: 10px 10px;
-  border-bottom: 1px solid #E5E5E5;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.notification-item:hover {
-  background-color: #F3F3F3;
-}
-
-.notification-item.unread {
-  background-color: #EEF0F3;
-  font-weight: 700;
-}
-
-.notification-message {
-  margin: 0;
-  font-size: 13px;
-  color: #030303;
-}
-
-.notification-time {
-  font-size: 11px;
-  color: #777777;
-}
-
-.overlay-header{
-  display: flex;
-  align-items: center;
-  flex-direction: row;
-  justify-content: space-between;
-  gap: 8px;
-
-}
-
-#notification-list {
-  padding: 4px 4px; 
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-height: 340px; 
-}
-
-#notification-overlay, #profile-overlay{
+#profile-overlay {
   width: 100%;
   max-width: 330px;
   max-height: 430px;
 }
 
-#notification-overlay.visible {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; 
-}
-
-#mark-all-read {
-  background: none;
-  border: none;
-  color: #164461;
-  font-weight: 700;
-  font-size: 12px;
-  cursor: pointer;
-}
 
 /* ABOUT PAGE */
 
 .about-everify-details{
   margin: 20px auto;
-  padding: 20px;
+  padding: 28px;
   background: #FDFDFD;
   border-radius: 16px;
-  max-width: 490px;
+  max-width: 940px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   display: flex;
   justify-content: center;
@@ -494,10 +394,10 @@ body {
 
 .about-everify-guide {
   margin: 20px auto;
-  padding: 20px;
+  padding: 28px;
   background: #FDFDFD;
   border-radius: 16px;
-  max-width: 490px;
+  max-width: 940px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;   
@@ -619,10 +519,10 @@ body {
 
 .about-everify-platforms{
   margin: 20px auto;
-  padding: 20px;
+  padding: 28px;
   background: #FDFDFD;
   border-radius: 16px;
-  max-width: 490px;
+  max-width: 940px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;   
@@ -675,10 +575,10 @@ body {
 
 .about-everify-agencies{
   margin: 20px auto;
-  padding: 20px;
+  padding: 28px;
   background: #FDFDFD;
   border-radius: 16px;
-  max-width: 490px;
+  max-width: 940px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;   
@@ -731,10 +631,10 @@ body {
 
 .about-everify-terms{
   margin: 20px auto;
-  padding: 20px;
+  padding: 28px;
   background: #FDFDFD;
   border-radius: 16px;
-  max-width: 490px;
+  max-width: 940px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;  
@@ -771,6 +671,7 @@ body {
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
+  overflow: hidden;
 }
 
 .status-card-top {
@@ -1073,10 +974,13 @@ body {
 .detail-row {
   margin: 0 0 4px;
   font-family: 'Inter', sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   color: #030303;
   line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
+
 
 .detail-label {
   font-weight: 700;
@@ -1681,3 +1585,72 @@ body {
   flex-shrink: 0;
   transform: translateY(4px);
 }
+
+/* ============================================
+   GLOBAL FONT-SIZE INCREASE (adviser feedback)
+   Grouped by prior size, bumped one step up.
+   Appended here so it overrides the rules above
+   without editing each one individually.
+============================================ */
+
+/* 12px -> 13px */
+.field-label,
+.forgot-link,
+.field-error,
+.username-fix-text,
+.history-item-meta,
+.history-item-status,
+.detail-meta-item,
+.detail-row,
+.step-label,
+.resolved-counter {
+  font-size: 13px;
+}
+
+/* 13px -> 14px */
+.notice-text,
+.guest-notice-text,
+.guest-notice-title,
+.attach-text,
+.step-description,
+.about-everify-terms-description,
+.status-note,
+.username-fix-title {
+  font-size: 14px;
+}
+
+/* 14px -> 15px */
+.notice-title,
+.auth-input,
+.complaint-input,
+.complaint-textarea,
+.tab-button,
+.history-tab,
+.history-item-name,
+.about-everify-description,
+.about-everify-guide-subtitle,
+.about-everify-terms-subtitle,
+.header-link {
+  font-size: 15px;
+}
+
+/* 15px -> 16px */
+.btn-primary-green,
+.btn-guest,
+.btn-cancel,
+.btn-submit-report,
+.btn-google,
+.status-product-name,
+.step-title {
+  font-size: 16px;
+}
+
+/* standalone bumps */
+.otp-digit-input {
+  font-size: 22px;
+}
+
+.header-title {
+  font-size: 24px;
+}
+

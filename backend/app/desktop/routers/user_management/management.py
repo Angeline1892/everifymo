@@ -382,10 +382,7 @@ def delete_user(
     deleted_user_email = user.email
     deleted_user_region_code = get_user_region_code(db, user)
 
-    db.query(AccountInvitationToken).filter(AccountInvitationToken.user_id == user_id).delete()
-    db.delete(user)
-    db.commit()
-
+    
     notification_service.create_notification_for_all_superadmins(
         db=db,
         event_type=NotificationEventType.ACCOUNT_DELETED,
@@ -393,6 +390,11 @@ def delete_user(
         message=f"{deleted_user_email}'s account has been deleted.",
         related_user_id=deleted_user_id,
     )
+
+    db.query(AccountInvitationToken).filter(AccountInvitationToken.user_id == user_id).delete()
+    db.delete(user)
+    db.commit()
+
 
     write_audit_log(
         db,

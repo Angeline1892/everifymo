@@ -25,10 +25,10 @@
   },
 
   "host_permissions": [
-    "https://shopee.ph/*",
-    "https://www.lazada.com.ph/*",
-    "https://www.tiktok.com/*",
-    "https://www.facebook.com/marketplace/*",
+    "https://*.shopee.ph/*",
+    "https://*.lazada.com.ph/*",
+    "https://*.tiktok.com/*",
+    "https://*.facebook.com/marketplace/*",
     "http://localhost:8001/*",
     "https://localhost:8001/verify"
   ],
@@ -36,10 +36,10 @@
   "content_scripts": [
     {
       "matches": [
-        "https://shopee.ph/*",
-        "https://lazada.com.ph/*",
-        "https://shop.tiktok.com/*",
-        "https://facebook.com/marketplace/*"  
+        "https://*.shopee.ph/*",
+        "https://*.lazada.com.ph/*",
+        "https://*.tiktok.com/*",
+        "https://*.facebook.com/marketplace/*"
       ],
       "js": ["scripts/content.js"],
       "css": ["scripts/content.css"],

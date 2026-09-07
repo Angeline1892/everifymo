@@ -11,9 +11,12 @@ function showReportView(viewId) {
 }
 
 function populateDetectedProduct(title, url) {
-  const suffix = isUserLoggedIn() ? '-user' : '-guest';
-  const nameEl = document.getElementById('complaint-product-name' + suffix);
-  const urlEl = document.getElementById('complaint-product-url' + suffix);
+  // Guests no longer have a fillable form (sign-in required to report),
+  // so there's nothing to populate for them.
+  if (!isUserLoggedIn()) return;
+
+  const nameEl = document.getElementById('complaint-product-name-user');
+  const urlEl = document.getElementById('complaint-product-url-user');
 
   if (nameEl) nameEl.value = title || '';
   if (urlEl) urlEl.value = url || '';
@@ -188,12 +191,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (status === 'unregistered' || status === 'registered' || status === 'suspicious') {
           populateDetectedProduct(data.productTitle, data.productUrl);
+          // Guests see the sign-in-required version of this view instead of a fillable form
           showReportView(isGuest ? 'report-form-view-guest' : 'report-form-view');
         } else {
           showReportView(isGuest ? 'report-default-view-guest' : 'report-default-view');
         }
       }
     );
+
   });
 
   // autoFillUrl();

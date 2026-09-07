@@ -166,9 +166,10 @@ document.addEventListener("DOMContentLoaded", () => {
           platform: platform(lastProductUrl),
           url: lastProductUrl
         }, (response) => {
-          const status = response?.data?.status || 'unregistered';
+          const verdict = response?.data?.verdict || 'no_match';
+          const status = verdict === 'no_match' ? 'suspicious' : verdict;
           lastVerificationStatus = status;
-          const results = response?.data?.results || [];
+          const results = response?.data?.top5_registered || [];
           renderResult(status, lastProductTitle, results);
         });
       });
@@ -272,7 +273,7 @@ function populateMatches(stateId, results) {
     const fillEl = card.querySelector(`.progress-fill${suffix}`);
 
     if (titleEl) titleEl.textContent = match.title;
-    const pct = Math.round(match.cosine_similarity * 100);
+    const pct = Math.round((match.score ?? match.cosine_similarity ?? 0) * 100);
     if (percentEl) percentEl.textContent = `${pct}%`;
     if (fillEl) fillEl.style.width = `${pct}%`;
   });
