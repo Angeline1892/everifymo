@@ -152,7 +152,12 @@ export function logoutUser(callback) {
 }
 
 export function submitComplaint(complaints, callback) {
-  const token = _session ? _session.access_token : null;
+  if (!isUserLoggedIn()) {
+    callback(false, "You must be signed in to submit a report.");
+    return;
+  }
+
+  const token = _session.access_token;
 
   apiSubmitComplaint({ 
     product_title: complaints.productName, 
