@@ -1,0 +1,1206 @@
+/* =========================================================
+   NATIONAL ADMIN WORKSPACE STYLES
+   Prefix: NAM / nam- (Uniquely scoped for National Admin)
+   Design System: Matches EverifyMo Superadmin Workspace
+   ========================================================= */
+
+/* ── Workspace Layout ── */
+.NAMMainContainer {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: #fdfdfd;
+}
+
+.NAMContentContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.NAMMainfeed {
+  flex: 1;
+  padding: 32px;
+  background: #f5f5f5;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+/* ── Page Container & Header ── */
+.NAMPageContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.NAMPageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.NAMPageTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.NAMPageTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.NAMPageSubtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Header Add Buttons ── */
+.NAMAddBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+  white-space: nowrap;
+  font-family: 'Poppins', sans-serif;
+}
+
+.NAMAddBtn:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.45);
+}
+
+.NAMAddBtn:active {
+  transform: translateY(0);
+}
+
+/* ── Statistics Cards ── */
+.NAMStatsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.NAMStatCard {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.18s ease;
+}
+
+.NAMStatCard:hover {
+  transform: translateY(-2px);
+}
+
+.NAMStatValue {
+  font-size: 26px;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+}
+
+.NAMStatLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nam-stat-active {
+  border-top: 3.5px solid #16a34a;
+}
+.nam-stat-active .NAMStatValue {
+  color: #16a34a;
+}
+
+.nam-stat-suspended {
+  border-top: 3.5px solid #475569;
+}
+.nam-stat-suspended .NAMStatValue {
+  color: #475569;
+}
+
+.nam-stat-locked {
+  border-top: 3.5px solid #b91c1c;
+}
+.nam-stat-locked .NAMStatValue {
+  color: #b91c1c;
+}
+
+/* ── Search & Filters Bar ── */
+.NAMFiltersContainer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  flex-wrap: wrap;
+}
+
+.NAMSearchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 0 340px;
+  min-width: 240px;
+  max-width: 380px;
+}
+
+.NAMSearchIcon {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.NAMSearchInput {
+  width: 100%;
+  padding: 9px 32px 9px 36px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.NAMSearchInput:focus {
+  border-color: #0D9488;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+}
+
+.NAMClearSearch {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.NAMClearSearch:hover {
+  color: #475569;
+}
+
+.NAMFilterGroup {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.NAMFilterItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.NAMFilterLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.NAMSelectFilter {
+  padding: 9px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.NAMSelectFilter:focus {
+  border-color: #0D9488;
+  background: #ffffff;
+}
+
+.NAMBtnClearFiltersIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #f1f5f9;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  margin-bottom: 1px;
+}
+
+.NAMBtnClearFiltersIcon:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+/* ── Table Styling ── */
+.NAMTableWrapper {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.NAMTable thead tr:first-child th:first-child {
+  border-top-left-radius: 13px;
+}
+
+.NAMTable thead tr:first-child th:last-child {
+  border-top-right-radius: 13px;
+}
+
+.NAMTable tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 13px;
+}
+
+.NAMTable tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 13px;
+}
+
+.NAMTable {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+}
+
+.NAMTable thead tr {
+  background: #1E293B;
+}
+
+.NAMTable thead th {
+  padding: 14px 18px;
+  text-align: left;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+
+.NAMTable tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+}
+
+.NAMTable tbody tr:last-child {
+  border-bottom: none;
+}
+
+.NAMTable tbody tr:hover {
+  background: #f8fafc;
+}
+
+.NAMTable tbody td {
+  padding: 14px 18px;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.NAMTdCenter {
+  text-align: center;
+  color: #94a3b8 !important;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.NAMEmailCell {
+  color: #0D9488 !important;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.NAMEmpty {
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+.NAMNoResults {
+  text-align: center;
+  padding: 36px 16px !important;
+  color: #94a3b8;
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Agency Badge in Table */
+.NAMAgencyBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.nam-agency-fda {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.nam-agency-lea {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* ── Status Badges ── */
+.NAMStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.nam-badge-active {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.nam-badge-suspended {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.nam-badge-locked {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.nam-badge-pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.nam-badge-invited {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.nam-badge-expired {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* ── Actions Dropdown ── */
+.NAMDropdownWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.NAMDropdownTrigger {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.NAMDropdownTrigger:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.NAMDropdownWrapper.active-open {
+  z-index: 1000;
+}
+
+.NAMDropdownMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  z-index: 100;
+  min-width: 175px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: NAMDropdownFade 0.15s ease;
+}
+
+.NAMDropdownMenu.open-upward {
+  top: auto;
+  bottom: calc(100% + 4px);
+  animation: NAMDropdownFadeUp 0.15s ease;
+}
+
+@keyframes NAMDropdownFadeUp {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes NAMDropdownFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.NAMDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #334155;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.NAMDropdownItem:hover {
+  background: #f1f5f9;
+  color: #0D9488;
+}
+
+.NAMDropdownItem.danger:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.NAMDropdownDivider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 4px 0;
+}
+
+/* ── Modals & Overlays ── */
+.NAMModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: NAMFadeIn 0.2s ease;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+@keyframes NAMFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.NAMModal {
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: NAMSlideUp 0.25s ease;
+  overflow-y: auto;
+  max-height: calc(100vh - 48px);
+  box-sizing: border-box;
+}
+
+@keyframes NAMSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.NAMAddModal,
+.NAMAdminAddModal {
+  width: 100%;
+  max-width: 720px;
+  padding: 36px 36px 32px;
+}
+
+.NAMViewModal {
+  width: 100%;
+  max-width: 780px;
+  /* No full padding — header/body/footer handle their own padding */
+  overflow-y: visible;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── View Details Modal Grid Layout (National Admin) ── */
+.NAMVDGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 24px;
+}
+
+.NAMVDGrid.three-col {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.NAMVDGrid .full-span {
+  grid-column: 1 / -1;
+}
+
+.NAMVDField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.NAMVDLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.55px;
+  white-space: nowrap;
+}
+
+.NAMVDValue {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #0f172a;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
+  line-height: 1.45;
+}
+
+.NAMViewModal .NAMModalHeader {
+  margin-bottom: 0;
+  padding: 26px 32px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+
+.NAMViewModal .NAMModalTitle {
+  font-size: 20px;
+}
+
+.NAMViewModal .NAMModalSubtitle {
+  font-size: 13.5px;
+}
+
+.NAMConfirmModal {
+  width: 100%;
+  max-width: 400px;
+  padding: 36px 32px;
+  text-align: center;
+}
+
+.NAMModalHeader {
+  margin-bottom: 22px;
+}
+
+.NAMViewTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.NAMModalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 6px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.NAMModalSubtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Form Fields & Inputs ── */
+.NAMFormGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.NAMLabel {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.NAMRequired {
+  color: #ef4444;
+}
+
+.NAMInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.NAMInputIcon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.NAMInput {
+  width: 100%;
+  padding: 12px 14px;
+  min-height: 46px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14.5px;
+  color: #111827;
+  background: #f9fafb;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.NAMInput.with-icon {
+  padding-left: 42px;
+}
+
+.NAMInput:focus {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+  background: #fff;
+}
+
+.NAMInput.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.NAMSelect {
+  width: 100%;
+  padding: 12px 14px;
+  min-height: 46px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14.5px;
+  color: #111827;
+  background: #f9fafb;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.NAMSelect.with-icon {
+  padding-left: 42px;
+}
+
+.NAMSelect:focus {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+  background: #fff;
+}
+
+.NAMSelect.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.NAMFieldError {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 2px;
+}
+
+/* Form Multi-Column Grid Layout */
+.NAMFieldRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.NAMFieldRow3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+/* ── Modal Footer Buttons ── */
+.NAMModalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.NAMFooterCenter {
+  justify-content: center;
+}
+
+.NAMCancelBtn {
+  padding: 10px 18px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.NAMCancelBtn:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.NAMCancelBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.NAMConfirmBtn {
+  padding: 10px 22px;
+  font-size: 13.5px;
+  font-weight: 700;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+.NAMConfirmBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.NAMConfirmBtn.primary {
+  background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+}
+
+.NAMConfirmBtn.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  box-shadow: 0 6px 18px rgba(13, 148, 136, 0.45);
+}
+
+.NAMConfirmBtn.danger {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+}
+
+.NAMConfirmBtn.danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.45);
+}
+
+/* ── Confirmation Modal Details ── */
+.NAMConfirmIcon {
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.NAMConfirmMessage {
+  font-size: 14px;
+  color: #64748b;
+  margin: 8px 0 28px;
+  line-height: 1.6;
+}
+
+/* ── Success Box in Modals ── */
+.NAMSuccessBox {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.NAMSuccessIcon {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+
+.NAMSuccessMsg {
+  font-size: 14px;
+  color: #166534;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── View Details Modal Styling (NAM) ── */
+.NAMViewBody {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+
+.NAMViewDetails {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 22px 26px;
+}
+
+.NAMViewFooter {
+  flex-shrink: 0;
+  padding: 16px 32px 24px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.NAMDetailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.NAMDetailRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.NAMDetailLabel {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.NAMDetailValue {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: right;
+}
+
+/* ── Pagination ── */
+.NAMPaginationWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.NAMPaginationInfo {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.NAMPaginationControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.NAMPaginationBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.NAMPaginationBtn:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.NAMPaginationBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.NAMPaginationPageNumber {
+  min-width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0 6px;
+}
+
+.NAMPaginationPageNumber:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.NAMPaginationPageNumber.active {
+  background: #1E293B;
+  border-color: #1E293B;
+  color: #ffffff;
+}
+
+/* =========================================================
+   RESPONSIVE ADAPTATIONS (Tablet & Mobile)
+   ========================================================= */
+
+@media (max-width: 1024px) {
+  .NAMFiltersContainer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .NAMSearchWrapper {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .NAMSearchInput {
+    width: 100%;
+  }
+
+  .NAMFilterGroup {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: center;
+    flex-wrap: nowrap !important;
+    gap: 8px;
+    width: auto;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .NAMFilterItem {
+    flex: 0 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .NAMFilterLabel {
+    font-size: 10.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+  }
+
+  .NAMSelectFilter {
+    width: auto;
+    min-width: 0;
+    max-width: 130px;
+    flex: 0 1 auto;
+    flex-shrink: 1;
+    padding: 0 8px;
+    font-size: 12px;
+    height: 36px;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+
+  .NAMBtnClearFiltersIcon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    margin-bottom: 2px;
+  }
+}
+
+@media (max-width: 900px) {
+  .NAMMainfeed {
+    padding: 20px 16px;
+  }
+
+  .NAMFilterGroup {
+    gap: 6px;
+  }
+
+  .NAMSelectFilter {
+    max-width: 110px;
+    padding: 0 6px;
+    font-size: 11.5px;
+    height: 34px;
+  }
+
+  .NAMFilterLabel {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .NAMFieldRow,
+  .NAMFieldRow3 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .NAMAdminAddModal {
+    max-width: 100%;
+    padding: 24px 20px;
+  }
+
+  .NAMAddModal,
+  .NAMViewModal,
+  .NAMConfirmModal {
+    padding: 24px 20px;
+  }
+
+  .NAMViewModal {
+    max-width: 100%;
+  }
+
+  .NAMViewBody {
+    padding: 16px 20px;
+  }
+
+  .NAMViewDetails {
+    padding: 16px 18px;
+  }
+
+  .NAMVDGrid,
+  .NAMVDGrid.three-col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .NAMVDGrid {
+    gap: 12px 16px;
+  }
+
+  .NAMPaginationWrapper {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 560px) {
+  .NAMFilterGroup {
+    flex-wrap: nowrap !important;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .NAMFilterItem,
+  .NAMSelectFilter {
+    width: auto;
+    min-width: 0;
+    max-width: 95px;
+    flex: 0 1 auto;
+    flex-shrink: 1;
+    padding: 0 4px;
+    font-size: 11px;
+    height: 32px;
+  }
+}

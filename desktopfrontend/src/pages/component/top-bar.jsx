@@ -2,7 +2,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, User, Settings, LogOut, ChevronDown } from 'lucide-react'
-import { apiFetch } from '../../utils/apiFetch'  
+import { apiFetch } from '../../utils/apiFetch'
 
 // Event types that are computed at read-time on the backend (not real
 // stored rows) - clicking these can't call the mark-as-read endpoint,
@@ -31,20 +31,115 @@ function timeAgo(dateString) {
  */
 const getAuthenticatedRole = () => {
     const raw = (
-        localStorage.getItem('agency') || 
-        localStorage.getItem('role') || 
+        localStorage.getItem('agency') ||
+        localStorage.getItem('role') ||
         'fda'
     ).toString().trim().toLowerCase();
 
-    if (raw.includes('super')) return 'superadmin';
+    if (raw.includes('national') || raw.includes('super')) return 'superadmin';
+    if (raw.includes('admin') && raw.includes('fda')) return 'fda_admin';
+    if (raw.includes('admin') && (raw.includes('lea') || raw.includes('cidg'))) return 'lea_admin';
     if (raw === 'lea' || raw === 'cidg' || raw.includes('lea') || raw.includes('cidg')) return 'lea';
     return 'fda';
 };
 
+// Mock notifications for frontend-only admin prototypes
+const FDA_ADMIN_MOCK_NOTIFICATIONS = [
+    {
+        id: 'mock-fda-1',
+        title: 'New Verification Request',
+        message: 'A new product verification request has been submitted for review.',
+        time: '5 minutes ago',
+        isRead: false,
+        eventType: 'verification_request'
+    },
+    {
+        id: 'mock-fda-2',
+        title: 'Report Escalation',
+        message: 'Adverse event report #ADV-2026-042 requires admin sign-off.',
+        time: '1 hour ago',
+        isRead: false,
+        eventType: 'report_escalation'
+    },
+    {
+        id: 'mock-fda-3',
+        title: 'Monthly Summary Generated',
+        message: 'August 2026 product clearance summary is ready for download.',
+        time: '1 day ago',
+        isRead: true,
+        eventType: 'system'
+    }
+];
+
+const LEA_ADMIN_MOCK_NOTIFICATIONS = [
+    {
+        id: 'mock-lea-1',
+        title: 'Intake Case Assigned',
+        message: 'New intake report #LEA-9921 has been assigned to CIDG Region 7.',
+        time: '12 minutes ago',
+        isRead: false,
+        eventType: 'case_intake'
+    },
+    {
+        id: 'mock-lea-2',
+        title: 'Urgent Coordination Alert',
+        message: 'Cross-regional operation coordination update submitted.',
+        time: '2 hours ago',
+        isRead: false,
+        eventType: 'coordination_alert'
+    },
+    {
+        id: 'mock-lea-3',
+        title: 'Personnel Clearance Update',
+        message: 'Special Investigator status reviewed and updated.',
+        time: '2 days ago',
+        isRead: true,
+        eventType: 'system'
+    }
+];
+
+const NATIONAL_ADMIN_MOCK_NOTIFICATIONS = [
+    {
+        id: 'mock-na-1',
+        title: 'Regional Admin Registered',
+        message: 'New regional administrator account pending approval.',
+        time: '10 minutes ago',
+        isRead: false,
+        eventType: 'admin_registration'
+    },
+    {
+        id: 'mock-na-2',
+        title: 'System Audit Completed',
+        message: 'Quarterly system compliance audit logs compiled.',
+        time: '3 hours ago',
+        isRead: false,
+        eventType: 'audit_log'
+    },
+    {
+        id: 'mock-na-3',
+        title: 'Security Policy Updated',
+        message: 'Global Multi-Factor Authentication policy enforced.',
+        time: '1 day ago',
+        isRead: true,
+        eventType: 'security'
+    }
+];
+
+const getMockNotifications = (ws) => {
+    switch (ws) {
+        case 'FDA_ADMIN':
+            return FDA_ADMIN_MOCK_NOTIFICATIONS;
+        case 'LEA_ADMIN':
+            return LEA_ADMIN_MOCK_NOTIFICATIONS;
+        case 'NATIONAL_ADMIN':
+        default:
+            return NATIONAL_ADMIN_MOCK_NOTIFICATIONS;
+    }
+};
 
 function TopBar({ topbarType, role, agency }) {
     const navigate = useNavigate();
-    
+
     // Determine type to render (single source of truth: topbarType -> role -> agency -> fallback to localStorage)
     let type = topbarType;
     if (!type) {
@@ -54,19 +149,34 @@ function TopBar({ topbarType, role, agency }) {
         else if (rawAgency) type = rawAgency;
     }
 
-    const getNormalizedAgency = () => {
+    const getWorkspace = () => {
         if (type) {
-            const raw = type.toString().trim().toLowerCase();
-            if (raw.includes('super')) return 'superadmin';
-            if (raw === 'lea' || raw === 'cidg' || raw.includes('lea') || raw.includes('cidg')) return 'lea';
-            if (raw === 'fda' || raw.includes('fda')) return 'fda';
+            const raw = type.toString().trim().toUpperCase().replace(/[-\s]/g, '_');
+            if (raw === 'NATIONAL_ADMIN' || raw === 'NATIONALADMIN') return 'NATIONAL_ADMIN';
+            if (raw === 'SUPER_ADMIN' || raw === 'SUPERADMIN' || raw.includes('SUPER')) return 'NATIONAL_ADMIN';
+            if (raw === 'FDA_ADMIN' || raw === 'FDAADMIN' || (raw.includes('FDA') && raw.includes('ADMIN'))) return 'FDA_ADMIN';
+            if (raw === 'LEA_ADMIN' || raw === 'LEAADMIN' || ((raw.includes('LEA') || raw.includes('CIDG')) && raw.includes('ADMIN'))) return 'LEA_ADMIN';
+            if (raw === 'FDA' || raw.includes('FDA')) return 'FDA';
+            if (raw === 'LEA' || raw === 'CIDG' || raw.includes('LEA') || raw.includes('CIDG')) return 'LEA';
         }
-        return getAuthenticatedRole();
+        const authRole = getAuthenticatedRole();
+        if (authRole === 'superadmin') return 'NATIONAL_ADMIN';
+        if (authRole === 'fda_admin') return 'FDA_ADMIN';
+        if (authRole === 'lea_admin') return 'LEA_ADMIN';
+        if (authRole === 'lea') return 'LEA';
+        return 'FDA';
     };
 
-    const normalizedAgency = getNormalizedAgency();
-    const isSuperadmin = normalizedAgency === 'superadmin';  
+    const workspace = getWorkspace();
+    const isSuperadmin = workspace === 'NATIONAL_ADMIN';
+    const normalizedAgency = isSuperadmin ? 'superadmin' : (workspace === 'FDA_ADMIN' || workspace === 'FDA') ? 'fda' : 'lea';
     const notificationsBasePath = isSuperadmin ? '/notifications' : '/personnel-notifications';
+
+    // Mock mode: used for FDA_ADMIN, LEA_ADMIN prototypes, or NATIONAL_ADMIN when unauthenticated/prototype
+    const isMockWorkspace =
+        workspace === 'FDA_ADMIN' ||
+        workspace === 'LEA_ADMIN' ||
+        (workspace === 'NATIONAL_ADMIN' && (!localStorage.getItem('access_token') || topbarType === 'NATIONAL_ADMIN'));
 
     // dropdown open/close states
     const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -80,15 +190,30 @@ function TopBar({ topbarType, role, agency }) {
     const notifRef = useRef(null);
     const profileRef = useRef(null);
 
-    // CHANGED — notifications now always come from the real backend,
-    // for every personnel role (fda, lea, superadmin alike). The old
-    // FDA/LEA mock-data branch has been removed entirely.
-    const [notifications, setNotifications] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
+    // Notifications state — initialized with mock data if in mock workspace
+    const [notifications, setNotifications] = useState(() => {
+        if (isMockWorkspace) {
+            return getMockNotifications(workspace);
+        }
+        return [];
+    });
+    const [unreadCount, setUnreadCount] = useState(() => {
+        if (isMockWorkspace) {
+            return getMockNotifications(workspace).filter(n => !n.isRead).length;
+        }
+        return 0;
+    });
     const [notifLoading, setNotifLoading] = useState(false);
 
-    // ---- fetch unread count on mount + poll every 30s ----
+    // ---- fetch unread count on mount + poll every 30s (live personnel) ----
     useEffect(() => {
+        if (isMockWorkspace) {
+            const mockList = getMockNotifications(workspace);
+            setNotifications(mockList);
+            setUnreadCount(mockList.filter(n => !n.isRead).length);
+            return;
+        }
+
         const fetchUnreadCount = async () => {
             try {
                 const res = await apiFetch(`${notificationsBasePath}/unread-count`);
@@ -103,11 +228,12 @@ function TopBar({ topbarType, role, agency }) {
         fetchUnreadCount();
         const interval = setInterval(fetchUnreadCount, 30000);
         return () => clearInterval(interval);
-    }, []);
+    }, [isMockWorkspace, notificationsBasePath, workspace]);
 
-    // ---- fetch full list when dropdown opens ----
+    // ---- fetch full list when dropdown opens (live personnel) ----
     useEffect(() => {
         if (!isNotifOpen) return;
+        if (isMockWorkspace) return;
 
         const fetchNotifications = async () => {
             setNotifLoading(true);
@@ -134,7 +260,7 @@ function TopBar({ topbarType, role, agency }) {
         };
 
         fetchNotifications();
-    }, [isNotifOpen]);
+    }, [isNotifOpen, isMockWorkspace, notificationsBasePath]);
 
     // close dropdowns when clicking outside
     useEffect(() => {
@@ -150,11 +276,16 @@ function TopBar({ topbarType, role, agency }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // CHANGED — unread count now always comes from backend state,
-    // for every role. No more local-mock-derived count.
+    // Unread count
     const displayUnreadCount = unreadCount;
 
     const handleMarkAllAsRead = async () => {
+        if (isMockWorkspace) {
+            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+            setUnreadCount(0);
+            return;
+        }
+
         try {
             const res = await apiFetch(`${notificationsBasePath}/read-all`, { method: 'PATCH' });
             if (!res.ok) return;
@@ -167,6 +298,13 @@ function TopBar({ topbarType, role, agency }) {
     };
 
     const handleNotificationClick = async (notif) => {
+        if (isMockWorkspace) {
+            if (notif.isRead) return;
+            setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
+            return;
+        }
+
         // Computed entries (invite_not_activated / invite_expired) have no
         // real DB row - nothing to mark read, they resolve on their own.
         if (COMPUTED_EVENT_TYPES.includes(notif.eventType)) return;
@@ -183,42 +321,44 @@ function TopBar({ topbarType, role, agency }) {
         }
     };
 
-    // Profile Settings — only for FDA and LEA, NOT superadmin
+    // Profile Settings
     const handleProfileClick = () => {
         setIsProfileOpen(false);
-        navigate('/profile-setting');
+        if (workspace) {
+            localStorage.setItem('current_workspace', workspace);
+        }
+        navigate('/profile-setting', { state: { workspace } });
     };
 
-    // Logout — redirects to correct login page based on agency
+    // Logout — redirects to correct login page based on agency/workspace
     const handleLogoutClick = async () => {
-    setIsProfileOpen(false);
+        setIsProfileOpen(false);
 
-    const refreshToken = localStorage.getItem('refresh_token');
-
-    try {
-        if (refreshToken) {
-            await apiFetch('/auth/token/revoke', {
-                method: 'POST',
-                body: JSON.stringify({ refresh_token: refreshToken }),
-            });
+        if (!isMockWorkspace) {
+            const refreshToken = localStorage.getItem('refresh_token');
+            try {
+                if (refreshToken) {
+                    await apiFetch('/auth/token/revoke', {
+                        method: 'POST',
+                        body: JSON.stringify({ refresh_token: refreshToken }),
+                    });
+                }
+            } catch (err) {
+                console.error('Logout failed:', err);
+            }
         }
-    } catch (err) {
-        console.error('Logout failed:', err);
-        // proceed with local cleanup regardless — don't trap the user in a logged-in UI
-        // just because the network call failed
-    }
 
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('agency');
-    localStorage.removeItem('role');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('agency');
+        localStorage.removeItem('role');
 
-    if (normalizedAgency === 'superadmin') {
-        navigate('/universal-login?tab=superadmin');
-    } else {
-        navigate('/universal-login');
-    }
-};
+        if (workspace === 'NATIONAL_ADMIN') {
+            navigate('/universal-login?tab=superadmin');
+        } else {
+            navigate('/universal-login');
+        }
+    };
 
     // Gated End Session UI Handlers — opens modal first, never ends session prematurely
     const handleEndSessionClick = () => {
@@ -239,6 +379,45 @@ function TopBar({ topbarType, role, agency }) {
         } finally {
             setIsLoggingOut(false);
             setIsEndSessionModalOpen(false);
+        }
+    };
+
+    const getDisplayName = () => {
+        if (workspace === 'NATIONAL_ADMIN') return 'National Admin';
+        if (workspace === 'FDA_ADMIN') return 'FDA Admin';
+        if (workspace === 'LEA_ADMIN') return 'LEA Admin';
+        return 'Admin';
+    };
+
+    const getAvatarClass = () => {
+        switch (workspace) {
+            case 'NATIONAL_ADMIN':
+                return 'agency-national-admin agency-superadmin';
+            case 'FDA_ADMIN':
+                return 'agency-fda-admin agency-fda';
+            case 'LEA_ADMIN':
+                return 'agency-lea-admin agency-lea';
+            case 'FDA':
+                return 'agency-fda';
+            case 'LEA':
+            default:
+                return 'agency-lea';
+        }
+    };
+
+    const getContainerClass = () => {
+        switch (workspace) {
+            case 'NATIONAL_ADMIN':
+                return 'NationalAdminTopBar';
+            case 'FDA_ADMIN':
+                return 'FDAAdminTopBar';
+            case 'LEA_ADMIN':
+                return 'LEAAdminTopBar';
+            case 'FDA':
+                return 'FDATopBar';
+            case 'LEA':
+            default:
+                return 'LEATopBar';
         }
     };
 
@@ -332,19 +511,37 @@ function TopBar({ topbarType, role, agency }) {
                     border: 1px solid rgba(253, 253, 253, 0.2);
                 }
 
-                /* FDA — dark green */
-                .TopbarAvatarCircle.agency-fda {
+                /* FDA & FDA Admin — dark green */
+                .TopbarAvatarCircle.agency-fda,
+                .TopbarAvatarCircle.agency-fda-admin {
                     background: #1B4332;
                 }
 
-                /* LEA-CIDG — navy blue */
-                .TopbarAvatarCircle.agency-lea {
+                /* LEA-CIDG & LEA Admin — navy blue */
+                .TopbarAvatarCircle.agency-lea,
+                .TopbarAvatarCircle.agency-lea-admin {
                     background: #13213C;
                 }
 
-                /* Superadmin — teal */
-                .TopbarAvatarCircle.agency-superadmin {
-                    background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
+                /*National Admin — navy/slate */
+                .TopbarAvatarCircle.agency-superadmin,
+                .TopbarAvatarCircle.agency-national-admin {
+                    background: linear-gradient(135deg, #1E293B 0%, #1E293B 100%);
+                }
+
+                /* Scoped theme styles */
+                .FDAAdminTopBar .SeeAllNotifsBtn:hover,
+                .FDATopBar .SeeAllNotifsBtn:hover {
+                    color: #1B4332;
+                }
+
+                .LEAAdminTopBar .SeeAllNotifsBtn:hover,
+                .LEATopBar .SeeAllNotifsBtn:hover {
+                    color: #13213C;
+                }
+
+                .NationalAdminTopBar .SeeAllNotifsBtn:hover {
+                    color: #1E293B; 
                 }
 
                 .TopbarAvatarCircle svg {
@@ -797,30 +994,23 @@ function TopBar({ topbarType, role, agency }) {
                     }
             `}</style>
 
-            <div className='TopbarContainer'>
+            <div className={`TopbarContainer ${getContainerClass()}`}>
                 <div className='TopbarActions'>
-                    
+
                     {/* Profile Dropdown */}
                     <div className='TopbarProfileWrapper' ref={profileRef}>
                         <div
                             className='TopbarProfileBox'
                             onClick={() => setIsProfileOpen(!isProfileOpen)}
                         >
-                            {/* Avatar circle color changes per agency */}
-                            <div className={`TopbarAvatarCircle ${
-                                normalizedAgency === 'fda'
-                                    ? 'agency-fda'
-                                    : normalizedAgency === 'superadmin'
-                                        ? 'agency-superadmin'
-                                        : 'agency-lea'
-                            }`}>
+                            {/* Avatar circle color changes per agency / workspace */}
+                            <div className={`TopbarAvatarCircle ${getAvatarClass()}`}>
                                 <User />
                             </div>
 
                             {/* Username label */}
-                            {/* 🔌 BACKEND: replace 'Admin' with actual logged-in user's name */}
                             <span className='TopbarUsername'>
-                                {normalizedAgency === 'superadmin' ? 'Super Admin' : 'Admin'}
+                                {getDisplayName()}
                             </span>
 
                             <ChevronDown
