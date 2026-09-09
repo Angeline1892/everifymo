@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, AlertCircle, Users, ShieldCheck } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, AlertCircle, Users, ShieldCheck, Building2, CheckCircle2 } from 'lucide-react'
 import FDALogo from '../images/FDA.png'
 import PNPLogo from '../images/pnp-cidg.jpg'
 import { API_BASE_URL } from '../utils/apiConfig'
@@ -13,9 +13,14 @@ function UniversalLogin() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Which tab is active: 'personnel' | 'superadmin'
-  // Supports being deep-linked to a specific tab via ?tab=superadmin
-  const initialTab = searchParams.get('tab') === 'superadmin' ? 'superadmin' : 'personnel';
+  // Which tab is active: 'personnel' | 'national-admin' | 'interagency-admin'
+  // Supports deep-linking via ?tab=national-admin (or legacy ?tab=superadmin) or ?tab=interagency-admin
+  const tabParam = searchParams.get('tab');
+  const initialTab = (tabParam === 'superadmin' || tabParam === 'national-admin')
+    ? 'national-admin'
+    : tabParam === 'interagency-admin'
+    ? 'interagency-admin'
+    : 'personnel';
   const [universalLoginActiveTab, setUniversalLoginActiveTab] = useState(initialTab);
 
   // Tracks whether either child form is on its OTP screen
@@ -74,19 +79,31 @@ function UniversalLogin() {
                   </button>
                   <button
                     type="button"
-                    className={`universal-login-tab-btn ${universalLoginActiveTab === 'superadmin' ? 'active' : ''}`}
-                    onClick={() => handleUniversalLoginTabSwitch('superadmin')}
+                    className={`universal-login-tab-btn ${universalLoginActiveTab === 'national-admin' ? 'active' : ''}`}
+                    onClick={() => handleUniversalLoginTabSwitch('national-admin')}
                   >
                     <ShieldCheck size={15} />
-                    <span>Super Admin</span>
+                    <span>National Admin</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`universal-login-tab-btn ${universalLoginActiveTab === 'interagency-admin' ? 'active' : ''}`}
+                    onClick={() => handleUniversalLoginTabSwitch('interagency-admin')}
+                  >
+                    <Building2 size={15} />
+                    <span>Interagency Admin</span>
                   </button>
                 </div>
               )}
 
-              {universalLoginActiveTab === 'personnel' ? (
+              {universalLoginActiveTab === 'personnel' && (
                 <PersonnelLoginForm navigate={navigate} onOtpStateChange={setIsShowingOtp} />
-              ) : (
+              )}
+              {universalLoginActiveTab === 'national-admin' && (
                 <SuperAdminLoginForm navigate={navigate} onOtpStateChange={setIsShowingOtp} />
+              )}
+              {universalLoginActiveTab === 'interagency-admin' && (
+                <InteragencyAdminLoginForm navigate={navigate} onOtpStateChange={setIsShowingOtp} />
               )}
             </div>
           </div>
@@ -117,8 +134,8 @@ function UniversalLogin() {
           flex-direction: row;
           justify-content: space-between;
           align-items: stretch;
-          width: min(88vw, 1280px);
-          min-height: 560px;
+          width: min(95vw, 1450px);
+          min-height: 700px;
           background: rgba(253, 253, 253, 0.07);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
@@ -214,7 +231,8 @@ function UniversalLogin() {
 
         .universal-login-tabs-container {
           display: flex;
-          width: 100%;
+          width: 90%;
+          margin: 0 auto 18px auto;
           background: rgba(29, 52, 57, 0.07);
           border: 1px solid rgba(29, 52, 57, 0.12);
           backdrop-filter: blur(10px);
@@ -222,7 +240,6 @@ function UniversalLogin() {
           border-radius: 10px;
           padding: 4px;
           gap: 4px;
-          margin-bottom: 16px;
           box-sizing: border-box;
           box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
           height: 44px;
@@ -235,21 +252,22 @@ function UniversalLogin() {
           flex-direction: row;
           align-items: center;
           justify-content: center;
-          gap: 6px;
-          padding: 0 12px;
+          gap: 5px;
+          padding: 0 4px;
           height: 100%;
           border-radius: 7px;
           border: 1px solid transparent;
           background: transparent;
           color: #64748b;
-          font-size: 12.5px;
+          font-size: 13px;
           font-weight: 600;
           font-family: inherit;
-          letter-spacing: 0.2px;
+          letter-spacing: 0.1px;
           cursor: pointer;
           transition: all 0.2s ease;
           text-align: center;
           box-sizing: border-box;
+          white-space: nowrap;
         }
 
         .universal-login-tab-btn:hover:not(.active) {
@@ -270,9 +288,9 @@ function UniversalLogin() {
 
         /* ===== SMALLER COMPACT WHITE LOGIN CARD ===== */
         .universal-login-right-panel {
-          width: 440px;
+          width: 510px;
           max-width: 100%;
-          min-height: 520px;
+          min-height: 580px;
           height: auto;
           background: #ffffff;
           padding: 24px 28px;
@@ -292,7 +310,7 @@ function UniversalLogin() {
           margin-bottom: 20px;
         }
         .universal-login-card-header h2 {
-          font-size: 20px;
+          font-size: 25px;
           font-weight: 700;
           color: #0f172a;
           margin-bottom: 2px;
@@ -300,7 +318,7 @@ function UniversalLogin() {
         }
         .universal-login-card-header small {
           display: block;
-          font-size: 11px;
+          font-size: 15px;
           font-weight: 600;
           letter-spacing: 0.8px;
           text-transform: uppercase;
@@ -308,7 +326,7 @@ function UniversalLogin() {
           margin-bottom: 2px;
         }
         .universal-login-card-header p {
-          font-size: 12px;
+          font-size: 13px;
           color: #64748b;
           margin-bottom: 16px;
         }
@@ -318,7 +336,7 @@ function UniversalLogin() {
           margin-bottom: 6px;
         }
         .universal-login-otp-header h2, .universal-login-otp-header h3 {
-          font-size: 18px;
+          font-size: 20px;
           font-weight: 700;
           color: #0f172a;
           letter-spacing: -0.2px;
@@ -326,7 +344,7 @@ function UniversalLogin() {
         }
         .universal-login-otp-header small {
           display: block;
-          font-size: 10.5px;
+          font-size: 11px;
           font-weight: 600;
           letter-spacing: 0.8px;
           text-transform: uppercase;
@@ -347,6 +365,13 @@ function UniversalLogin() {
           width: 100%;
         }
 
+        .universal-login-personnel-form form,
+        .universal-login-admin-form form {
+          width: 90%;
+          max-width: 410px;
+          margin: 0 auto;
+        }
+
         .universal-login-form-group {
           display: flex;
           flex-direction: column;
@@ -357,10 +382,11 @@ function UniversalLogin() {
         .universal-login-personnel-form label,
         .universal-login-admin-form label {
           display: block;
-          font-size: 12.5px;
+          font-size: 14.5px;
           font-weight: 600;
           color: #334155;
-          margin-bottom: 5px;
+          margin-bottom: 6px;
+          letter-spacing: 0.1px;
         }
 
         .universal-login-form-group span.required-star,
@@ -380,11 +406,12 @@ function UniversalLogin() {
         .universal-login-agency-buttons input[type="radio"] { display: none; }
         .universal-login-inter-buttons {
           flex: 1;
-          padding: 7px 10px;
+          padding: 9px 12px;
+          min-height: 44px;
           border: 1.5px solid #e2e8f0;
           border-radius: 7px;
           cursor: pointer;
-          font-size: 12.5px;
+          font-size: 13.5px;
           font-weight: 600;
           transition: all 0.2s ease;
           text-align: center;
@@ -397,11 +424,13 @@ function UniversalLogin() {
         }
         .universal-login-agency-btn-fda:hover { border-color: #1b4322; background: #1b4322; color: #fdfdfd; }
         .universal-login-agency-btn-cidg:hover { background: #1f2937; border-color: #1f2937; color: #fdfdfd; }
-        input[type="radio"]#universal-login-fda:checked + label {
+        input[type="radio"]#universal-login-fda:checked + label,
+        input[type="radio"]#universal-login-interagency-fda:checked + label {
           border-color: #2d6c39; background: #2d6c39; color: #fff;
           box-shadow: 0 3px 10px rgba(45, 108, 57, 0.25); transform: translateY(-1px);
         }
-        input[type="radio"]#universal-login-cidg:checked + label {
+        input[type="radio"]#universal-login-cidg:checked + label,
+        input[type="radio"]#universal-login-interagency-cidg:checked + label {
           border-color: #1f2937; background: #1f2937; color: #fff;
           box-shadow: 0 3px 10px rgba(31, 41, 55, 0.25); transform: translateY(-1px);
         }
@@ -419,11 +448,12 @@ function UniversalLogin() {
         .universal-login-input-wrapper input,
         .universal-login-admin-input-wrapper input {
           width: 100%;
-          padding: 9px 12px 9px 36px !important;
+          padding: 11.5px 14px 11.5px 38px !important;
+          min-height: 44px;
           margin-bottom: 0 !important;
           border: 1.5px solid #cbd5e1;
           border-radius: 7px;
-          font-size: 13px;
+          font-size: 13.5px;
           background: #ffffff;
           color: #0f172a;
           outline: none;
@@ -435,14 +465,56 @@ function UniversalLogin() {
           box-shadow: 0 0 0 3px rgba(247, 147, 26, 0.15);
         }
 
-        .universal-login-password-wrapper input,
-        .universal-login-admin-password-wrapper input {
+        .universal-login-select {
           width: 100%;
-          padding: 9px 38px 9px 36px !important;
+          padding: 11.5px 32px 11.5px 38px !important;
+          min-height: 44px;
           margin-bottom: 0 !important;
           border: 1.5px solid #cbd5e1;
           border-radius: 7px;
-          font-size: 13px;
+          font-size: 13.5px;
+          background: #ffffff;
+          color: #0f172a;
+          outline: none;
+          transition: all 0.2s ease;
+          cursor: pointer;
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+          background-repeat: no-repeat;
+          background-position: right 10px center;
+          background-size: 14px;
+        }
+        .universal-login-select:focus {
+          border-color: #f7931a;
+          box-shadow: 0 0 0 3px rgba(247, 147, 26, 0.15);
+        }
+        .universal-login-mockup-success {
+          background-color: #f0fdf4;
+          border: 1px solid #bbf7d0;
+          color: #166534;
+          padding: 8px 12px;
+          border-radius: 7px;
+          margin-top: 10px;
+          font-size: 12px;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          text-align: center;
+        }
+
+        .universal-login-password-wrapper input,
+        .universal-login-admin-password-wrapper input {
+          width: 100%;
+          padding: 11.5px 38px 11.5px 38px !important;
+          min-height: 44px;
+          margin-bottom: 0 !important;
+          border: 1.5px solid #cbd5e1;
+          border-radius: 7px;
+          font-size: 13.5px;
           background: #ffffff;
           color: #0f172a;
           outline: none;
@@ -457,7 +529,9 @@ function UniversalLogin() {
         .universal-login-input-icon,
         .universal-login-admin-input-icon {
           position: absolute;
-          left: 11px;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
           color: #94a3b8;
           pointer-events: none;
           display: flex;
@@ -646,6 +720,54 @@ function UniversalLogin() {
           box-shadow: 0 0 0 3px rgba(247, 147, 26, 0.2);
           outline: none;
         }
+
+        /* ===== INTERAGENCY ADMIN OTP SIZING (SCALED FOR CONTAINER PROPORTIONS) ===== */
+        .universal-login-interagency-otp-header p {
+          font-size: 14.5px;
+          color: #64748b;
+          margin-bottom: 18px;
+        }
+        .universal-login-interagency-otp-instructions {
+          font-size: 13.5px;
+          color: #475569;
+          margin-bottom: 40px;
+          line-height: 1.45;
+          text-align: center;
+        }
+        .universal-login-interagency-otp-instructions span {
+          font-weight: 600;
+          color: #0f172a;
+        }
+        .universal-login-interagency-otp-grid {
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+          margin-bottom: 16px;
+        }
+        .universal-login-interagency-otp-digit-input {
+          width: 55px;
+          height: 59px;
+          text-align: center;
+          font-size: 22px;
+          font-weight: 700;
+          border-radius: 8px;
+          border: 1.5px solid #cbd5e1 !important;
+          background-color: #ffffff;
+          color: #0f172a;
+          transition: all 0.2s ease;
+          margin-bottom: 0 !important;
+          padding: 0 !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        .universal-login-interagency-otp-digit-input:focus {
+          border-color: #f7931a !important;
+          box-shadow: 0 0 0 3px rgba(247, 147, 26, 0.2);
+          outline: none;
+        }
+        .universal-login-interagency-otp-timer-container {
+          font-size: 14px;
+          margin-bottom: 16px;
+        }
         .universal-login-otp-timer-container,
         .universal-login-admin-otp-timer-container {
           display: flex;
@@ -653,7 +775,7 @@ function UniversalLogin() {
           align-items: center;
           gap: 4px;
           margin-bottom: 10px;
-          font-size: 12px;
+          font-size: 14px;
           color: #64748b;
           text-align: center;
         }
@@ -684,19 +806,20 @@ function UniversalLogin() {
           background: none;
           border: none;
           color: #64748b;
-          font-size: 12px;
+          font-size: 14.5px;
           font-weight: 500;
           cursor: pointer;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 5px;
-          margin-top: 8px;
+          margin-top: 20px;
           text-decoration: underline;
         }
         .universal-login-back-btn:hover,
         .universal-login-admin-back-btn:hover {
           color: #0f172a;
+          font-weight: 800;
         }
 
         @keyframes universalLoginFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -760,6 +883,7 @@ function UniversalLogin() {
             justify-content: flex-start;
           }
           .universal-login-tabs-container {
+            width: 100%;
             margin-bottom: 14px;
             padding: 3px;
             border-radius: 8px;
@@ -767,17 +891,23 @@ function UniversalLogin() {
             flex-shrink: 0;
           }
           .universal-login-tab-btn {
-            padding: 0 8px;
+            padding: 0 4px;
             height: 100%;
-            font-size: 12px;
-            gap: 5px;
+            font-size: 11px;
+            gap: 4px;
             border-radius: 6px;
+          }
+          .universal-login-personnel-form form,
+          .universal-login-admin-form form {
+            width: 100%;
           }
           .universal-login-card-header h2 { font-size: 18px; }
           .universal-login-agency-buttons { gap: 6px; }
           .universal-login-inter-buttons { padding: 6px 5px; font-size: 11.5px; }
           .universal-login-otp-input-grid, .universal-login-admin-otp-grid { gap: 5px; }
           .universal-login-otp-digit-input, .universal-login-admin-otp-digit-input { width: 36px; height: 40px; font-size: 16px; }
+          .universal-login-interagency-otp-grid { gap: 6px; }
+          .universal-login-interagency-otp-digit-input { width: 42px; height: 48px; font-size: 18px; }
         }
       `}</style>
     </div>
@@ -1485,7 +1615,7 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
         <form noValidate onSubmit={handleAdminLoginSubmit}>
           <div className="universal-login-card-header">
             <small>AUTHORIZED LOGIN</small>
-            <h2>Super Admin Login</h2>
+            <h2>National Admin Login</h2>
             <p>Enter your administrator credentials to continue.</p>
           </div>
 
@@ -1632,6 +1762,333 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
               Verify &amp; Login
             </button>
             <button type="button" className="universal-login-admin-back-btn" onClick={handleAdminBackToLogin}>
+              ← Back to login credentials
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// INTERAGENCY ADMIN LOGIN FORM (FRONTEND MOCKUP ONLY)
+// ============================================================================
+function InteragencyAdminLoginForm({ onOtpStateChange }) {
+  const [agency, setAgency] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  // OTP mockup state
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [otp, setOtp] = useState(new Array(6).fill(''));
+  const [timer, setTimer] = useState(300);
+  const [otpError, setOtpError] = useState('');
+  const [otpSuccess, setOtpSuccess] = useState('');
+  const otpRefs = useRef([]);
+
+  // Notify parent when OTP screen visibility changes
+  useEffect(() => {
+    if (onOtpStateChange) onOtpStateChange(isOtpSent);
+  }, [isOtpSent, onOtpStateChange]);
+
+  useEffect(() => {
+    let interval;
+    if (isOtpSent && timer > 0) {
+      interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isOtpSent, timer]);
+
+  function handleAgencyChange(value) {
+    setAgency(value);
+    if (errors.agency) setErrors((prev) => ({ ...prev, agency: '' }));
+  }
+
+  function handleEmailChange(e) {
+    const val = e.target.value;
+    setEmail(val);
+    if (!val.trim()) {
+      setErrors((prev) => ({ ...prev, email: '' }));
+    } else if (!EMAIL_REGEX.test(val.trim())) {
+      setErrors((prev) => ({ ...prev, email: 'Please enter a valid email address.' }));
+    } else {
+      setErrors((prev) => ({ ...prev, email: '' }));
+    }
+  }
+
+  function handlePasswordChange(e) {
+    setPassword(e.target.value);
+    if (errors.password) setErrors((prev) => ({ ...prev, password: '' }));
+  }
+
+  function handleCredentialsSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const newErrors = {};
+    if (!agency) {
+      newErrors.agency = 'Please select an agency.';
+    }
+
+    if (!email.trim()) {
+      newErrors.email = 'Email is required.';
+    } else if (!EMAIL_REGEX.test(email.trim())) {
+      newErrors.email = 'Please enter a valid email address.';
+    }
+
+    if (!password.trim()) {
+      newErrors.password = 'Please enter your password.';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
+    setIsOtpSent(true);
+    setTimer(300);
+    setOtp(new Array(6).fill(''));
+    setOtpError('');
+    setOtpSuccess('');
+    setTimeout(() => otpRefs.current[0]?.focus(), 0);
+  }
+
+  function handleOtpChange(element, index) {
+    let val = element.value;
+    if (!/^\d*$/.test(val)) return;
+    val = val.substring(val.length - 1);
+    const newOtp = [...otp];
+    newOtp[index] = val;
+    setOtp(newOtp);
+    if (val && index < 5) otpRefs.current[index + 1]?.focus();
+  }
+
+  function handleOtpKeyDown(e, index) {
+    if (e.key === 'Backspace') {
+      if (!otp[index] && index > 0) {
+        const newOtp = [...otp];
+        newOtp[index - 1] = '';
+        setOtp(newOtp);
+        otpRefs.current[index - 1]?.focus();
+      } else {
+        const newOtp = [...otp];
+        newOtp[index] = '';
+        setOtp(newOtp);
+      }
+    }
+  }
+
+  function handleOtpPaste(e) {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').trim().substring(0, 6);
+    if (/^\d+$/.test(pastedData)) {
+      const digits = pastedData.split('');
+      const newOtp = [...otp];
+      for (let i = 0; i < 6; i++) newOtp[i] = digits[i] || '';
+      setOtp(newOtp);
+      const targetFocusIndex = Math.min(digits.length, 5);
+      otpRefs.current[targetFocusIndex]?.focus();
+    }
+  }
+
+  function handleResendOtp() {
+    setOtpError('');
+    setOtpSuccess('');
+    setTimer(300);
+    setOtp(new Array(6).fill(''));
+    setTimeout(() => otpRefs.current[0]?.focus(), 0);
+  }
+
+  function handleBackToLogin() {
+    setIsOtpSent(false);
+    setOtp(new Array(6).fill(''));
+    setOtpError('');
+    setOtpSuccess('');
+  }
+
+  function handleOtpSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const otpCode = otp.join('');
+    if (otpCode.length < 6) {
+      setOtpError('Please enter the full 6-digit verification code.');
+      setOtpSuccess('');
+      return;
+    }
+    setOtpError('');
+    setOtpSuccess('OTP verified successfully! (Mockup demonstration only — no backend connection)');
+  }
+
+  const formatTimer = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+  function maskEmail(rawEmail) {
+    if (!rawEmail || !rawEmail.includes('@')) return rawEmail;
+    const [localPart, domain] = rawEmail.split('@');
+    const visibleChars = Math.min(2, localPart.length);
+    const maskedLocal = localPart.slice(0, visibleChars) + '*'.repeat(Math.max(localPart.length - visibleChars, 3));
+    return `${maskedLocal}@${domain}`;
+  }
+
+  return (
+    <div className="universal-login-admin-form">
+      {!isOtpSent ? (
+        <form noValidate onSubmit={handleCredentialsSubmit}>
+          <div className="universal-login-card-header">
+            <small>AUTHORIZED LOGIN</small>
+            <h2>Interagency Admin Login</h2>
+            <p>Select your agency and enter your credentials.</p>
+          </div>
+
+          <div className="universal-login-form-group">
+            <label htmlFor="universal-login-interagency-agency">
+              Agency <span className="required-star">*</span>
+            </label>
+            <div className="universal-login-agency-buttons" id="universal-login-interagency-agency">
+              <input
+                type="radio"
+                id="universal-login-interagency-fda"
+                name="universal-login-interagency-agency-radio"
+                value="fda"
+                onChange={() => handleAgencyChange('fda')}
+                checked={agency === 'fda'}
+              />
+              <label htmlFor="universal-login-interagency-fda" className="universal-login-inter-buttons universal-login-agency-btn-fda">FDA</label>
+
+              <input
+                type="radio"
+                id="universal-login-interagency-cidg"
+                name="universal-login-interagency-agency-radio"
+                value="lea"
+                onChange={() => handleAgencyChange('lea')}
+                checked={agency === 'lea'}
+              />
+              <label htmlFor="universal-login-interagency-cidg" className="universal-login-inter-buttons universal-login-agency-btn-cidg">LEA-CIDG</label>
+            </div>
+            {errors.agency && (
+              <span className="universal-login-field-error">
+                <AlertCircle size={11} /> {errors.agency}
+              </span>
+            )}
+          </div>
+
+          <div className="universal-login-form-group">
+            <label htmlFor="universal-login-interagency-email">
+              Email Address <span className="required-star">*</span>
+            </label>
+            <div className="universal-login-input-wrapper">
+              <Mail className="universal-login-input-icon" size={15} />
+              <input
+                id="universal-login-interagency-email"
+                type="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={handleEmailChange}
+              />
+            </div>
+            {errors.email && (
+              <span className="universal-login-field-error">
+                <AlertCircle size={11} /> {errors.email}
+              </span>
+            )}
+          </div>
+
+          <div className="universal-login-form-group">
+            <label htmlFor="universal-login-interagency-password">
+              Password <span className="required-star">*</span>
+            </label>
+            <div className="universal-login-password-wrapper">
+              <Lock className="universal-login-input-icon" size={15} />
+              <input
+                id="universal-login-interagency-password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter your password"
+                value={password}
+                onChange={handlePasswordChange}
+              />
+              <button
+                type="button"
+                className="universal-login-toggle-password-btn"
+                onClick={() => setShowPassword(v => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
+            {errors.password && (
+              <span className="universal-login-field-error">
+                <AlertCircle size={11} /> {errors.password}
+              </span>
+            )}
+          </div>
+
+          <button type="submit" className="universal-login-submit-btn">
+            Login
+          </button>
+        </form>
+      ) : (
+        <form noValidate onSubmit={handleOtpSubmit}>
+          <div className="universal-login-otp-header universal-login-interagency-otp-header">
+            <small>SECURITY VERIFICATION</small>
+            <h2>Enter Security Code</h2>
+            <p>We've sent a 6-digit verification code to your email.</p>
+          </div>
+
+          <div className="universal-login-otp-container">
+            <div className="universal-login-otp-instructions universal-login-interagency-otp-instructions">
+              Enter the code sent to <span>{maskEmail(email)}</span>
+            </div>
+
+            <div className="universal-login-interagency-otp-grid">
+              {otp.map((digit, idx) => (
+                <input
+                  key={idx}
+                  id={`universal-login-interagency-otp-digit-${idx}`}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  className="universal-login-interagency-otp-digit-input"
+                  value={digit}
+                  ref={(el) => (otpRefs.current[idx] = el)}
+                  onChange={(e) => handleOtpChange(e.target, idx)}
+                  onKeyDown={(e) => handleOtpKeyDown(e, idx)}
+                  onPaste={handleOtpPaste}
+                  required
+                />
+              ))}
+            </div>
+
+            <div className="universal-login-admin-otp-timer-container universal-login-interagency-otp-timer-container">
+              {timer > 0 ? (
+                <p>Resend code in <strong>{formatTimer(timer)}</strong></p>
+              ) : (
+                <p>
+                  Didn't receive the code?{' '}
+                  <button type="button" className="universal-login-admin-resend-button" onClick={handleResendOtp}>
+                    Resend OTP
+                  </button>
+                </p>
+              )}
+            </div>
+
+            {otpError && (
+              <div className="universal-login-admin-error-container">
+                <p className="universal-login-admin-error-msg">{otpError}</p>
+              </div>
+            )}
+
+            {otpSuccess && (
+              <div className="universal-login-mockup-success" style={{ marginBottom: '12px' }}>
+                <CheckCircle2 size={15} />
+                <span>{otpSuccess}</span>
+              </div>
+            )}
+
+            <button type="submit" className="universal-login-submit-btn">
+              Verify &amp; Login
+            </button>
+            <button type="button" className="universal-login-admin-back-btn" onClick={handleBackToLogin}>
               ← Back to login credentials
             </button>
           </div>
