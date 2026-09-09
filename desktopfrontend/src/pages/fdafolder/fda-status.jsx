@@ -13,7 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   XCircle,
-  X
+  X,
+  Paperclip
 } from 'lucide-react';
 import { apiFetch } from "../../utils/apiFetch";
 
@@ -92,6 +93,12 @@ function FdaStatus() {
   const [dismissPreset, setDismissPreset] = useState("");
   const [dismissNote, setDismissNote] = useState("");
 
+  // Optional evidence attachment — mirrors the extension's own attach flow
+  // (base64 data URL + filename), so the backend can decode it the same way.
+  const [attachmentFile, setAttachmentFile] = useState(null);
+  const [attachmentPreview, setAttachmentPreview] = useState(null);
+  const [attachmentName, setAttachmentName] = useState(null);
+
   const [historyPage, setHistoryPage] = useState(1);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [toastError, setToastError] = useState(null);
@@ -142,6 +149,9 @@ function FdaStatus() {
     );
     setDismissPreset("");
     setDismissNote("");
+    setAttachmentFile(null);
+    setAttachmentPreview(null);
+    setAttachmentName(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedComplaintId]);
 
@@ -166,6 +176,28 @@ function FdaStatus() {
     if (newStatus === "completed") return COMPLETED_MESSAGE;
     if (newStatus === "dismissed") return dismissNote || dismissPreset;
     return null;
+  };
+
+  // Same read approach as the extension's attach box — FileReader to a
+  // base64 data URL, so it can be sent as a plain JSON string field.
+  const handleAttachmentChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setAttachmentFile(file);
+    setAttachmentName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAttachmentPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAttachment = () => {
+    setAttachmentFile(null);
+    setAttachmentPreview(null);
+    setAttachmentName(null);
   };
 
   const handlePushUpdate = async () => {
@@ -211,7 +243,14 @@ function FdaStatus() {
     try {
         const res = await apiFetch(`/complaints/${selectedComplaint.complaintId}/status`, {
           method: "PATCH",
-          body: JSON.stringify({ status: newStatus, change_note: outgoingMessage }),
+          body: JSON.stringify({
+            status: newStatus,
+            change_note: outgoingMessage,
+            // Optional — null when no file was attached. Backend needs to
+            // accept these two fields; see fda-status.jsx attachment notes.
+            attachment_data: attachmentPreview,
+            attachment_name: attachmentName,
+          }),
         });
   
         if (!res.ok) {
@@ -248,6 +287,9 @@ function FdaStatus() {
         };
         setStatusHistory((prev) => [entry, ...prev]);
         setHistoryPage(1);
+        setAttachmentFile(null);
+        setAttachmentPreview(null);
+        setAttachmentName(null);
       } catch (err) {
         setIsToastWarning(false);
         alert("Network error — please check your connection and try again.");
@@ -459,6 +501,47 @@ function FdaStatus() {
                         {selectedComplaint.reporterUsername} · {selectedComplaint.reporterEmail}
                       </div>
                     </div>
+                  </div>
+
+                  <div className="FdaFormGroup" style={{ marginBottom: 18 }}>
+                    <label>Attach evidence (optional)</label>
+                    <div className="FdaFileUploadWrapper">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAttachmentChange}
+                      />
+                      <div className="FdaFileUploadContent">
+                        <Paperclip size={20} />
+                        <span>Click to upload a screenshot or photo</span>
+                        {attachmentName && <span className="FdaFileName">{attachmentName}</span>}
+                      </div>
+                    </div>
+                    {attachmentPreview && (
+                      <div style={{ marginTop: 10, position: "relative", display: "inline-block" }}>
+                        <img
+                          src={attachmentPreview}
+                          alt="Attachment preview"
+                          className="FdaModalImagePreview"
+                          style={{ maxWidth: 220 }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveAttachment}
+                          className="FdaVerifIconButton"
+                          style={{
+                            position: "absolute",
+                            top: 4,
+                            right: 4,
+                            background: "#FDFDFD",
+                            borderRadius: "50%",
+                          }}
+                          aria-label="Remove attachment"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {newStatus === "completed" && (
