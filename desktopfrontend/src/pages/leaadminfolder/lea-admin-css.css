@@ -1,0 +1,1267 @@
+/* ==========================================================================
+   LEA ADMIN WORKSPACE STYLES
+   Scoped strictly with .LEAAdmin / .lea-admin prefix to avoid collisions.
+   ========================================================================== */
+
+.LEAAdminMainContainer {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background: #f8fafc;
+  overflow: hidden;
+  position: relative;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1e293b;
+}
+
+.LEAAdminContentContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.LEAAdminMainfeed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+  box-sizing: border-box;
+}
+
+.LEAAdminPageContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Page Header */
+.LEAAdminPageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.LEAAdminPageTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.LEAAdminPageTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.LEAAdminAgencyTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.LEAAdminPageSubtitle {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Add Button */
+.LEAAdminAddBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+  white-space: nowrap;
+}
+
+.LEAAdminAddBtn:hover {
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.35);
+}
+
+.LEAAdminAddBtn:active {
+  transform: translateY(0);
+}
+
+/* Stats Row */
+.LEAAdminStatsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.LEAAdminStatCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.LEAAdminStatCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.LEAAdminStatValue {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.LEAAdminStatLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.stat-total { border-top: 3.5px solid #1e293b; }
+.stat-total .LEAAdminStatValue { color: #1e293b; }
+
+.stat-active { border-top: 3.5px solid #16a34a; }
+.stat-active .LEAAdminStatValue { color: #16a34a; }
+
+.stat-activation { border-top: 3.5px solid #2563eb; }
+.stat-activation .LEAAdminStatValue { color: #2563eb; }
+
+.stat-pending { border-top: 3.5px solid #d97706; }
+.stat-pending .LEAAdminStatValue { color: #d97706; }
+
+.stat-expired { border-top: 3.5px solid #dc2626; }
+.stat-expired .LEAAdminStatValue { color: #dc2626; }
+
+.stat-suspended { border-top: 3.5px solid #ef4444; }
+.stat-suspended .LEAAdminStatValue { color: #ef4444; }
+
+.stat-locked { border-top: 3.5px solid #64748b; }
+.stat-locked .LEAAdminStatValue { color: #64748b; }
+
+/* Filter & Search Bar */
+.LEAAdminFiltersContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #ffffff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.LEAAdminSearchGroup {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 220px;
+  max-width: 440px;
+}
+
+.LEAAdminSearchIcon {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.LEAAdminSearchInput {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  font-size: 13.5px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.LEAAdminSearchInput:focus {
+  background: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.LEAAdminFilterControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.LEAAdminFilterItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.LEAAdminFilterLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.LEAAdminSelect {
+  padding: 7px 12px;
+  font-size: 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.LEAAdminSelect:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.LEAAdminClearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.LEAAdminClearBtn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* Table */
+.LEAAdminTableWrapper {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+.LEAAdminTable {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+}
+
+.LEAAdminTable thead tr {
+  background: #13213C;
+}
+
+.LEAAdminTable thead th {
+  padding: 13px 16px;
+  text-align: left;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+
+.LEAAdminTable thead th:first-child {
+  border-top-left-radius: 13px;
+}
+
+.LEAAdminTable thead th:last-child {
+  border-top-right-radius: 13px;
+}
+
+.LEAAdminTable tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+}
+
+.LEAAdminTable tbody tr:hover {
+  background: #f8fafc;
+}
+
+.LEAAdminTable tbody td {
+  padding: 13px 16px;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.LEAAdminTdCenter {
+  text-align: center;
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.LEAAdminEmailCell {
+  color: #2563eb;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.LEAAdminEmpty {
+  color: #94a3b8;
+  font-style: italic;
+  padding: 40px;
+  text-align: center;
+}
+
+/* Status Badges */
+.LEAAdminStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.badge-pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.badge-for-activation {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-active {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-suspended {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.badge-expired {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.badge-locked {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+/* Action Dropdown */
+.LEAAdminDropdownWrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.LEAAdminDropdownTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.LEAAdminDropdownTrigger:hover,
+.LEAAdminDropdownWrapper.active-open .LEAAdminDropdownTrigger {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+.LEAAdminDropdownMenu {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+  padding: 6px;
+  min-width: 175px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 9999;
+  animation: LEAAdminScaleIn 0.15s ease;
+}
+
+@keyframes LEAAdminScaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.LEAAdminDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.LEAAdminDropdownItem:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.LEAAdminDropdownItem.danger {
+  color: #dc2626;
+}
+
+.LEAAdminDropdownItem.danger:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.LEAAdminDropdownItem.primary-action {
+  color: #2563eb;
+}
+
+.LEAAdminDropdownItem.primary-action:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.LEAAdminDropdownDivider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 4px 0;
+}
+
+/* Pagination */
+.LEAAdminPaginationWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.LEAAdminPaginationInfo {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.LEAAdminPaginationControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.LEAAdminPageBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.LEAAdminPageBtn:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.LEAAdminPageBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.LEAAdminPageNumber {
+  min-width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.LEAAdminPageNumber:hover {
+  background: #f1f5f9;
+}
+
+.LEAAdminPageNumber.active {
+  background: #1e293b;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Modals */
+.LEAAdminModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 16px;
+  animation: LEAAdminFadeIn 0.2s ease;
+}
+
+@keyframes LEAAdminFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.LEAAdminModal {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 540px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  animation: LEAAdminSlideUp 0.22s ease;
+  position: relative;
+}
+
+/* ── View Details Modal Grid Layout ── */
+.LEAAdminVDGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 20px;
+}
+
+.LEAAdminVDGrid.three-col {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.LEAAdminVDGrid .full-span {
+  grid-column: 1 / -1;
+}
+
+.LEAAdminVDField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.LEAAdminVDLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.55px;
+  white-space: nowrap;
+}
+
+.LEAAdminVDValue {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #0f172a;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
+  line-height: 1.45;
+}
+
+.LEAAdminAddModal {
+  max-width: 720px;
+  padding: 36px 36px 32px;
+}
+
+.LEAAdminAddModal .LEAAdminModalHeader {
+  padding: 0 0 24px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.LEAAdminAddModal .LEAAdminModalTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+
+.LEAAdminAddModal .LEAAdminModalSubtitle {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.LEAAdminAddModal .LEAAdminModalBody {
+  padding: 24px 0 0 0;
+  gap: 0;
+}
+
+.LEAAdminAddModal .LEAAdminModalFooter {
+  padding: 24px 0 0 0;
+  margin-top: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+@keyframes LEAAdminSlideUp {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.LEAAdminModalHeader {
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  position: relative;
+}
+
+.LEAAdminModalTitle {
+  font-size: 19px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.LEAAdminModalSubtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.LEAAdminModalCloseBtn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.LEAAdminModalCloseBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.LEAAdminModalBody {
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.LEAAdminFormGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.LEAAdminFormGrid.single-col {
+  grid-template-columns: 1fr;
+}
+
+.LEAAdminFormRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.LEAAdminFormRow3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.LEAAdminFormGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.LEAAdminFormGroup.full-width {
+  grid-column: 1 / -1;
+}
+
+.LEAAdminLabel {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.LEAAdminRequired {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.LEAAdminInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.LEAAdminInputIcon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.LEAAdminInputWrapper .LEAAdminInput,
+.LEAAdminInputWrapper .LEAAdminSelect,
+.LEAAdminInput.with-icon,
+.LEAAdminSelect.with-icon {
+  padding-left: 44px !important;
+}
+
+.LEAAdminInput {
+  width: 100%;
+  padding: 12px 14px;
+  min-height: 46px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14.5px;
+  color: #1e293b;
+  background: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.LEAAdminInput:focus {
+  border-color: #1e293b;
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.15);
+}
+
+.LEAAdminInput.input-error {
+  border-color: #ef4444 !important;
+  background: #fffbfb;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.LEAAdminInput:disabled,
+.LEAAdminInput.readonly-input {
+  background: #f8fafc;
+  color: #475569;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
+
+.LEAAdminSelect {
+  width: 100%;
+  padding: 12px 14px;
+  min-height: 46px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14.5px;
+  color: #1e293b;
+  background: #ffffff;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.LEAAdminSelect.with-icon {
+  padding-left: 42px;
+}
+
+.LEAAdminSelect:focus {
+  border-color: #1e293b;
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.15);
+}
+
+.LEAAdminSelect.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.LEAAdminFieldError {
+  font-size: 12px;
+  color: #dc2626;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.LEAAdminModalFooter {
+  padding: 16px 28px 24px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.LEAAdminModalFooter.center-footer {
+  justify-content: center;
+}
+
+.LEAAdminCancelBtn {
+  padding: 9px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.LEAAdminCancelBtn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.LEAAdminConfirmBtn {
+  padding: 9px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.LEAAdminConfirmBtn.primary {
+  background: #1e293b;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(30, 41, 59, 0.3);
+}
+
+.LEAAdminConfirmBtn.primary:hover {
+  background: #0f172a;
+}
+
+.LEAAdminConfirmBtn.danger {
+  background: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+.LEAAdminConfirmBtn.danger:hover {
+  background: #b91c1c;
+}
+
+/* Verification / Summary Card */
+.LEAAdminSummaryBox {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.LEAAdminSummaryNotice {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.LEAAdminSummaryRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #e2e8f0;
+  font-size: 13px;
+}
+
+.LEAAdminSummaryRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.LEAAdminSummaryLabel {
+  font-weight: 600;
+  color: #64748b;
+  min-width: 130px;
+}
+
+.LEAAdminSummaryValue {
+  font-weight: 500;
+  color: #0f172a;
+  text-align: right;
+  word-break: break-word;
+}
+
+/* ── View Details Modal — Wider, Flex-Column, Fixed Header/Footer ── */
+.LEAAdminViewModal {
+  max-width: 780px;
+  overflow-y: visible;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.LEAAdminViewModal .LEAAdminModalHeader {
+  padding: 26px 32px 20px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.LEAAdminViewModal .LEAAdminModalTitle {
+  font-size: 20px;
+}
+
+.LEAAdminViewModal .LEAAdminModalSubtitle {
+  font-size: 13.5px;
+}
+
+.LEAAdminViewModal .LEAAdminModalBody {
+  padding: 24px 32px;
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.LEAAdminViewModal .LEAAdminSummaryBox {
+  padding: 22px 24px;
+  gap: 0;
+  border-radius: 12px;
+  display: block;
+}
+
+/* When SummaryBox contains VDGrid (View Details), remove old row styles */
+.LEAAdminViewModal .LEAAdminSummaryBox .LEAAdminVDGrid {
+  gap: 16px 24px;
+}
+
+.LEAAdminViewModal .LEAAdminSummaryRow {
+  padding-bottom: 12px;
+  font-size: 14px;
+}
+
+.LEAAdminViewModal .LEAAdminSummaryLabel {
+  font-size: 14px;
+  min-width: 140px;
+}
+
+.LEAAdminViewModal .LEAAdminSummaryValue {
+  font-size: 14.5px;
+}
+
+.LEAAdminViewModal .LEAAdminModalFooter {
+  padding: 16px 32px 24px;
+  flex-shrink: 0;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Toast */
+.LEAAdminToast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #1e293b;
+  color: #ffffff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  z-index: 100000;
+  animation: LEAAdminToastIn 0.25s ease;
+}
+
+@keyframes LEAAdminToastIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Audit Logs Tabs */
+.LEAAdminAuditTabsWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.LEAAdminAuditTabBtn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.LEAAdminAuditTabBtn:hover {
+  color: #2563eb;
+}
+
+.LEAAdminAuditTabBtn.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+.LEAAdminAuditTabBadge {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.LEAAdminAuditTabBtn.active .LEAAdminAuditTabBadge {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* Audit Action Badges */
+.badge-action-create {
+  background: #dcfce7;
+  color: #15803d;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-action-update {
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-action-delete {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid #fecaca;
+}
+
+.badge-action-neutral {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+}
+
+.badge-agency-lea {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+.badge-agency-system {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .LEAAdminMainfeed {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .LEAAdminMainfeed {
+    padding: 16px 12px;
+  }
+
+  .LEAAdminPageHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .LEAAdminAddBtn {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .LEAAdminFiltersContainer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .LEAAdminSearchGroup {
+    max-width: 100%;
+  }
+
+  .LEAAdminFilterControls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .LEAAdminFilterItem {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .LEAAdminSelect {
+    flex: 1;
+  }
+
+  .LEAAdminFormGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .LEAAdminAddModal {
+    padding: 24px 20px 20px;
+  }
+
+  .LEAAdminFormRow,
+  .LEAAdminFormRow3 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .LEAAdminViewModal .LEAAdminModalHeader {
+    padding: 20px 20px 14px;
+  }
+
+  .LEAAdminViewModal .LEAAdminModalBody {
+    padding: 16px 20px;
+  }
+
+  .LEAAdminViewModal .LEAAdminSummaryBox {
+    padding: 16px 18px;
+  }
+
+  .LEAAdminViewModal .LEAAdminModalFooter {
+    padding: 14px 20px 20px;
+  }
+
+  .LEAAdminVDGrid,
+  .LEAAdminVDGrid.three-col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .LEAAdminViewModal .LEAAdminVDGrid {
+    gap: 12px 16px;
+  }
+}
