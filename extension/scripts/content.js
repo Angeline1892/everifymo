@@ -328,6 +328,14 @@ function createModal() {
         </div>
       </div>
 
+      <div class="state hidden" id="state-report-unauthorized">
+        <p class="state-message">🔒 You need an account to submit a report. Please sign in first.</p>
+        <div class="action-buttons">
+          <button id="rf-unauth-login" type="button">Sign In</button>
+          <button id="rf-unauth-back" type="button">Back to Results</button>
+        </div>
+      </div>
+
     </main>
   `;
  
@@ -364,21 +372,38 @@ function createModal() {
     btn.addEventListener('click', () => { modal.style.display = 'none'; });
   });
 
+  modal.querySelector('#rf-unauth-login').addEventListener('click', () => {
+    // window.location.href = 'auth.html';
+    chrome.runtime.sendMessage({ action: "openLogin" });
+  });
+
+  modal.querySelector('#rf-unauth-back').addEventListener('click', () => {
+    showState(lastResultState || 'state-suspicious');
+  });
+
   let lastResultState = '';
   modal.querySelectorAll('.btn-report').forEach(btn => {
     btn.addEventListener('click', () => {  
-      lastResultState = btn.closest('.state').id;
+      chrome.runtime.sendMessage({ action: "checkAuth" }, (res) => {
+        if (!res?.loggedIn) {
+          lastResultState = btn.closest('.state').id;
+          showState('state-report-unauthorized');
+          return;
+        }
 
-      const productName = modal.querySelector('#rf-product-name');
-      const url = modal.querySelector('#rf-product-url');
-
-      if (productName) productName.value = lastProductTitle;
-      if (url) url.value = sanitizeUrl(lastProductUrl);
-
-      modal.querySelector('#rf-store-name').value = '';
-      modal.querySelector('#rf-description').value = '';
-
-      showState('state-report-form');
+        lastResultState = btn.closest('.state').id;
+       
+        const productName = modal.querySelector('#rf-product-name');
+        const url = modal.querySelector('#rf-product-url');
+       
+        if (productName) productName.value = lastProductTitle;
+        if (url) url.value = sanitizeUrl(lastProductUrl);
+       
+        modal.querySelector('#rf-store-name').value = '';
+        modal.querySelector('#rf-description').value = '';
+       
+        showState('state-report-form');
+      });
     });
   });
 

@@ -1,0 +1,1262 @@
+/* ==========================================================================
+   FDA ADMIN WORKSPACE STYLES
+   Scoped strictly with .FDAAdmin / .fda-admin prefix to avoid collisions.
+   ========================================================================== */
+
+.FDAAdminMainContainer {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background: #f8fafc;
+  overflow: hidden;
+  position: relative;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1e293b;
+}
+
+.FDAAdminContentContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.FDAAdminMainfeed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+  box-sizing: border-box;
+}
+
+.FDAAdminPageContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Page Header */
+.FDAAdminPageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.FDAAdminPageTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.FDAAdminPageTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.FDAAdminAgencyTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.FDAAdminPageSubtitle {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Add Button */
+.FDAAdminAddBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #1B4332;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  box-shadow: 0 4px 14px rgba(27, 67, 50, 0.35);
+  white-space: nowrap;
+  font-family: 'Poppins', sans-serif;
+}
+
+.FDAAdminAddBtn:hover {
+  background: #1B4332;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(27, 67, 50, 0.45);
+}
+
+.FDAAdminAddBtn:active {
+  transform: translateY(0);
+}
+
+/* Stats Row */
+.FDAAdminStatsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.FDAAdminStatCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.FDAAdminStatCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.FDAAdminStatValue {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.FDAAdminStatLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.stat-total { border-top: 3.5px solid #1e293b; }
+.stat-total .FDAAdminStatValue { color: #1e293b; }
+
+.stat-active { border-top: 3.5px solid #16a34a; }
+.stat-active .FDAAdminStatValue { color: #16a34a; }
+
+.stat-activation { border-top: 3.5px solid #2563eb; }
+.stat-activation .FDAAdminStatValue { color: #2563eb; }
+
+.stat-pending { border-top: 3.5px solid #d97706; }
+.stat-pending .FDAAdminStatValue { color: #d97706; }
+
+.stat-expired { border-top: 3.5px solid #dc2626; }
+.stat-expired .FDAAdminStatValue { color: #dc2626; }
+
+.stat-suspended { border-top: 3.5px solid #ef4444; }
+.stat-suspended .FDAAdminStatValue { color: #ef4444; }
+
+.stat-locked { border-top: 3.5px solid #64748b; }
+.stat-locked .FDAAdminStatValue { color: #64748b; }
+
+/* Filter & Search Bar */
+.FDAAdminFiltersContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #ffffff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.FDAAdminSearchGroup {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 220px;
+  max-width: 440px;
+}
+
+.FDAAdminSearchIcon {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.FDAAdminSearchInput {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  font-size: 13.5px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.FDAAdminSearchInput:focus {
+  background: #ffffff;
+  border-color: #1B4332;
+  box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.15);
+}
+
+.FDAAdminFilterControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.FDAAdminFilterItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.FDAAdminFilterLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.FDAAdminSelect {
+  padding: 7px 12px;
+  font-size: 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.FDAAdminSelect:focus {
+  border-color: #1B4332;
+  box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.15);
+}
+
+.FDAAdminClearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.FDAAdminClearBtn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* Table */
+.FDAAdminTableWrapper {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+.FDAAdminTable {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+}
+
+.FDAAdminTable thead tr {
+  background: #1B4332;
+}
+
+.FDAAdminTable thead th {
+  padding: 13px 16px;
+  text-align: left;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+
+.FDAAdminTable thead th:first-child {
+  border-top-left-radius: 13px;
+}
+
+.FDAAdminTable thead th:last-child {
+  border-top-right-radius: 13px;
+}
+
+.FDAAdminTable tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+}
+
+.FDAAdminTable tbody tr:hover {
+  background: #f8fafc;
+}
+
+.FDAAdminTable tbody td {
+  padding: 13px 16px;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.FDAAdminTdCenter {
+  text-align: center;
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.FDAAdminEmailCell {
+  color: #1B4332;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.FDAAdminEmpty {
+  color: #94a3b8;
+  font-style: italic;
+  padding: 40px;
+  text-align: center;
+}
+
+/* Status Badges - exact same classes/styles as superadmin-user-management.jsx */
+.FDAAdminStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.badge-pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.badge-for-activation {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-active {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-suspended {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.badge-expired {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.badge-locked {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+/* Action Dropdown */
+.FDAAdminDropdownWrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.FDAAdminDropdownTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.FDAAdminDropdownTrigger:hover,
+.FDAAdminDropdownWrapper.active-open .FDAAdminDropdownTrigger {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+.FDAAdminDropdownMenu {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+  padding: 6px;
+  min-width: 175px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 9999;
+  animation: FDAAdminScaleIn 0.15s ease;
+}
+
+@keyframes FDAAdminScaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.FDAAdminDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.FDAAdminDropdownItem:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.FDAAdminDropdownItem.danger {
+  color: #dc2626;
+}
+
+.FDAAdminDropdownItem.danger:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.FDAAdminDropdownItem.primary-action {
+  color: #0d9488;
+}
+
+.FDAAdminDropdownItem.primary-action:hover {
+  background: #ecfdf5;
+  color: #0f766e;
+}
+
+.FDAAdminDropdownDivider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 4px 0;
+}
+
+/* Pagination */
+.FDAAdminPaginationWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.FDAAdminPaginationInfo {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.FDAAdminPaginationControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.FDAAdminPageBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.FDAAdminPageBtn:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.FDAAdminPageBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.FDAAdminPageNumber {
+  min-width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.FDAAdminPageNumber:hover {
+  background: #f1f5f9;
+}
+
+.FDAAdminPageNumber.active {
+  background: #1B4332;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Modals */
+.FDAAdminModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 16px;
+  animation: FDAAdminFadeIn 0.2s ease;
+}
+
+@keyframes FDAAdminFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.FDAAdminModal {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 540px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  animation: FDAAdminSlideUp 0.22s ease;
+  position: relative;
+}
+
+/* ── View Details Modal Grid Layout ── */
+.FDAAdminVDGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 20px;
+}
+
+.FDAAdminVDGrid.three-col {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.FDAAdminVDGrid .full-span {
+  grid-column: 1 / -1;
+}
+
+.FDAAdminVDField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.FDAAdminVDLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.55px;
+  white-space: nowrap;
+}
+
+.FDAAdminVDValue {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #0f172a;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
+  line-height: 1.45;
+}
+
+.FDAAdminAddModal {
+  max-width: 720px;
+  padding: 36px 36px 32px;
+}
+
+.FDAAdminAddModal .FDAAdminModalHeader {
+  padding: 0 0 24px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.FDAAdminAddModal .FDAAdminModalTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+
+.FDAAdminAddModal .FDAAdminModalSubtitle {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.FDAAdminAddModal .FDAAdminModalBody {
+  padding: 24px 0 0 0;
+  gap: 0;
+}
+
+.FDAAdminAddModal .FDAAdminModalFooter {
+  padding: 24px 0 0 0;
+  margin-top: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+@keyframes FDAAdminSlideUp {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.FDAAdminModalHeader {
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  position: relative;
+}
+
+.FDAAdminModalTitle {
+  font-size: 19px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.FDAAdminModalSubtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.FDAAdminModalCloseBtn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.FDAAdminModalCloseBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.FDAAdminModalBody {
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.FDAAdminFormGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.FDAAdminFormGrid.single-col {
+  grid-template-columns: 1fr;
+}
+
+.FDAAdminFormRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.FDAAdminFormRow3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.FDAAdminFormGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.FDAAdminFormGroup.full-width {
+  grid-column: 1 / -1;
+}
+
+.FDAAdminLabel {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.FDAAdminRequired {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.FDAAdminInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.FDAAdminInputIcon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.FDAAdminInputWrapper .FDAAdminInput,
+.FDAAdminInputWrapper .FDAAdminSelect,
+.FDAAdminInput.with-icon,
+.FDAAdminSelect.with-icon {
+  padding-left: 44px !important;
+}
+
+.FDAAdminInput {
+  width: 100%;
+  padding: 12px 14px;
+  min-height: 46px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14.5px;
+  color: #1e293b;
+  background: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.FDAAdminInput:focus {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+.FDAAdminInput.input-error {
+  border-color: #ef4444 !important;
+  background: #fffbfb;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.FDAAdminInput:disabled,
+.FDAAdminInput.readonly-input {
+  background: #f8fafc;
+  color: #475569;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
+
+.FDAAdminSelect {
+  width: 100%;
+  padding: 12px 14px;
+  min-height: 46px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14.5px;
+  color: #1e293b;
+  background: #ffffff;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.FDAAdminSelect:focus {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+.FDAAdminSelect.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.FDAAdminFieldError {
+  font-size: 12px;
+  color: #dc2626;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.FDAAdminModalFooter {
+  padding: 16px 28px 24px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.FDAAdminModalFooter.center-footer {
+  justify-content: center;
+}
+
+.FDAAdminCancelBtn {
+  padding: 9px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.FDAAdminCancelBtn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.FDAAdminConfirmBtn {
+  padding: 9px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.FDAAdminConfirmBtn.primary {
+  background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+}
+
+.FDAAdminConfirmBtn.primary:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+}
+
+.FDAAdminConfirmBtn.danger {
+  background: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+.FDAAdminConfirmBtn.danger:hover {
+  background: #b91c1c;
+}
+
+/* Verification / Summary Card */
+.FDAAdminSummaryBox {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.FDAAdminSummaryNotice {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.FDAAdminSummaryRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #e2e8f0;
+  font-size: 13px;
+}
+
+.FDAAdminSummaryRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.FDAAdminSummaryLabel {
+  font-weight: 600;
+  color: #64748b;
+  min-width: 130px;
+}
+
+.FDAAdminSummaryValue {
+  font-weight: 500;
+  color: #0f172a;
+  text-align: right;
+  word-break: break-word;
+}
+
+/* ── View Details Modal — Wider, Flex-Column, Fixed Header/Footer ── */
+.FDAAdminViewModal {
+  max-width: 780px;
+  /* Override the base modal's scroll-everything approach */
+  overflow-y: visible;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.FDAAdminViewModal .FDAAdminModalHeader {
+  padding: 26px 32px 20px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.FDAAdminViewModal .FDAAdminModalTitle {
+  font-size: 20px;
+}
+
+.FDAAdminViewModal .FDAAdminModalSubtitle {
+  font-size: 13.5px;
+}
+
+.FDAAdminViewModal .FDAAdminModalBody {
+  padding: 24px 32px;
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.FDAAdminViewModal .FDAAdminSummaryBox {
+  padding: 22px 24px;
+  gap: 0;
+  border-radius: 12px;
+  display: block;
+}
+
+/* When SummaryBox contains VDGrid (View Details), remove old row styles */
+.FDAAdminViewModal .FDAAdminSummaryBox .FDAAdminVDGrid {
+  gap: 16px 24px;
+}
+
+.FDAAdminViewModal .FDAAdminSummaryRow {
+  padding-bottom: 12px;
+  font-size: 14px;
+}
+
+.FDAAdminViewModal .FDAAdminSummaryLabel {
+  font-size: 14px;
+  min-width: 140px;
+}
+
+.FDAAdminViewModal .FDAAdminSummaryValue {
+  font-size: 14.5px;
+}
+
+.FDAAdminViewModal .FDAAdminModalFooter {
+  padding: 16px 32px 24px;
+  flex-shrink: 0;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Toast */
+.FDAAdminToast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #065f46;
+  color: #ffffff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  z-index: 100000;
+  animation: FDAAdminToastIn 0.25s ease;
+}
+
+@keyframes FDAAdminToastIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Audit Logs Tabs */
+.FDAAdminAuditTabsWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.FDAAdminAuditTabBtn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.FDAAdminAuditTabBtn:hover {
+  color: #0d9488;
+}
+
+.FDAAdminAuditTabBtn.active {
+  color: #0d9488;
+  border-bottom-color: #0d9488;
+}
+
+.FDAAdminAuditTabBadge {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.FDAAdminAuditTabBtn.active .FDAAdminAuditTabBadge {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+/* Audit Action Badges */
+.badge-action-create {
+  background: #dcfce7;
+  color: #15803d;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-action-update {
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-action-delete {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid #fecaca;
+}
+
+.badge-action-neutral {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+}
+
+.badge-agency-fda {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-agency-system {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .FDAAdminMainfeed {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .FDAAdminMainfeed {
+    padding: 16px 12px;
+  }
+
+  .FDAAdminPageHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .FDAAdminAddBtn {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .FDAAdminFiltersContainer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .FDAAdminSearchGroup {
+    max-width: 100%;
+  }
+
+  .FDAAdminFilterControls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .FDAAdminFilterItem {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .FDAAdminSelect {
+    flex: 1;
+  }
+
+  .FDAAdminFormGrid,
+  .FDAAdminFormRow,
+  .FDAAdminFormRow3 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .FDAAdminAddModal {
+    padding: 24px 20px;
+  }
+
+  .FDAAdminViewModal .FDAAdminModalHeader {
+    padding: 20px 20px 14px;
+  }
+
+  .FDAAdminViewModal .FDAAdminModalBody {
+    padding: 16px 20px;
+  }
+
+  .FDAAdminViewModal .FDAAdminSummaryBox {
+    padding: 16px 18px;
+  }
+
+  .FDAAdminViewModal .FDAAdminModalFooter {
+    padding: 14px 20px 20px;
+  }
+
+  .FDAAdminVDGrid,
+  .FDAAdminVDGrid.three-col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .FDAAdminViewModal .FDAAdminVDGrid {
+    gap: 12px 16px;
+  }
+}

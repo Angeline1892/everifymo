@@ -20,6 +20,10 @@ import DeepLinkStatus from './pages/emailtemplates/invitation-status.jsx'
 import ProfileSetting from './pages/profile-setting.jsx';
 import AllNotifications from './pages/component/all-notifications.jsx';
 
+{/* NATIONAL ADMIN PAGES */}
+import NationalAdminNewAdminManagement from './pages/nationaladminfolder/national-admin-new-admin-management.jsx';
+import NationalAdminInteragencyAdminManagement from './pages/nationaladminfolder/national-admin-interagency-admin-management.jsx';
+
 {/* SUPERADMIN PAGES */ }
 import SuperAdminLogin from './pages/superadminfolder/superadmin-login.jsx';
 import ForgotPassword from './pages/forgot-password.jsx';
@@ -33,6 +37,7 @@ import UserEmailRegistration from './pages/emailtemplates/user-email-registratio
 import UserEmailActivation from './pages/emailtemplates/user-email-activation.jsx';
 import SuperadminEmailAddAdmin from './pages/emailtemplates/superadmin-email-add-admin.jsx';
 import SuperadminInviteStatus from './pages/emailtemplates/superadmin-invite-status.jsx';
+import ConvertedEmailTemplate from './pages/emailtemplates/converted-email-template.jsx';
 
 {/* FDA PAGES */ }
 import FDADashboard from './pages/fdafolder/fda-dashboard.jsx';
@@ -41,6 +46,16 @@ import FDAVerification from './pages/fdafolder/fda-verification.jsx';
 import FDAStatus from './pages/fdafolder/fda-status.jsx';
 import FDAProductDB from './pages/fdafolder/fda-product-db.jsx';
 import FDASavedDraft from './pages/fdafolder/fda-saved-draft.jsx';
+
+{/* FDA ADMIN PAGES */}
+import FDAAdminUserManagement from './pages/fdaadminfolder/fda-admin-user-management.jsx';
+import FDAAdminAdminManagement from './pages/fdaadminfolder/fda-admin-admin-management.jsx';
+import FDAAdminAuditLogs from './pages/fdaadminfolder/fda-admin-audit-logs.jsx';
+
+{/* LEA ADMIN PAGES */}
+import LEAAdminUserManagement from './pages/leaadminfolder/lea-admin-user-management.jsx';
+import LEAAdminAdminManagement from './pages/leaadminfolder/lea-admin-admin-management.jsx';
+import LEAAdminAuditLogs from './pages/leaadminfolder/lea-admin-audit-logs.jsx';
 
 
 
@@ -108,6 +123,10 @@ export default function App() {
         <Route path='/leacidgfolder/lea-new-intake' element={<LeaNewIntake />} />
         <Route path='/leacidgfolder/lea-saved-draft' element={<LeaSavedDraft />} />
 
+        {/* NATIONAL ADMIN ROUTES */}
+        <Route path='/nationaladminfolder/national-admin-new-admin-management' element={<NationalAdminNewAdminManagement />} />
+        <Route path='/nationaladminfolder/national-admin-interagency-admin-management' element={<NationalAdminInteragencyAdminManagement />} />
+
         {/* SUPERADMIN ROUTES */}
         <Route path='/superadminfolder/superadmin-user-management' element={<SuperAdminUserManagement />} />
         <Route path='/superadminfolder/superadmin-admin-management' element={<SuperAdminAdminManagement />} />
@@ -121,6 +140,7 @@ export default function App() {
         <Route path='/preview-email/activation' element={<UserEmailActivation />} />
         <Route path='/preview-email/superadmin-otp' element={<SuperadminOtpEmail />} />
         <Route path='/preview-email/superadmin-add-admin' element={<SuperadminEmailAddAdmin />} />
+        <Route path='/preview-email/converted-product' element={<ConvertedEmailTemplate />} />
 
         {/* DEEP LINK ROUTES */}
         <Route path='/invitation-status' element={<DeepLinkStatus />} />
@@ -136,6 +156,16 @@ export default function App() {
         <Route path='/fdafolder/fda-status' element={<FDAStatus />} />
         <Route path='/fdafolder/fda-product-db' element={<FDAProductDB />} />
         <Route path='/fdafolder/fda-saved-draft' element={<FDASavedDraft />} />
+
+        {/* FDA ADMIN ROUTES */}
+        <Route path='/fdaadminfolder/fda-admin-user-management' element={<FDAAdminUserManagement />} />
+        <Route path='/fdaadminfolder/fda-admin-admin-management' element={<FDAAdminAdminManagement />} />
+        <Route path='/fdaadminfolder/fda-admin-audit-logs' element={<FDAAdminAuditLogs />} />
+
+        {/* LEA ADMIN ROUTES */}
+        <Route path='/leaadminfolder/lea-admin-user-management' element={<LEAAdminUserManagement />} />
+        <Route path='/leaadminfolder/lea-admin-admin-management' element={<LEAAdminAdminManagement />} />
+        <Route path='/leaadminfolder/lea-admin-audit-logs' element={<LEAAdminAuditLogs />} />
       </Routes>
     </BrowserRouter>
   );

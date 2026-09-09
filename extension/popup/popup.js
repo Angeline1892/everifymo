@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
         chrome.storage.local.set({
           productTitle: title,
           productUrl: url,
-          productStatus: status
+          productStatus: 'home'
         });
 
         if (status === 'registered') {
