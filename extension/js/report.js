@@ -129,6 +129,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('.report-submit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (!isUserLoggedIn()) {
+          // don't submit — send them to sign in
+          window.location.href = 'auth.html'; // or however you route to sign-in
+          return;
+        }
+
         const isGuest = !isUserLoggedIn();
         showReportView(isGuest ? 'report-success-view-guest' : 'report-success-view');
 
