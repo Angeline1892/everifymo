@@ -12,8 +12,8 @@ from app.core.constants import AuditAction
 
 from app.models.users import User
 from app.models.account_invitation_tokens import AccountInvitationToken
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+from everifymo.backend.app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 
 
 def create_invited_superadmin(db: Session, email: str, first_name: str, last_name: str, created_by, request=None):

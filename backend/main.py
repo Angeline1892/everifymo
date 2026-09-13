@@ -19,7 +19,7 @@ from app.desktop.routers.auth.personnel_login import router as personnel_login_r
 from app.desktop.routers.auth.password_change import router as password_change_router
 from app.desktop.routers.profile_setting import profile as profile_router
 from app.desktop.routers.auth.superadmin_invite_public import router as superadmin_invite_public_router
-from app.desktop.routers.superadmin_notifications.superadmin_notifications import router as superadmin_notifications_router
+from everifymo.backend.app.desktop.routers.admin_notifications.admin_notifications import router as admin_notifications_router
 from app.desktop.routers.audit_logs.audit_logs import router as audit_logs_router  
 from app.desktop.routers.notifications.notifications import router as notifications_router  # ADDED     
 
@@ -148,7 +148,7 @@ app.include_router(personnel_login_router)
 app.include_router(password_change_router)
 app.include_router(profile_router.router)
 app.include_router(superadmin_invite_public_router)
-app.include_router(superadmin_notifications_router)
+app.include_router(admin_notifications_router)
 app.include_router(audit_logs_router)
 app.include_router(notifications_router)  # ADDED
 

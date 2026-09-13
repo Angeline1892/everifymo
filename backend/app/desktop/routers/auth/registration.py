@@ -22,8 +22,8 @@ import secrets
 
 from app.desktop.schemas.auth.registration import RequestResendRequest, RequestResendResponse
 
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+from everifymo.backend.app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 from app.core.audit import write_audit_log, get_user_region_code
 
 # All registration-related endpoints will start with /registration

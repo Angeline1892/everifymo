@@ -18,8 +18,8 @@ from app.desktop.schemas.profile_setting.profile import (
 )
 from app.core.dependencies import get_current_user
 from app.core.security import hash_password, verify_password
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+from everifymo.backend.app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -60,8 +60,8 @@ def get_profile(
     return build_profile_response(db, current_user)
 
 
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+from everifymo.backend.app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 
 # ... (already imported at the top for change_password, so no new import needed)
 

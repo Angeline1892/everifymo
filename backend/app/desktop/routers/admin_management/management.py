@@ -26,8 +26,8 @@ from app.desktop.services.auth.email import send_superadmin_invite_email
 from app.desktop.services.admin_management.invite import create_invited_superadmin
 from app.desktop.services.admin_management.invite import activate_superadmin
 from app.desktop.services.auth.email import send_superadmin_activation_email
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+from everifymo.backend.app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 
 
 router = APIRouter(prefix="/admin/superadmins", tags=["superadmin-management"])
