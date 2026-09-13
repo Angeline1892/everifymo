@@ -1,11 +1,8 @@
-# backend/app/desktop/routers/Product_database/unregistered_advisory.py 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import List
 from uuid import UUID
-
-from fastapi import Request
 
 from app.database.sessions import get_db
 from app.models.users import User
@@ -66,11 +63,12 @@ def convert_from_product(
     product_id: UUID,
     payload: UnregisteredAdvisoryCreate,
     http_request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     db.execute(text("SET app.bypass_rls = 'true'"))
-    return convert_product_to_advisory(db, product_id, payload, current_user, http_request)
+    return convert_product_to_advisory(db, product_id, payload, current_user, http_request, background_tasks=background_tasks)
 
 
 @router.delete("/{advisory_id}")

@@ -5,7 +5,11 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from app.models.registered_products import RegisteredProduct
 from app.models.unregistered_advisories import UnregisteredAdvisory
-#from nlp.common.clean import clean_title --temp
+def clean_title(title: str) -> str:
+    """Cleans and standardizes product titles."""
+    if not title:
+        return ""
+    return " ".join(str(title).strip().split())
 
 # Get backend folder root relative to this file
 # __file__ is backend/app/desktop/services/Product_database/csv_sync.py
@@ -20,6 +24,7 @@ def sync_registered_products_to_csv(db: Session):
     and removing any deleted products.
     """
     try:
+        REGISTERED_CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
         # 1. Read existing Registered_cleaned.csv if it exists
         if REGISTERED_CSV_PATH.exists():
             df = pd.read_csv(REGISTERED_CSV_PATH, dtype=str)
@@ -87,8 +92,7 @@ def sync_registered_products_to_csv(db: Session):
         new_df.to_csv(REGISTERED_CSV_PATH, index=False)
         print(f"Successfully synced database changes to {REGISTERED_CSV_PATH}.", file=sys.stderr)
     except Exception as e:
-        print(f"Error syncing registered products to CSV: {e}", file=sys.stderr)
-        raise e
+        print(f"Warning: Error syncing registered products to CSV: {e}", file=sys.stderr)
 
 def sync_unregistered_advisories_to_csv(db: Session):
     """
@@ -97,6 +101,7 @@ def sync_unregistered_advisories_to_csv(db: Session):
     and removing any deleted advisories.
     """
     try:
+        UNREGISTERED_CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
         # 1. Read existing Unregistered_cleaned.csv if it exists
         if UNREGISTERED_CSV_PATH.exists():
             df = pd.read_csv(UNREGISTERED_CSV_PATH, dtype=str)
@@ -161,5 +166,4 @@ def sync_unregistered_advisories_to_csv(db: Session):
         new_df.to_csv(UNREGISTERED_CSV_PATH, index=False)
         print(f"Successfully synced database changes to {UNREGISTERED_CSV_PATH}.", file=sys.stderr)
     except Exception as e:
-        print(f"Error syncing unregistered advisories to CSV: {e}", file=sys.stderr)
-        raise e
+        print(f"Warning: Error syncing unregistered advisories to CSV: {e}", file=sys.stderr)
