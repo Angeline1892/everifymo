@@ -1,7 +1,8 @@
 // desktopfrontend/src/pages/leaadminfolder/lea-admin-admin-management.jsx
 import './lea-admin-css.css';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { apiFetch } from '../../utils/apiFetch';
 import {
   Send,
   UserCheck,
@@ -16,7 +17,6 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Edit3,
   Search,
   CheckCircle2,
   User,
@@ -30,90 +30,22 @@ import {
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
 
-export function computeAdminStatus(admin) {
-  if (!admin) return '';
-  const rawStatus = (admin.status || '').toString().trim().toLowerCase();
-
-  // 1. Pending Approval check (must be recognized before generic active/inactive logic)
-  if (rawStatus === 'pending_approval' || rawStatus === 'pending approval') {
-    return 'Pending Approval';
-  }
-
-  // 2. Locked must take precedence over Active
-  // Condition: status == active && is_active == true && is_locked == true
-  if (
-    (rawStatus === 'active' && admin.is_active === true && admin.is_locked === true) ||
-    rawStatus === 'locked' ||
-    (admin.is_locked === true && rawStatus === 'active' && admin.is_active !== false)
-  ) {
-    return 'Locked';
-  }
-
-  // 3. Suspended: status == active && is_active == false
-  if (
-    (rawStatus === 'active' && admin.is_active === false) ||
-    rawStatus === 'suspended' ||
-    rawStatus === 'suspend'
-  ) {
-    return 'Suspended';
-  }
-
-  // 4. Active: status == active && is_active == true && is_locked != true
-  if (
-    rawStatus === 'active' ||
-    (!rawStatus && admin.is_active === true && !admin.is_locked)
-  ) {
-    return 'Active';
-  }
-
-  // 5. Invited / Resend Requested / Link Expired
-  if (
-    rawStatus === 'invited' ||
-    rawStatus === 'resend requested' ||
-    rawStatus === 'resend_requested' ||
-    rawStatus === 'link expired' ||
-    rawStatus === 'link_expired'
-  ) {
-    let isExpired = false;
-    if (typeof admin.is_token_expired === 'boolean') {
-      isExpired = admin.is_token_expired;
-    } else if (typeof admin.token_expired === 'boolean') {
-      isExpired = admin.token_expired;
-    } else if (admin.expiration_date || admin.expires_at) {
-      const expDate = new Date(admin.expiration_date || admin.expires_at);
-      if (!isNaN(expDate.getTime())) {
-        isExpired = expDate.getTime() < Date.now();
-      }
-    } else if (
-      rawStatus === 'link expired' ||
-      rawStatus === 'link_expired' ||
-      rawStatus === 'resend requested' ||
-      rawStatus === 'resend_requested'
-    ) {
-      isExpired = true;
+function extractErrorMessage(errorData, fallback) {
+    const detail = errorData?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+        return detail.map(d => d?.msg || JSON.stringify(d)).join(' ');
     }
-
-    const hasResendRequest =
-      admin.resend_requested_at !== null && admin.resend_requested_at !== undefined;
-
-    if (hasResendRequest && isExpired) {
-      return 'Resend Requested';
+    if (detail && typeof detail === 'object') {
+        return detail.msg || detail.message || JSON.stringify(detail);
     }
-    if (!hasResendRequest && isExpired) {
-      return 'Link Expired';
-    }
-    return 'Invited';
-  }
-
-  return admin.status || 'Active';
+    return fallback;
 }
 
-// Mirroring the exact status system from Superadmin Admin Management
 const STATUS_META = {
   Invited: { label: 'Invited', className: 'badge-pending' },
   Active: { label: 'Active', className: 'badge-active' },
   Suspended: { label: 'Suspended', className: 'badge-suspended' },
-  Suspend: { label: 'Suspended', className: 'badge-suspended' },
   'Resend Requested': { label: 'Resend Requested', className: 'badge-pending' },
   'Link Expired': { label: 'Link Expired', className: 'badge-expired' },
   'Pending Approval': { label: 'Pending Approval', className: 'badge-pending' },
@@ -121,148 +53,15 @@ const STATUS_META = {
 };
 
 function StatusBadge({ status }) {
-  const statusStr = typeof status === 'object' && status !== null ? computeAdminStatus(status) : status;
-  const meta = STATUS_META[statusStr] || { label: statusStr, className: '' };
+  const meta = STATUS_META[status] || { label: status, className: '' };
   return <span className={`LEAAdminStatusBadge ${meta.className}`}>{meta.label}</span>;
 }
 
-// Realistic mock LEA Admin accounts
-const INITIAL_LEA_ADMINS = [
-  {
-    id: 'lea-adm-001',
-    first_name: 'Dominic',
-    middle_name: 'Cruz',
-    last_name: 'Valdez',
-    fullname: 'Dominic Cruz Valdez',
-    employee_id: 'CIDG-ADM-0892',
-    email: 'dominic.valdez@cidg.pnp.gov.ph',
-    contact_number: '09189876543',
-    agency: 'LEA Admin',
-    region: 'Region III - Central Luzon',
-    department: 'Special Operations Command',
-    position: 'Regional Inter-Agency Administrator',
-    status: 'Active',
-  },
-  {
-    id: 'lea-adm-002',
-    first_name: 'Renato',
-    middle_name: 'Perez',
-    last_name: 'Soriano',
-    fullname: 'Renato Perez Soriano',
-    employee_id: 'CIDG-ADM-0341',
-    email: 'renato.soriano@cidg.pnp.gov.ph',
-    contact_number: '09194567890',
-    agency: 'LEA Admin',
-    region: 'Region XI - Davao Region',
-    department: 'Anti-Fraud Command Center',
-    position: 'Senior Regional CIDG Admin',
-    status: 'Active',
-  },
-  {
-    id: 'lea-adm-003',
-    first_name: 'Alexander',
-    middle_name: 'David',
-    last_name: 'Mercado',
-    fullname: 'Alexander David Mercado',
-    employee_id: 'CIDG-ADM-0442',
-    email: 'alexander.mercado@cidg.pnp.gov.ph',
-    contact_number: '09221112233',
-    agency: 'LEA Admin',
-    region: 'National Capital Region (NCR)',
-    department: 'National Operations Oversight',
-    position: 'Central Agency Administrator',
-    status: 'Link Expired',
-  },
-  {
-    id: 'lea-adm-004',
-    first_name: 'Gerardo',
-    middle_name: 'Bautista',
-    last_name: 'Castro',
-    fullname: 'Gerardo Bautista Castro',
-    employee_id: 'CIDG-ADM-0671',
-    email: 'gerardo.castro@cidg.pnp.gov.ph',
-    contact_number: '09283334455',
-    agency: 'LEA Admin',
-    region: 'Region VII - Central Visayas',
-    department: 'Field Logistics & Investigations',
-    position: 'Regional Command Admin',
-    status: 'Suspended',
-  },
-  {
-    id: 'lea-adm-005',
-    first_name: 'Rodolfo',
-    middle_name: 'Ignacio',
-    last_name: 'Santos',
-    fullname: 'Rodolfo Ignacio Santos',
-    employee_id: 'CIDG-ADM-0129',
-    email: 'rodolfo.santos@cidg.pnp.gov.ph',
-    contact_number: '09177778899',
-    agency: 'LEA Admin',
-    region: 'Region IV-A - CALABARZON',
-    department: 'Intelligence Administration',
-    position: 'Regional Security Administrator',
-    status: 'Locked',
-  },
-  {
-    id: 'lea-adm-006',
-    first_name: 'Teodoro',
-    middle_name: 'Villanueva',
-    last_name: 'Ramos',
-    fullname: 'Teodoro Villanueva Ramos',
-    employee_id: 'CIDG-ADM-0995',
-    email: 'teodoro.ramos@cidg.pnp.gov.ph',
-    contact_number: '09395556677',
-    agency: 'LEA Admin',
-    region: 'Region I - Ilocos Region',
-    department: 'Operations Support Division',
-    position: 'Regional Admin Officer',
-    status: 'Invited',
-  },
-  {
-    id: 'lea-adm-007',
-    first_name: 'Danilo',
-    middle_name: 'Morales',
-    last_name: 'Gutierrez',
-    fullname: 'Danilo Morales Gutierrez',
-    employee_id: 'CIDG-ADM-0723',
-    email: 'danilo.gutierrez@cidg.pnp.gov.ph',
-    contact_number: '09176667788',
-    agency: 'LEA Admin',
-    region: 'Region II - Cagayan Valley',
-    department: 'Anti-Cybercrime Administrative Unit',
-    position: 'Regional Operations Admin',
-    status: 'Pending Approval',
-    is_active: false,
-    is_locked: false,
-  },
-];
-
-const PHILIPPINE_REGIONS = [
-  'National Capital Region (NCR)',
-  'Cordillera Administrative Region (CAR)',
-  'Region I - Ilocos Region',
-  'Region II - Cagayan Valley',
-  'Region III - Central Luzon',
-  'Region IV-A - CALABARZON',
-  'MIMAROPA Region',
-  'Region V - Bicol Region',
-  'Region VI - Western Visayas',
-  'Region VII - Central Visayas',
-  'Region VIII - Eastern Visayas',
-  'Region IX - Zamboanga Peninsula',
-  'Region X - Northern Mindanao',
-  'Region XI - Davao Region',
-  'Region XII - SOCCSKSARGEN',
-  'Region XIII - Caraga',
-  'Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)',
-];
-
-function AdminMgmtActionDropdown({ admin, onAction, onView, onEdit }) {
-  const [isOpen, setIsOpen] = useState(false);
+function AdminMgmtActionDropdown({ admin, isSelf, isOpen, toggleDropdown, onAction, onView }) {
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
-  const displayStatus = computeAdminStatus(admin);
+  const displayStatus = admin.status;
 
   function openMenu() {
     if (!triggerRef.current) return;
@@ -273,22 +72,8 @@ function AdminMgmtActionDropdown({ admin, onAction, onView, onEdit }) {
       top: upward ? Math.max(8, rect.top - 170) : rect.bottom + 6,
       left: Math.max(8, rect.right - 185),
     });
-    setIsOpen(true);
+    toggleDropdown();
   }
-
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleOutsideClick(event) {
-      if (
-        menuRef.current && !menuRef.current.contains(event.target) &&
-        triggerRef.current && !triggerRef.current.contains(event.target)
-      ) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('click', handleOutsideClick);
-    return () => document.removeEventListener('click', handleOutsideClick);
-  }, [isOpen]);
 
   return (
     <div className={`LEAAdminDropdownWrapper ${isOpen ? 'active-open' : ''}`}>
@@ -299,7 +84,11 @@ function AdminMgmtActionDropdown({ admin, onAction, onView, onEdit }) {
         title="More Actions"
         onClick={(e) => {
           e.stopPropagation();
-          isOpen ? setIsOpen(false) : openMenu();
+          if (!isOpen) {
+            openMenu();
+          } else {
+            toggleDropdown();
+          }
         }}
       >
         <MoreVertical size={16} />
@@ -312,117 +101,45 @@ function AdminMgmtActionDropdown({ admin, onAction, onView, onEdit }) {
             ref={menuRef}
             style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }}
           >
-            <button
-              className="LEAAdminDropdownItem"
-              onClick={() => {
-                onView();
-                setIsOpen(false);
-              }}
-            >
+            <button className="LEAAdminDropdownItem" onClick={() => { onView(); toggleDropdown(); }}>
               <Eye size={14} /> View Details
             </button>
 
-            {/* Active -> Edit Profile, Suspend (STRICTLY NO RESET PASSWORD IN ADMIN MGMT!) */}
-            {displayStatus === 'Active' && (
-              <>
-                <button
-                  className="LEAAdminDropdownItem"
-                  onClick={() => {
-                    onEdit();
-                    setIsOpen(false);
-                  }}
-                >
-                  <Edit3 size={14} /> Edit Profile
-                </button>
-                <div className="LEAAdminDropdownDivider" />
-                <button
-                  className="LEAAdminDropdownItem danger"
-                  onClick={() => {
-                    onAction('suspend');
-                    setIsOpen(false);
-                  }}
-                >
-                  <UserX size={14} /> Suspend Account
-                </button>
-              </>
+            {displayStatus === 'Active' && !isSelf && (
+              <button className="LEAAdminDropdownItem danger" onClick={() => { onAction('suspend'); toggleDropdown(); }}>
+                <UserX size={14} /> Suspend Account
+              </button>
             )}
 
-            {/* Suspended -> Reactivate, Delete */}
-            {(displayStatus === 'Suspended' || displayStatus === 'Suspend') && (
-              <>
-                <button
-                  className="LEAAdminDropdownItem primary-action"
-                  onClick={() => {
-                    onAction('reactivate');
-                    setIsOpen(false);
-                  }}
-                >
-                  <RotateCcw size={14} /> Reactivate Account
-                </button>
-                <div className="LEAAdminDropdownDivider" />
-                <button
-                  className="LEAAdminDropdownItem danger"
-                  onClick={() => {
-                    onAction('delete');
-                    setIsOpen(false);
-                  }}
-                >
-                  <Trash2 size={14} /> Delete Account
-                </button>
-              </>
+            {displayStatus === 'Suspended' && !isSelf && (
+              <button className="LEAAdminDropdownItem primary-action" onClick={() => { onAction('reactivate'); toggleDropdown(); }}>
+                <RotateCcw size={14} /> Reactivate Account
+              </button>
             )}
 
-            {/* Pending Approval -> Activate */}
             {displayStatus === 'Pending Approval' && (
-              <button
-                className="LEAAdminDropdownItem primary-action"
-                onClick={() => {
-                  onAction('activate');
-                  setIsOpen(false);
-                }}
-              >
+              <button className="LEAAdminDropdownItem primary-action" onClick={() => { onAction('activate'); toggleDropdown(); }}>
                 <CheckCircle2 size={14} /> Activate Account
               </button>
             )}
 
-            {/* Resend link */}
             {['Resend Requested', 'Link Expired'].includes(displayStatus) && (
-              <button
-                className="LEAAdminDropdownItem"
-                onClick={() => {
-                  onAction('resend');
-                  setIsOpen(false);
-                }}
-              >
+              <button className="LEAAdminDropdownItem" onClick={() => { onAction('resend'); toggleDropdown(); }}>
                 <Send size={14} /> Resend Link
               </button>
             )}
 
-            {/* Link Expired -> Delete */}
             {displayStatus === 'Link Expired' && (
               <>
                 <div className="LEAAdminDropdownDivider" />
-                <button
-                  className="LEAAdminDropdownItem danger"
-                  onClick={() => {
-                    onAction('delete');
-                    setIsOpen(false);
-                  }}
-                >
+                <button className="LEAAdminDropdownItem danger" onClick={() => { onAction('delete'); toggleDropdown(); }}>
                   <Trash2 size={14} /> Delete Account
                 </button>
               </>
             )}
 
-            {/* Locked -> Unlock */}
             {displayStatus === 'Locked' && (
-              <button
-                className="LEAAdminDropdownItem primary-action"
-                onClick={() => {
-                  onAction('unlock');
-                  setIsOpen(false);
-                }}
-              >
+              <button className="LEAAdminDropdownItem primary-action" onClick={() => { onAction('unlock'); toggleDropdown(); }}>
                 <UserCheck size={14} /> Unlock Account
               </button>
             )}
@@ -501,8 +218,11 @@ function ConfirmModal({ open, actionType, onConfirm, onCancel }) {
   );
 }
 
-// 2-Step Add LEA Admin Flow
-function AddAdminFlow({ open, onClose, onCreated }) {
+// 2-step Add Admin flow — wired to POST /admin-management/by-fellow-admin.
+// Agency + region are derived server-side from the logged-in admin, but we
+// now also fetch and DISPLAY the real values here (via GET /profile),
+// passed down as the `myProfile` prop, instead of hardcoded placeholder text.
+function AddAdminFlow({ open, onClose, onCreated, myProfile }) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -511,13 +231,12 @@ function AddAdminFlow({ open, onClose, onCreated }) {
     employeeId: '',
     contactNumber: '',
     email: '',
-    agency: 'LEA Admin', // Read-only
-    region: '',
     department: '',
     position: '',
   });
-
   const [errors, setErrors] = useState({});
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -529,16 +248,21 @@ function AddAdminFlow({ open, onClose, onCreated }) {
         employeeId: '',
         contactNumber: '',
         email: '',
-        agency: 'LEA Admin',
-        region: '',
         department: '',
         position: '',
       });
       setErrors({});
+      setSubmitError('');
+      setSending(false);
     }
   }, [open]);
 
   if (!open) return null;
+
+  // Real agency/region of the current logged-in admin, fetched via /profile
+  // by the parent component. Falls back to "Loading…" until it resolves.
+  const agencyDisplay = myProfile ? `${myProfile.agency} Admin` : 'Loading…';
+  const regionDisplay = myProfile?.region || 'Loading…';
 
   function validate() {
     const errs = {};
@@ -563,10 +287,6 @@ function AddAdminFlow({ open, onClose, onCreated }) {
       }
     }
 
-    if (!formData.region) {
-      errs.region = 'Region is required. Please select an agency region.';
-    }
-
     return errs;
   }
 
@@ -581,26 +301,37 @@ function AddAdminFlow({ open, onClose, onCreated }) {
     setStep(2);
   }
 
-  function handleFinalConfirm() {
-    const fullName = [formData.firstName, formData.middleName, formData.lastName].filter(Boolean).join(' ');
-    const newAdmin = {
-      id: `lea-adm-${Date.now()}`,
-      first_name: formData.firstName.trim(),
-      middle_name: formData.middleName.trim(),
-      last_name: formData.lastName.trim(),
-      fullname: fullName,
-      employee_id: formData.employeeId.trim(),
-      email: formData.email.trim().toLowerCase(),
-      contact_number: formData.contactNumber.trim(),
-      agency: 'LEA Admin',
-      region: formData.region,
-      department: formData.department.trim(),
-      position: formData.position.trim(),
-      status: 'Active', // Confirmed accounts automatically Active
-    };
+  async function handleFinalConfirm() {
+    setSending(true);
+    setSubmitError('');
+    try {
+        const res = await apiFetch('/admin-management/by-fellow-admin', {
+          method: 'POST',
+          body: JSON.stringify({
+            first_name: formData.firstName.trim(),
+            middle_name: formData.middleName.trim() || null,
+            last_name: formData.lastName.trim(),
+            email: formData.email.trim(),
+            contact_number: formData.contactNumber.trim() || null,
+            employee_id: formData.employeeId.trim() || null,
+            position: formData.position.trim() || null,
+            department: formData.department.trim() || null,
+          }),
+        });
 
-    onCreated(newAdmin);
-    onClose();
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(extractErrorMessage(errData, 'Failed to send invitation.'));
+        }
+
+      onCreated(formData.email.trim());
+      onClose();
+    } catch (err) {
+      setSubmitError(err.message || 'Something went wrong.');
+      setStep(1);
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -610,7 +341,8 @@ function AddAdminFlow({ open, onClose, onCreated }) {
           <div className="LEAAdminModalHeader">
             <h3 className="LEAAdminModalTitle">Add New LEA Admin</h3>
             <p className="LEAAdminModalSubtitle">
-              Provision a new administrator account for LEA workspace operations.
+              Provision a new administrator account for LEA workspace operations. The account
+              will be added under your current agency and region.
             </p>
             <button className="LEAAdminModalCloseBtn" onClick={onClose}>
               <X size={18} />
@@ -619,7 +351,6 @@ function AddAdminFlow({ open, onClose, onCreated }) {
 
           <form onSubmit={handleFormSubmit}>
             <div className="LEAAdminModalBody">
-              {/* Row 1: First Name, Middle Name, Last Name */}
               <div className="LEAAdminFormRow3">
                 <div className="LEAAdminFormGroup">
                   <label className="LEAAdminLabel">
@@ -678,7 +409,6 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                 </div>
               </div>
 
-              {/* Row 2: Employee ID, Contact Number */}
               <div className="LEAAdminFormRow">
                 <div className="LEAAdminFormGroup">
                   <label className="LEAAdminLabel">Employee ID</label>
@@ -720,7 +450,6 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                 </div>
               </div>
 
-              {/* Row 3: Email Address */}
               <div className="LEAAdminFormGroup">
                 <label className="LEAAdminLabel">
                   Email Address <span className="LEAAdminRequired">*</span>
@@ -730,7 +459,7 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                   <input
                     type="email"
                     className={`LEAAdminInput ${errors.email ? 'input-error' : ''}`}
-                    placeholder="e.g. dominic.valdez@cidg.gov.ph"
+                    placeholder="e.g. dominic.valdez@cidg.pnp.gov.ph"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
@@ -742,48 +471,23 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                 )}
               </div>
 
-              {/* Row 4: Agency, Region */}
               <div className="LEAAdminFormRow">
                 <div className="LEAAdminFormGroup">
-                  <label className="LEAAdminLabel">Agency (Read-only)</label>
+                  <label className="LEAAdminLabel">Agency</label>
                   <div className="LEAAdminInputWrapper">
                     <Building2 className="LEAAdminInputIcon" size={17} />
-                    <input
-                      type="text"
-                      className="LEAAdminInput readonly-input"
-                      value={formData.agency}
-                      readOnly
-                      disabled
-                    />
+                    <input type="text" className="LEAAdminInput readonly-input" value={agencyDisplay} readOnly disabled />
                   </div>
                 </div>
-
                 <div className="LEAAdminFormGroup">
-                  <label className="LEAAdminLabel">
-                    Region <span className="LEAAdminRequired">*</span>
-                  </label>
+                  <label className="LEAAdminLabel">Region</label>
                   <div className="LEAAdminInputWrapper">
                     <MapPin className="LEAAdminInputIcon" size={17} />
-                    <select
-                      className={`LEAAdminSelect ${errors.region ? 'input-error' : ''}`}
-                      value={formData.region}
-                      onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                    >
-                      <option value="">Select Region</option>
-                      {PHILIPPINE_REGIONS.map((reg) => (
-                        <option key={reg} value={reg}>{reg}</option>
-                      ))}
-                    </select>
+                    <input type="text" className="LEAAdminInput readonly-input" value={regionDisplay} readOnly disabled />
                   </div>
-                  {errors.region && (
-                    <span className="LEAAdminFieldError">
-                      <AlertCircle size={12} /> {errors.region}
-                    </span>
-                  )}
                 </div>
               </div>
 
-              {/* Row 5: Department, Position */}
               <div className="LEAAdminFormRow">
                 <div className="LEAAdminFormGroup">
                   <label className="LEAAdminLabel">Department</label>
@@ -798,7 +502,6 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                     />
                   </div>
                 </div>
-
                 <div className="LEAAdminFormGroup">
                   <label className="LEAAdminLabel">Position</label>
                   <div className="LEAAdminInputWrapper">
@@ -813,6 +516,12 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                   </div>
                 </div>
               </div>
+
+              {submitError && (
+                <span className="LEAAdminFieldError">
+                  <AlertCircle size={12} /> {submitError}
+                </span>
+              )}
             </div>
 
             <div className="LEAAdminModalFooter">
@@ -826,19 +535,18 @@ function AddAdminFlow({ open, onClose, onCreated }) {
           </form>
         </div>
       ) : (
-        /* STEP 2: Summary Confirmation */
         <div className="LEAAdminModal" style={{ maxWidth: '480px' }}>
           <div className="LEAAdminModalHeader">
             <h3 className="LEAAdminModalTitle">Confirm Administrator Creation</h3>
             <p className="LEAAdminModalSubtitle">
-              Verify administrator credentials before finalizing account creation.
+              Verify administrator credentials before sending the invitation.
             </p>
           </div>
 
           <div className="LEAAdminModalBody">
             <div className="LEAAdminSummaryNotice">
-              <CircleCheckBig size={18} />
-              <span>This account will be created directly with <strong>Active</strong> administrative status.</span>
+              <Mail size={18} />
+              <span>An invitation link will be emailed to this address. The account stays <strong>Invited</strong> until it's accepted.</span>
             </div>
 
             <div className="LEAAdminSummaryBox">
@@ -847,18 +555,6 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                 <span className="LEAAdminSummaryValue">
                   {[formData.firstName, formData.middleName, formData.lastName].filter(Boolean).join(' ') || '-'}
                 </span>
-              </div>
-              <div className="LEAAdminSummaryRow">
-                <span className="LEAAdminSummaryLabel">First Name:</span>
-                <span className="LEAAdminSummaryValue">{formData.firstName || '-'}</span>
-              </div>
-              <div className="LEAAdminSummaryRow">
-                <span className="LEAAdminSummaryLabel">Middle Name:</span>
-                <span className="LEAAdminSummaryValue">{formData.middleName || '-'}</span>
-              </div>
-              <div className="LEAAdminSummaryRow">
-                <span className="LEAAdminSummaryLabel">Last Name:</span>
-                <span className="LEAAdminSummaryValue">{formData.lastName || '-'}</span>
               </div>
               <div className="LEAAdminSummaryRow">
                 <span className="LEAAdminSummaryLabel">Employee ID:</span>
@@ -875,12 +571,12 @@ function AddAdminFlow({ open, onClose, onCreated }) {
               <div className="LEAAdminSummaryRow">
                 <span className="LEAAdminSummaryLabel">Agency:</span>
                 <span className="LEAAdminSummaryValue">
-                  <span className="LEAAdminAgencyTag">LEA Admin</span>
+                  <span className="LEAAdminAgencyTag">{agencyDisplay}</span>
                 </span>
               </div>
               <div className="LEAAdminSummaryRow">
                 <span className="LEAAdminSummaryLabel">Region:</span>
-                <span className="LEAAdminSummaryValue">{formData.region || '-'}</span>
+                <span className="LEAAdminSummaryValue">{regionDisplay}</span>
               </div>
               <div className="LEAAdminSummaryRow">
                 <span className="LEAAdminSummaryLabel">Department:</span>
@@ -891,14 +587,20 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                 <span className="LEAAdminSummaryValue">{formData.position || '-'}</span>
               </div>
             </div>
+
+            {submitError && (
+              <span className="LEAAdminFieldError">
+                <AlertCircle size={12} /> {submitError}
+              </span>
+            )}
           </div>
 
           <div className="LEAAdminModalFooter">
-            <button type="button" className="LEAAdminCancelBtn" onClick={() => setStep(1)}>
+            <button type="button" className="LEAAdminCancelBtn" onClick={() => setStep(1)} disabled={sending}>
               Go Back
             </button>
-            <button type="button" className="LEAAdminConfirmBtn primary" onClick={handleFinalConfirm}>
-              Confirm / Add New Admin
+            <button type="button" className="LEAAdminConfirmBtn primary" onClick={handleFinalConfirm} disabled={sending}>
+              {sending ? 'Sending Invitation…' : 'Confirm / Send Invitation'}
             </button>
           </div>
         </div>
@@ -907,191 +609,9 @@ function AddAdminFlow({ open, onClose, onCreated }) {
   );
 }
 
-// Edit Profile Modal for LEA Admin
-function EditAdminModal({ open, admin, onClose, onSave }) {
-  const [form, setForm] = useState({
-    firstName: '',
-    middleName: '',
-    lastName: '',
-    employeeId: '',
-    contactNumber: '',
-    email: '',
-    agency: 'LEA Admin',
-    region: '',
-    department: '',
-    position: '',
-  });
 
-  useEffect(() => {
-    if (admin) {
-      setForm({
-        firstName: admin.first_name || '',
-        middleName: admin.middle_name || '',
-        lastName: admin.last_name || '',
-        employeeId: admin.employee_id || '',
-        contactNumber: admin.contact_number || '',
-        email: admin.email || '',
-        agency: 'LEA Admin',
-        region: admin.region || 'National Capital Region (NCR)',
-        department: admin.department || '',
-        position: admin.position || '',
-      });
-    }
-  }, [admin]);
-
-  if (!open || !admin) return null;
-
-  function handleSave(e) {
-    e.preventDefault();
-    const updated = {
-      ...admin,
-      first_name: form.firstName.trim(),
-      middle_name: form.middleName.trim(),
-      last_name: form.lastName.trim(),
-      fullname: [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' '),
-      employee_id: form.employeeId.trim(),
-      contact_number: form.contactNumber.trim(),
-      email: form.email.trim(),
-      agency: 'LEA Admin',
-      region: form.region,
-      department: form.department.trim(),
-      position: form.position.trim(),
-    };
-    onSave(updated);
-    onClose();
-  }
-
-  return (
-    <div className="LEAAdminModalOverlay">
-      <div className="LEAAdminModal">
-        <div className="LEAAdminModalHeader">
-          <h3 className="LEAAdminModalTitle">Edit Administrator Profile</h3>
-          <p className="LEAAdminModalSubtitle">Update credentials for this LEA Administrator.</p>
-          <button className="LEAAdminModalCloseBtn" onClick={onClose}><X size={18} /></button>
-        </div>
-        <form onSubmit={handleSave}>
-          <div className="LEAAdminModalBody">
-            <div className="LEAAdminFormGrid">
-              <div className="LEAAdminFormGroup">
-                <label className="LEAAdminLabel">First Name</label>
-                <input
-                  type="text"
-                  className="LEAAdminInput"
-                  value={form.firstName}
-                  onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="LEAAdminFormGroup">
-                <label className="LEAAdminLabel">Middle Name</label>
-                <input
-                  type="text"
-                  className="LEAAdminInput"
-                  value={form.middleName}
-                  onChange={(e) => setForm({ ...form, middleName: e.target.value })}
-                />
-              </div>
-              <div className="LEAAdminFormGroup">
-                <label className="LEAAdminLabel">Last Name</label>
-                <input
-                  type="text"
-                  className="LEAAdminInput"
-                  value={form.lastName}
-                  onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="LEAAdminFormGroup">
-                <label className="LEAAdminLabel">Employee ID</label>
-                <input
-                  type="text"
-                  className="LEAAdminInput"
-                  value={form.employeeId}
-                  onChange={(e) => setForm({ ...form, employeeId: e.target.value })}
-                />
-              </div>
-              <div className="LEAAdminFormGroup">
-                <label className="LEAAdminLabel">Contact Number</label>
-                <input
-                  type="tel"
-                  maxLength={11}
-                  className="LEAAdminInput"
-                  value={form.contactNumber}
-                  onChange={(e) => setForm({ ...form, contactNumber: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="LEAAdminFormGroup">
-                <label className="LEAAdminLabel">Email Address</label>
-                <input
-                  type="email"
-                  className="LEAAdminInput"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="LEAAdminFormGroup">
-                <label className="LEAAdminLabel">Agency (Read-only)</label>
-                <input
-                  type="text"
-                  className="LEAAdminInput readonly-input"
-                  value={form.agency}
-                  readOnly
-                  disabled
-                />
-              </div>
-              <div className="LEAAdminFormGroup">
-                <label className="LEAAdminLabel">Region</label>
-                <select
-                  className="LEAAdminSelect"
-                  style={{ width: '100%' }}
-                  value={form.region}
-                  onChange={(e) => setForm({ ...form, region: e.target.value })}
-                >
-                  {PHILIPPINE_REGIONS.map((reg) => (
-                    <option key={reg} value={reg}>{reg}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="LEAAdminFormGroup">
-                <label className="LEAAdminLabel">Department</label>
-                <input
-                  type="text"
-                  className="LEAAdminInput"
-                  value={form.department}
-                  onChange={(e) => setForm({ ...form, department: e.target.value })}
-                />
-              </div>
-              <div className="LEAAdminFormGroup">
-                <label className="LEAAdminLabel">Position</label>
-                <input
-                  type="text"
-                  className="LEAAdminInput"
-                  value={form.position}
-                  onChange={(e) => setForm({ ...form, position: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="LEAAdminModalFooter">
-            <button type="button" className="LEAAdminCancelBtn" onClick={onClose}>Cancel</button>
-            <button type="submit" className="LEAAdminConfirmBtn primary">Save Changes</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// View Admin Details
 function ViewAdminModal({ open, admin, onClose }) {
   if (!open || !admin) return null;
-
-  const resolvedFullName =
-    admin.fullname ||
-    [admin.first_name, admin.middle_name, admin.last_name].filter(Boolean).join(' ') ||
-    '-';
 
   return (
     <div className="LEAAdminModalOverlay">
@@ -1119,7 +639,7 @@ function ViewAdminModal({ open, admin, onClose }) {
 
               <div className="LEAAdminVDField full-span">
                 <span className="LEAAdminVDLabel">Full Name</span>
-                <span className="LEAAdminVDValue">{resolvedFullName}</span>
+                <span className="LEAAdminVDValue">{admin.fullname || '-'}</span>
               </div>
 
               <div className="LEAAdminVDField">
@@ -1159,7 +679,7 @@ function ViewAdminModal({ open, admin, onClose }) {
               <div className="LEAAdminVDField full-span">
                 <span className="LEAAdminVDLabel">Account Status</span>
                 <span className="LEAAdminVDValue">
-                  <StatusBadge status={admin} />
+                  <StatusBadge status={admin.status} />
                 </span>
               </div>
             </div>
@@ -1175,13 +695,21 @@ function ViewAdminModal({ open, admin, onClose }) {
   );
 }
 
-
 export default function LEAAdminAdminManagement() {
-  const [admins, setAdmins] = useState(INITIAL_LEA_ADMINS);
+  const [admins, setAdmins] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+
+
+  // Real region/agency of the LOGGED-IN admin, fetched once from GET /profile.
+  // Passed into AddAdminFlow so the "Add New LEA Admin" form shows real data
+  // instead of the old hardcoded "Same as your region" placeholder text.
+  const [myProfile, setMyProfile] = useState(null);
+  const [activeDropdownId, setActiveDropdownId] = useState(null);
+
   const [statusFilter, setStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewAdmin, setViewAdmin] = useState(null);
-  const [editAdmin, setEditAdmin] = useState(null);
   const [addFlowOpen, setAddFlowOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -1199,63 +727,118 @@ export default function LEAAdminAdminManagement() {
     setTimeout(() => setToastMessage(''), 4000);
   }
 
-  function handleAddAdminSuccess(newAdmin) {
-    setAdmins((prev) => [newAdmin, ...prev]);
-    showToast(`LEA Admin account for ${newAdmin.fullname} created and activated.`);
+  // `silent`: when true, skips toggling the table-wide `loading` state.
+  // Used for refetches triggered by an action (activate/suspend/etc.) so the
+  // whole table doesn't flash back to "Loading administrator records…" —
+  // only the initial mount-time fetch shows that loading state.
+  const fetchAdmins = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    setFetchError('');
+    try {
+      const res = await apiFetch('/admin-management');
+      if (!res.ok) throw new Error('Failed to load administrator records.');
+      const data = await res.json();
+      setAdmins(
+        data.map((a) => ({
+          id: a.user_id,
+          first_name: a.first_name,
+          middle_name: a.middle_name,
+          last_name: a.last_name,
+          fullname: [a.first_name, a.middle_name, a.last_name].filter(Boolean).join(' '),
+          email: a.email,
+          agency: a.agency,
+          region: a.region,
+          department: a.department,
+          position: a.position,
+          employee_id: a.employee_id,
+          contact_number: a.contact_number,
+          status: a.status,
+          is_locked: a.is_locked,
+        }))
+      );
+    } catch (err) {
+      setFetchError(err.message || 'Something went wrong.');
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, []);
+
+  const fetchMyProfile = useCallback(async () => {
+    try {
+      const res = await apiFetch('/profile');
+      if (!res.ok) return;
+      const data = await res.json();
+      setMyProfile(data);
+    } catch (err) {
+      console.error('Failed to fetch current admin profile:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAdmins();
+    fetchMyProfile();
+  }, [fetchAdmins, fetchMyProfile]);
+
+   useEffect(() => {
+    function handleOutsideClick(event) {
+      if (
+        !event.target.closest('.LEAAdminDropdownWrapper') &&
+        !event.target.closest('.LEAAdminDropdownMenu')
+      ) {
+        setActiveDropdownId(null);
+      }
+    }
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, []);
+
+  function handleAddAdminSuccess(email) {
+    showToast(`Invitation sent to ${email}.`);
+    fetchAdmins(true); // silent — table already has data, just refresh it quietly
   }
 
   function openConfirm(actionType, adminId) {
     setConfirmModal({ open: true, actionType, targetId: adminId });
   }
 
-  function handleConfirmAction() {
+  async function handleConfirmAction() {
     const { actionType, targetId } = confirmModal;
-    setAdmins((prev) =>
-      prev.flatMap((a) => {
-        if (a.id !== targetId) return [a];
-        if (actionType === 'activate') {
-          showToast(`Admin account ${a.fullname} activated.`);
-          return [{ ...a, status: 'Active', is_active: true, is_locked: false }];
-        }
-        if (actionType === 'suspend') {
-          showToast(`Admin account ${a.fullname} suspended.`);
-          return [{ ...a, status: 'Suspended', is_active: false }];
-        }
-        if (actionType === 'reactivate') {
-          showToast(`Admin account ${a.fullname} reactivated.`);
-          return [{ ...a, status: 'Active', is_active: true, is_locked: false }];
-        }
-        if (actionType === 'unlock') {
-          showToast(`Admin account ${a.fullname} unlocked.`);
-          return [{ ...a, status: 'Active', is_active: true, is_locked: false }];
-        }
-        if (actionType === 'resend') {
-          showToast(`Invitation resent to ${a.email}.`);
-          return [{ ...a, status: 'Invited' }];
-        }
-        if (actionType === 'delete') {
-          showToast(`Admin entry for ${a.fullname} deleted.`);
-          return [];
-        }
-        return [a];
-      })
-    );
+    const actionPathMap = {
+      suspend: 'suspend',
+      reactivate: 'reactivate',
+      activate: 'activate',
+      unlock: 'unlock',
+      resend: 'resend-link',
+    };
+
     setConfirmModal({ open: false, actionType: '', targetId: null });
+
+    try {
+      if (actionType === 'delete') {
+        const res = await apiFetch(`/admin-management/${targetId}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(extractErrorMessage(errData, 'Delete failed.'));
+        }
+        showToast('Admin entry deleted.');
+      } else {
+        const path = actionPathMap[actionType];
+        if (!path) return;
+        const res = await apiFetch(`/admin-management/${targetId}/${path}`, { method: 'POST' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(extractErrorMessage(errData, 'Action failed.'));
+        }
+        showToast('Account updated.');
+      }
+      await fetchAdmins(true); // silent — no full-table "Loading…" flash after an action
+    } catch (err) {
+      showToast(err.message || 'Something went wrong.');
+    }
   }
 
-  function handleSaveEdit(updatedAdmin) {
-    setAdmins((prev) => prev.map((a) => (a.id === updatedAdmin.id ? updatedAdmin : a)));
-    showToast(`Profile for ${updatedAdmin.fullname} successfully updated.`);
-  }
-
-  // Search & Filter
   const filteredAdmins = admins.filter((a) => {
-    const dispStatus = computeAdminStatus(a);
-    const matchesStatus =
-      statusFilter === 'All'
-        ? true
-        : dispStatus === statusFilter ||
-          (statusFilter === 'Suspended' && dispStatus === 'Suspend');
+    const matchesStatus = statusFilter === 'All' || a.status === statusFilter;
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
@@ -1282,7 +865,6 @@ export default function LEAAdminAdminManagement() {
         <TopBar topbarType="LEA_ADMIN" />
         <div className="LEAAdminMainfeed">
           <div className="LEAAdminPageContainer">
-            {/* Header */}
             <div className="LEAAdminPageHeader">
               <div className="LEAAdminPageTitleBlock">
                 <h1 className="LEAAdminPageTitle">
@@ -1302,27 +884,17 @@ export default function LEAAdminAdminManagement() {
               </button>
             </div>
 
-            {/* Stats Row - Primary Account States Only */}
+            {fetchError && (
+              <div className="LEAAdminFieldError" style={{ marginBottom: '12px' }}>
+                <AlertCircle size={12} /> {fetchError}
+              </div>
+            )}
+
             <div className="LEAAdminStatsRow">
               {[
-                {
-                  label: 'Active',
-                  value: admins.filter((a) => computeAdminStatus(a) === 'Active').length,
-                  className: 'stat-active',
-                },
-                {
-                  label: 'Suspended',
-                  value: admins.filter((a) => {
-                    const s = computeAdminStatus(a);
-                    return s === 'Suspended' || s === 'Suspend';
-                  }).length,
-                  className: 'stat-suspended',
-                },
-                {
-                  label: 'Locked',
-                  value: admins.filter((a) => computeAdminStatus(a) === 'Locked').length,
-                  className: 'stat-locked',
-                },
+                { label: 'Active', value: admins.filter((a) => a.status === 'Active').length, className: 'stat-active' },
+                { label: 'Suspended', value: admins.filter((a) => a.status === 'Suspended').length, className: 'stat-suspended' },
+                { label: 'Locked', value: admins.filter((a) => a.status === 'Locked').length, className: 'stat-locked' },
               ].map((s) => (
                 <div key={s.label} className={`LEAAdminStatCard ${s.className}`}>
                   <span className="LEAAdminStatValue">{s.value}</span>
@@ -1331,7 +903,6 @@ export default function LEAAdminAdminManagement() {
               ))}
             </div>
 
-            {/* Filters & Search */}
             <div className="LEAAdminFiltersContainer">
               <div className="LEAAdminSearchGroup">
                 <Search size={16} className="LEAAdminSearchIcon" />
@@ -1385,7 +956,6 @@ export default function LEAAdminAdminManagement() {
               </div>
             </div>
 
-            {/* Table */}
             <div className="LEAAdminTableWrapper">
               <table className="LEAAdminTable">
                 <thead>
@@ -1401,7 +971,13 @@ export default function LEAAdminAdminManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayedAdmins.length > 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="LEAAdminEmpty">
+                        Loading administrator records…
+                      </td>
+                    </tr>
+                  ) : displayedAdmins.length > 0 ? (
                     displayedAdmins.map((admin, idx) => (
                       <tr key={admin.id}>
                         <td className="LEAAdminTdCenter">{startIndex + idx + 1}</td>
@@ -1413,15 +989,23 @@ export default function LEAAdminAdminManagement() {
                         <td>{admin.region || '-'}</td>
                         <td>{admin.department || '-'}</td>
                         <td>
-                          <StatusBadge status={admin} />
+                          <StatusBadge status={admin.status} />
                         </td>
                         <td className="LEAAdminTdCenter">
+                          {myProfile !== null ? (
                           <AdminMgmtActionDropdown
                             admin={admin}
+                            isSelf={admin.id === myProfile?.user_id}
+                            isOpen={activeDropdownId === admin.id} 
+                             toggleDropdown={() =>
+                              setActiveDropdownId(activeDropdownId === admin.id ? null : admin.id)    
+                            }
                             onAction={(type) => openConfirm(type, admin.id)}
                             onView={() => setViewAdmin(admin)}
-                            onEdit={() => setEditAdmin(admin)}
                           />
+                           ) : (
+                            <span className="LEAAdminActionsPlaceholder">—</span>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -1435,7 +1019,7 @@ export default function LEAAdminAdminManagement() {
                 </tbody>
               </table>
 
-              {totalItems > 0 && (
+              {!loading && totalItems > 0 && (
                 <div className="LEAAdminPaginationWrapper">
                   <span className="LEAAdminPaginationInfo">
                     Showing {startIndex + 1}–{endIndex} of {totalItems} admin entries
@@ -1472,14 +1056,13 @@ export default function LEAAdminAdminManagement() {
         </div>
       </div>
 
-      {/* Add Admin Flow */}
       <AddAdminFlow
         open={addFlowOpen}
         onClose={() => setAddFlowOpen(false)}
         onCreated={handleAddAdminSuccess}
+        myProfile={myProfile}
       />
 
-      {/* Confirmation Modal */}
       <ConfirmModal
         open={confirmModal.open}
         actionType={confirmModal.actionType}
@@ -1487,22 +1070,12 @@ export default function LEAAdminAdminManagement() {
         onCancel={() => setConfirmModal({ open: false, actionType: '', targetId: null })}
       />
 
-      {/* View Admin Modal */}
       <ViewAdminModal
         open={!!viewAdmin}
         admin={viewAdmin}
         onClose={() => setViewAdmin(null)}
       />
 
-      {/* Edit Admin Modal */}
-      <EditAdminModal
-        open={!!editAdmin}
-        admin={editAdmin}
-        onClose={() => setEditAdmin(null)}
-        onSave={handleSaveEdit}
-      />
-
-      {/* Success Toast */}
       {toastMessage && (
         <div className="LEAAdminToast">
           <CheckCircle2 size={18} />

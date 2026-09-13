@@ -1,14 +1,54 @@
+# backend/app/desktop/services/auth/email.py
+"""
+ICMDA transactional email sender.
+
+Role tiers:
+    National Admin  -> no agency / region (system-wide)
+    Admin (FDA/LEA)  -> agency + region scoped, manages personnel + fellow admins
+    Personnel (FDA/LEA) -> agency + region scoped
+
+Email lifecycle per account:
+    invite      -> deep link to set a password (no credentials in the email)
+    otp         -> login verification code
+    activation  -> account approved by an approver; NO credentials included,
+                   since the user already set their own password via invite
+    reset       -> personnel-only. Admin-triggered from User Management.
+                   Sends a temporary password; next successful login forces
+                   a password change (force_change_password = True).
+"""
+
+import html
 from pathlib import Path
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
+from urllib.parse import quote
+
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 
 from app.core.config import settings
 
-TEMPLATE_PATH = Path(__file__).parent / "templates" / "invite_email.html"
-TEMPLATE_PATH_SUPERADMIN = Path(__file__).parent / "templates" / "superadmin_otp_email.html"
-TEMPLATE_PATH_PERSONNEL = Path(__file__).parent / "templates" / "personnel_otp_email.html"
-TEMPLATE_PATH_ACTIVATION = Path(__file__).parent / "templates" / "user_activation_email.html"
-TEMPLATE_PATH_SUPERADMIN_INVITE = Path(__file__).parent / "templates" / "superadmin_invite_email.html"
-TEMPLATE_PATH_SUPERADMIN_ACTIVATION = Path(__file__).parent / "templates" / "superadmin_activation_email.html"
+TEMPLATES_DIR = Path(__file__).parent / "templates"
+
+TEMPLATE_PATH_PERSONNEL_INVITE = TEMPLATES_DIR / "personnel_invite_email.html"
+TEMPLATE_PATH_ADMIN_INVITE = TEMPLATES_DIR / "admin_invite_email.html"
+TEMPLATE_PATH_NATIONAL_ADMIN_INVITE = TEMPLATES_DIR / "national_admin_invite_email.html"
+
+TEMPLATE_PATH_PERSONNEL_OTP = TEMPLATES_DIR / "personnel_otp_email.html"
+TEMPLATE_PATH_ADMIN_OTP = TEMPLATES_DIR / "admin_otp_email.html"
+TEMPLATE_PATH_NATIONAL_ADMIN_OTP = TEMPLATES_DIR / "national_admin_otp_email.html"
+
+TEMPLATE_PATH_PERSONNEL_ACTIVATION = TEMPLATES_DIR / "personnel_activation_email.html"
+TEMPLATE_PATH_ADMIN_ACTIVATION = TEMPLATES_DIR / "admin_activation_email.html"
+TEMPLATE_PATH_NATIONAL_ADMIN_ACTIVATION = TEMPLATES_DIR / "national_admin_activation_email.html"
+
+TEMPLATE_PATH_PERSONNEL_RESET_PASSWORD = TEMPLATES_DIR / "personnel_reset_password_email.html"
+
+AGENCY_DISPLAY_NAMES = {
+    "fda_personnel": "FDA",
+    "lea_personnel": "LEA-CIDG",
+    "fda_admin": "FDA",
+    "lea_admin": "LEA-CIDG",
+    "FDA": "FDA",
+    "LEA-CIDG": "LEA-CIDG",
+}
 
 conf = ConnectionConfig(
     MAIL_USERNAME=settings.MAIL_USERNAME,
@@ -23,146 +63,127 @@ conf = ConnectionConfig(
 )
 
 
-def render_invite_email(agency_name: str, deep_link: str) -> str:
-    html = TEMPLATE_PATH.read_text(encoding="utf-8")
-    html = html.replace("{{AGENCY_NAME}}", agency_name)
-    html = html.replace("{{DEEP_LINK}}", deep_link)
-    return html
+def _render(template_path: Path, **fields) -> str:
+    """Load a template and substitute {{PLACEHOLDER}} values, HTML-escaping every value."""
+    text = template_path.read_text(encoding="utf-8")
+    for key, value in fields.items():
+        text = text.replace("{{" + key + "}}", html.escape(str(value)))
+    return text
 
 
-async def send_invite_email(to_email: str, agency_name: str, token: str):
-    display_name = {
-        "fda_personnel": "FDA",
-        "lea_personnel": "LEA-CIDG",
-        "FDA": "FDA",
-        "LEA-CIDG": "LEA-CIDG"
-    }.get(agency_name, agency_name)
-
-    #deep_link = f"everifymo://complete-registration?token={token}"
-    deep_link = f"https://everifyapp.netlify.app/?token={token}"
-    html_body = render_invite_email(display_name, deep_link)
-
+async def _send(to_email: str, subject: str, html_body: str) -> None:
     message = MessageSchema(
-        subject="You're invited to register — ICMDA",
+        subject=subject,
         recipients=[to_email],
         body=html_body,
         subtype=MessageType.html,
     )
-
     fm = FastMail(conf)
     await fm.send_message(message)
-    
-
-def render_superadmin_invite_email(deep_link: str) -> str:
-    html = TEMPLATE_PATH_SUPERADMIN_INVITE.read_text(encoding="utf-8")
-    html = html.replace("{{DEEP_LINK}}", deep_link)
-    return html
 
 
-async def send_superadmin_invite_email(to_email: str, token: str):
-    #deep_link = f"everifymo://complete-registration?token={token}"
-    deep_link = f"https://everifyapp.netlify.app/?token={token}" 
-    html_body = render_superadmin_invite_email(deep_link)
+def _deep_link(token: str) -> str:
+    # everifymo://complete-registration?token={token}
+    return f"https://everifyapp.netlify.app/?token={quote(token)}"
 
-    message = MessageSchema(
-        subject="You're invited as a Superadmin — ICMDA",
-        recipients=[to_email],
-        body=html_body,
-        subtype=MessageType.html,
+
+def _display_agency(agency_name: str) -> str:
+    return AGENCY_DISPLAY_NAMES.get(agency_name, agency_name)
+
+
+# ---------------------------------------------------------------------------
+# Invite emails
+# ---------------------------------------------------------------------------
+
+async def send_personnel_invite_email(to_email: str, agency_name: str, region: str, token: str) -> None:
+    html_body = _render(
+        TEMPLATE_PATH_PERSONNEL_INVITE,
+        AGENCY_NAME=_display_agency(agency_name),
+        REGION=region,
+        DEEP_LINK=_deep_link(token),
     )
-
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    await _send(to_email, "You're invited to register — ICMDA", html_body)
 
 
-def render_superadmin_otp_email(otp_code: str, expire_minutes: int) -> str:
-    html = TEMPLATE_PATH_SUPERADMIN.read_text(encoding="utf-8")
-    html = html.replace("{{OTP_CODE}}", otp_code)
-    html = html.replace("{{EXPIRE_MINUTES}}", str(expire_minutes))
-    return html
-
-
-async def send_superadmin_otp_email(to_email: str, otp_code: str, expire_minutes: int = None):
-    if expire_minutes is None:
-        from app.core.config import settings
-        expire_minutes = settings.OTP_EXPIRE_MINUTES
-
-    html_body = render_superadmin_otp_email(otp_code, expire_minutes)
-
-    message = MessageSchema(
-        subject="Your Superadmin verification code",
-        recipients=[to_email],
-        body=html_body,
-        subtype=MessageType.html,
+async def send_admin_invite_email(to_email: str, agency_name: str, region: str, token: str) -> None:
+    html_body = _render(
+        TEMPLATE_PATH_ADMIN_INVITE,
+        AGENCY_NAME=_display_agency(agency_name),
+        REGION=region,
+        DEEP_LINK=_deep_link(token),
     )
-
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    await _send(to_email, "You're invited as Interagency Admin — ICMDA", html_body)
 
 
-def render_personnel_otp_email(otp_code: str, expire_minutes: int) -> str:
-    html = TEMPLATE_PATH_PERSONNEL.read_text(encoding="utf-8")
-    html = html.replace("{{OTP_CODE}}", otp_code)
-    html = html.replace("{{EXPIRE_MINUTES}}", str(expire_minutes))
-    return html
+async def send_national_admin_invite_email(to_email: str, token: str) -> None:
+    html_body = _render(
+        TEMPLATE_PATH_NATIONAL_ADMIN_INVITE,
+        DEEP_LINK=_deep_link(token),
+    )
+    await _send(to_email, "You're invited as National Admin — ICMDA", html_body)
 
 
-async def send_personnel_otp_email(to_email: str, otp_code: str, expire_minutes: int = None):
+# ---------------------------------------------------------------------------
+# OTP emails
+# ---------------------------------------------------------------------------
+
+async def send_personnel_otp_email(to_email: str, otp_code: str, expire_minutes: int = None) -> None:
     if expire_minutes is None:
         expire_minutes = settings.OTP_EXPIRE_MINUTES
+    html_body = _render(TEMPLATE_PATH_PERSONNEL_OTP, OTP_CODE=otp_code, EXPIRE_MINUTES=expire_minutes)
+    await _send(to_email, "Your ICMDA verification code", html_body)
 
-    html_body = render_personnel_otp_email(otp_code, expire_minutes)
 
-    message = MessageSchema(
-        subject="Your ICMDA verification code",
-        recipients=[to_email],
-        body=html_body,
-        subtype=MessageType.html,
+async def send_admin_otp_email(to_email: str, otp_code: str, expire_minutes: int = None) -> None:
+    if expire_minutes is None:
+        expire_minutes = settings.OTP_EXPIRE_MINUTES
+    html_body = _render(TEMPLATE_PATH_ADMIN_OTP, OTP_CODE=otp_code, EXPIRE_MINUTES=expire_minutes)
+    await _send(to_email, "Your Interagency Admin verification code", html_body)
+
+
+async def send_national_admin_otp_email(to_email: str, otp_code: str, expire_minutes: int = None) -> None:
+    if expire_minutes is None:
+        expire_minutes = settings.OTP_EXPIRE_MINUTES
+    html_body = _render(TEMPLATE_PATH_NATIONAL_ADMIN_OTP, OTP_CODE=otp_code, EXPIRE_MINUTES=expire_minutes)
+    await _send(to_email, "Your National Admin verification code", html_body)
+
+
+# ---------------------------------------------------------------------------
+# Activation emails — approved, NO credentials (password already self-set via invite)
+# ---------------------------------------------------------------------------
+
+async def send_personnel_activation_email(to_email: str, full_name: str) -> None:
+    html_body = _render(TEMPLATE_PATH_PERSONNEL_ACTIVATION, FULL_NAME=full_name, EMAIL=to_email)
+    await _send(to_email, "Your ICMDA account has been activated", html_body)
+
+
+async def send_admin_activation_email(to_email: str, full_name: str, agency_name: str, region: str) -> None:
+    html_body = _render(
+        TEMPLATE_PATH_ADMIN_ACTIVATION,
+        FULL_NAME=full_name,
+        EMAIL=to_email,
+        AGENCY_NAME=_display_agency(agency_name),
+        REGION=region,
     )
-
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    await _send(to_email, "Your Interagency Admin account has been activated", html_body)
 
 
-def render_activation_email(full_name: str, email: str, temp_password: str) -> str:
-    html = TEMPLATE_PATH_ACTIVATION.read_text(encoding="utf-8")
-    html = html.replace("{{FULL_NAME}}", full_name)
-    html = html.replace("{{EMAIL}}", email)
-    html = html.replace("{{TEMP_PASSWORD}}", temp_password)
-    return html
+async def send_national_admin_activation_email(to_email: str, full_name: str) -> None:
+    html_body = _render(TEMPLATE_PATH_NATIONAL_ADMIN_ACTIVATION, FULL_NAME=full_name, EMAIL=to_email)
+    await _send(to_email, "Your National Admin account has been activated", html_body)
 
 
-async def send_activation_email(to_email: str, full_name: str, temp_password: str):
-    html_body = render_activation_email(full_name, to_email, temp_password)
+# ---------------------------------------------------------------------------
+# Reset password — personnel only, triggered by an admin from User Management.
+# Sends a temp password; caller is responsible for setting
+# force_change_password = True on the personnel record.
+# ---------------------------------------------------------------------------
 
-    message = MessageSchema(
-        subject="Your ICMDA account has been activated",
-        recipients=[to_email],
-        body=html_body,
-        subtype=MessageType.html,
+async def send_personnel_reset_password_email(to_email: str, full_name: str, temp_password: str) -> None:
+    html_body = _render(
+        TEMPLATE_PATH_PERSONNEL_RESET_PASSWORD,
+        FULL_NAME=full_name,
+        EMAIL=to_email,
+        TEMP_PASSWORD=temp_password,
     )
-
-    fm = FastMail(conf)
-    await fm.send_message(message)
-
-
-
-
-def render_superadmin_activation_email(email: str) -> str:
-    html = TEMPLATE_PATH_SUPERADMIN_ACTIVATION.read_text(encoding="utf-8")
-    html = html.replace("{{EMAIL}}", email)
-    return html
-
-
-async def send_superadmin_activation_email(to_email: str):
-    html_body = render_superadmin_activation_email(to_email)
-
-    message = MessageSchema(
-        subject="Your ICMDA Superadmin account is now active",
-        recipients=[to_email],
-        body=html_body,
-        subtype=MessageType.html,
-    )
-
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    await _send(to_email, "Your ICMDA password has been reset", html_body)

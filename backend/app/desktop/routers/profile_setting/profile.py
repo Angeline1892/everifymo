@@ -1,11 +1,11 @@
 # backend/app/desktop/routers/profile_setting/profile.py
+import re
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 
 from fastapi import Request
 from app.core.audit import write_audit_log, get_user_region_code
-from app.core.constants import AuditAction
+from app.core.constants import AuditAction, Role
 
 from app.database.sessions import get_db
 from app.models.user_sessions import UserSession
@@ -26,8 +26,32 @@ router = APIRouter(prefix="/profile", tags=["profile"])
 AGENCY_LABELS = {
     "fda_personnel": "FDA",
     "lea_personnel": "LEA-CIDG",
-    "superadmin": "SUPERADMIN",
+    "fda_admin": "FDA",
+    "lea_admin": "LEA-CIDG",
+    Role.NATIONAL_ADMIN: "NATIONAL ADMIN",
 }
+
+# Field-level self-edit permissions per role tier.
+# - National Admin: name only (they only have name + email to begin with).
+# - Admin (fda/lea): same broad set personnel used to have.
+# - Personnel: none — read only, editable only by an admin via user management.
+NATIONAL_ADMIN_EDITABLE_FIELDS = {"first_name", "middle_name", "last_name"}
+ADMIN_EDITABLE_FIELDS = {
+    "first_name", "middle_name", "last_name",
+    "employee_id", "contact_number", "department", "position",
+}
+PERSONNEL_EDITABLE_FIELDS: set[str] = set()
+PH_MOBILE_REGEX = re.compile(r"^09\d{9}$")
+# Every editable field is required EXCEPT middle_name.
+OPTIONAL_FIELDS = {"middle_name"}
+
+
+def _editable_fields_for(role: str) -> set[str]:
+    if role == Role.NATIONAL_ADMIN:
+        return NATIONAL_ADMIN_EDITABLE_FIELDS
+    if role in Role.ADMIN_ROLES:
+        return ADMIN_EDITABLE_FIELDS
+    return PERSONNEL_EDITABLE_FIELDS  # personnel: read only
 
 
 def build_profile_response(db: Session, user: User) -> ProfileResponse:
@@ -60,11 +84,6 @@ def get_profile(
     return build_profile_response(db, current_user)
 
 
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
-
-# ... (already imported at the top for change_password, so no new import needed)
-
 @router.put("/update", response_model=ProfileResponse)
 def update_profile(
     payload: ProfileUpdateRequest,
@@ -74,7 +93,40 @@ def update_profile(
 ):
     update_data = payload.model_dump(exclude_unset=True)
 
-    if "employee_id" in update_data and update_data["employee_id"]:
+    if current_user.role in Role.PERSONNEL_ROLES:
+        raise HTTPException(
+            status_code=403,
+            detail="Your account information can only be edited by an administrator.",
+        )
+
+    allowed_fields = _editable_fields_for(current_user.role)
+    disallowed = set(update_data.keys()) - allowed_fields
+    if disallowed:
+        raise HTTPException(
+            status_code=403,
+            detail=f"You are not permitted to update: {', '.join(sorted(disallowed))}",
+        )
+
+    for field, value in list(update_data.items()):
+        if field in OPTIONAL_FIELDS:
+            update_data[field] = value.strip() if value and value.strip() else None
+            continue
+
+        stripped = value.strip() if isinstance(value, str) else value
+        if not stripped:
+            raise HTTPException(
+                status_code=400,
+                detail=f"{field.replace('_', ' ').title()} is required and cannot be blank.",
+            )
+        update_data[field] = stripped
+
+    if "contact_number" in update_data and not PH_MOBILE_REGEX.match(update_data["contact_number"]):
+        raise HTTPException(
+            status_code=400,
+            detail="Contact number must be exactly 11 digits and start with 09.",
+        )
+
+    if "employee_id" in update_data:
         existing = (
             db.query(User)
             .filter(
@@ -86,8 +138,6 @@ def update_profile(
         if existing:
             raise HTTPException(status_code=400, detail="This Employee ID is already in use.")
 
-    # capture the "before" values for exactly the fields being changed,
-    # before setattr() overwrites them
     old_data = {field: getattr(current_user, field, None) for field in update_data}
 
     for field, value in update_data.items():
@@ -95,6 +145,8 @@ def update_profile(
 
     db.commit()
     db.refresh(current_user)
+
+    # ...unchanged notification + audit log code below...
 
     if update_data:
         notification_service.create_notification_for_all_superadmins(
@@ -128,6 +180,15 @@ def change_password(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role in Role.PERSONNEL_ROLES:
+        # Personnel no longer self-service their password — an admin
+        # triggers Reset from user management instead (temp password +
+        # force_password_change).
+        raise HTTPException(
+            status_code=403,
+            detail="Password changes for your account are handled by an administrator.",
+        )
+
     if not current_user.password_hash or not verify_password(
         payload.current_password, current_user.password_hash
     ):
@@ -136,7 +197,7 @@ def change_password(
     current_user.password_hash = hash_password(payload.new_password)
     current_user.force_password_change = False
     db.query(UserSession).filter(UserSession.user_id == current_user.user_id).update(
-    {"is_revoked": True}
+        {"is_revoked": True}
     )
     db.commit()
 
@@ -150,7 +211,7 @@ def change_password(
 
     password_action = (
         AuditAction.UPDATE_SUPERADMIN_PASSWORD
-        if current_user.role == "superadmin"
+        if current_user.role == Role.NATIONAL_ADMIN
         else AuditAction.UPDATE_USER_PASSWORD
     )
 
@@ -168,76 +229,40 @@ def change_password(
     return {"message": "Password updated successfully"}
 
 
-PERSONNEL_EDITABLE_FIELDS = {
-    "first_name", "middle_name", "last_name",
-    "employee_id", "contact_number", "department", "position",
-}
-SUPERADMIN_EDITABLE_FIELDS = {"first_name", "middle_name", "last_name"}
-
-
-@router.put("/update", response_model=ProfileResponse)
-def update_profile(
-    payload: ProfileUpdateRequest,
+@router.post("/request-password-reset")
+def request_password_reset(
     http_request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    update_data = payload.model_dump(exclude_unset=True)
+    """Personnel-only: 'Notify Administrator to Reset Password' button on the
+    profile page. Personnel can't self-service a password change (see
+    change_password above) — this just raises a flag for their agency admin
+    to act on via personnel_management's existing reset-password endpoint.
 
-    allowed_fields = (
-        SUPERADMIN_EDITABLE_FIELDS
-        if current_user.role == "superadmin"
-        else PERSONNEL_EDITABLE_FIELDS
-    )
-    disallowed = set(update_data.keys()) - allowed_fields
-    if disallowed:
+    NOTE: notification targeting (who actually gets notified) is being wired
+    in separately — this only handles the audit trail and the endpoint
+    contract the frontend button calls. No is_locked/is_active gating here;
+    if a personnel account can authenticate at all, it can ask for this.
+    """
+    if current_user.role not in Role.PERSONNEL_ROLES:
         raise HTTPException(
             status_code=403,
-            detail=f"You are not permitted to update: {', '.join(sorted(disallowed))}",
+            detail="This action is only available to personnel accounts.",
         )
 
-    if "employee_id" in update_data and update_data["employee_id"]:
-        existing = (
-            db.query(User)
-            .filter(
-                User.employee_id == update_data["employee_id"],
-                User.user_id != current_user.user_id,
-            )
-            .first()
-        )
-        if existing:
-            raise HTTPException(status_code=400, detail="This Employee ID is already in use.")
+    write_audit_log(
+        db,
+        user=current_user,
+        action=AuditAction.PERSONNEL_REQUEST_PASSWORD_RESET,
+        target_table="users",
+        target_id=current_user.user_id,
+        target_reference=current_user.email,
+        request=http_request,
+        region_code=get_user_region_code(db, current_user),
+    )
 
-    # capture the "before" values for exactly the fields being changed,
-    # before setattr() overwrites them
-    old_data = {field: getattr(current_user, field, None) for field in update_data}
+    # TODO(notification targeting): notify this user's agency admins
+    # (region + agency scoped) — being wired in separately, not here.
 
-    for field, value in update_data.items():
-        setattr(current_user, field, value)
-
-    db.commit()
-    db.refresh(current_user)
-
-    if update_data:
-        notification_service.create_notification_for_all_superadmins(
-            db=db,
-            event_type=NotificationEventType.ACCOUNT_INFO_UPDATED,
-            title="Profile information updated",
-            message=f"{current_user.email} updated their profile information.",
-            related_user_id=current_user.user_id,
-        )
-
-        write_audit_log(
-            db,
-            user=current_user,
-            action=AuditAction.UPDATE_USER_PROFILE,
-            target_table="users",
-            target_id=current_user.user_id,
-            target_reference=f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email,
-            old_value=old_data,
-            new_value=update_data,
-            request=http_request,
-            region_code=get_user_region_code(db, current_user),
-        )
-
-    return build_profile_response(db, current_user)
+    return {"message": "Your request has been sent to the administrator."}

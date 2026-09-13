@@ -73,19 +73,10 @@ function DeepLinkListener() {
         .then((data) => {
           console.log('Validate response:', data);
 
-          if (data.role === 'superadmin') {
-            if (data.status === 'valid') {
-              navigate('/create-new-password', { state: { token } });
-            } else {
-              navigate('/superadmin-invite-status', {
-                state: { ...data, token },
-              });
-            }
-            return;
-          }
-
+           // All roles now go through the same flow: valid token -> set password,
+          // anything else (expired/invalid/used) -> the status page.
           if (data.status === 'valid') {
-            navigate('/user-registration', { state: { ...data, invite_token: token } });
+            navigate('/create-new-password', { state: { ...data, token } });
           } else {
             navigate('/invitation-status', { state: { ...data, invite_token: token } });
           }
