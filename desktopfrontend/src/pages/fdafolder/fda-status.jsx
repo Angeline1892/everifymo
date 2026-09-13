@@ -75,6 +75,14 @@ function getStatusBadgeStyle(status) {
   }
 }
 
+const thumbnailStyle = {
+  width: 220,
+  height: 150,
+  objectFit: "cover",
+  borderRadius: 8,
+  cursor: "pointer",
+};
+
 function FdaStatus() {
   const [complaints, setComplaints] = useState([]);
   const [statusHistory, setStatusHistory] = useState([]);
@@ -98,6 +106,8 @@ function FdaStatus() {
   const [attachmentFile, setAttachmentFile] = useState(null);
   const [attachmentPreview, setAttachmentPreview] = useState(null);
   const [attachmentName, setAttachmentName] = useState(null);
+  const [attachmentUrl, setAttachmentUrl] = useState(null);
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   const [historyPage, setHistoryPage] = useState(1);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -154,6 +164,35 @@ function FdaStatus() {
     setAttachmentName(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedComplaintId]);
+
+  useEffect(() => {
+  if (!selectedComplaint?.hasAttachment) {
+    setAttachmentUrl(null);
+    return;
+  }
+
+  let objectUrl = null;
+  let cancelled = false;
+
+  const loadAttachment = async () => {
+    try {
+      const res = await apiFetch(`/complaints/${selectedComplaint.complaintId}/attachment`);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      if (cancelled) return;
+      objectUrl = URL.createObjectURL(blob);
+      setAttachmentUrl(objectUrl);
+    } catch (err) {
+      console.error("Failed to load attachment:", err);
+    }
+  };
+  loadAttachment();
+
+  return () => {
+    cancelled = true;
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+  };
+}, [selectedComplaintId]);
 
   // Search + status filter combined
   const filteredComplaints = complaints.filter((c) => {
@@ -539,6 +578,43 @@ function FdaStatus() {
                           aria-label="Remove attachment"
                         >
                           <X size={14} />
+                        </button>
+                      </div>
+                    )}
+                    {attachmentUrl && (
+                      <img
+                        src={attachmentUrl}
+                        alt="Complaint evidence"
+                        className="FdaModalImagePreview"
+                        style={{ ...thumbnailStyle, marginTop: 10 }}
+                        onClick={() => setLightboxImage(attachmentUrl)}
+                      />
+                    )}
+                    {lightboxImage && (
+                      <div
+                        className="FdaVerifModalOverlay"
+                        onClick={() => setLightboxImage(null)}
+                        role="dialog"
+                        aria-modal="true"
+                      >
+                        <img
+                          src={lightboxImage}
+                          alt="Evidence full view"
+                          style={{
+                            maxWidth: "90vw",
+                            maxHeight: "90vh",
+                            borderRadius: 8,
+                            objectFit: "contain",
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <button
+                          className="FdaVerifToastCloseBtn"
+                          onClick={() => setLightboxImage(null)}
+                          aria-label="Close image"
+                          style={{ position: "absolute", top: 20, right: 20 }}
+                        >
+                          <X size={20} />
                         </button>
                       </div>
                     )}

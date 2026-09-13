@@ -1,10 +1,12 @@
 # backend/app/desktop/routers/complaints/complaint_status.py
 import logging
+import mimetypes
 from typing import Annotated, List
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from pathlib import Path
 
 from app.database.sessions import get_db  
 from app.models.complaints import Complaint
@@ -16,6 +18,8 @@ from app.core.security import get_current_personnel
 from app.models.regions import Region
 from app.core.audit import write_audit_log
 from app.core.constants import AuditAction
+
+from fastapi.responses import FileResponse
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +190,30 @@ def list_complaints(db: Session = Depends(get_db), current_user = Depends(get_cu
             "status": c.status,
             "reporterUsername": reporter_username,
             "reporterEmail": reporter_email,
+            "hasAttachment": bool(c.attachment_path),
         })
 
     return result
+
+
+@router.get("/complaints/{complaint_id}/attachment")
+def get_complaint_attachment(
+    complaint_id: UUID,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_personnel),
+):
+    complaint = (db.query(Complaint)
+                 .filter(Complaint.complaint_id == complaint_id)
+                 .filter(Complaint.region_id == current_user["region_id"])
+                 .filter(Complaint.source == "extension")
+                 .first())
+
+    if not complaint or not complaint.attachment_path:
+        raise HTTPException(status_code=404, detail="No attachment found for this complaint")
+
+    file_path = Path(complaint.attachment_path)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Attachment file is missing on disk")
+
+    media_type, _ = mimetypes.guess_type(file_path.name)
+    return FileResponse(file_path, media_type=media_type or "application/octet-stream")
