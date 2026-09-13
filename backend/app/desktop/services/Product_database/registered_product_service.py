@@ -1,11 +1,10 @@
 # backend/app/desktop/services/Product_database/registered_product_service.py
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy import func
-from fastapi import HTTPException, status
-
-from fastapi import Request
+from fastapi import HTTPException, status, Request, BackgroundTasks
 from app.core.audit import write_audit_log, get_user_region_code
 from app.core.constants import AuditAction
+from app.desktop.services.auth.email import send_converted_product_email
 
 from app.models.registered_products import RegisteredProduct
 from app.models.unregistered_advisories import UnregisteredAdvisory
@@ -269,7 +268,7 @@ def update_registered_product(db: Session, product_id, data: RegisteredProductUp
     return format_product_response(product, db)
 
 
-def convert_advisory_to_product(db: Session, advisory_id, data: RegisteredProductCreate, current_user, request: Request = None):
+def convert_advisory_to_product(db: Session, advisory_id, data: RegisteredProductCreate, current_user, request: Request = None, background_tasks: BackgroundTasks = None):
     advisory = db.query(UnregisteredAdvisory).filter(
         UnregisteredAdvisory.advisory_id == advisory_id,
         UnregisteredAdvisory.deleted_at.is_(None)
@@ -282,8 +281,16 @@ def convert_advisory_to_product(db: Session, advisory_id, data: RegisteredProduc
         )
 
     region_code = get_user_region_code(db, current_user)
-    current_user_id = current_user.user_id
-    current_user_role = current_user.role
+    current_user_id = current_user.user_id if current_user else None
+    current_user_role = current_user.role if current_user else None
+    officer_email = current_user.email if current_user else None
+    officer_first_name = current_user.first_name if current_user else None
+    officer_last_name = current_user.last_name if current_user else None
+    officer_name = " ".join(filter(None, [officer_first_name, officer_last_name])) or (officer_email or "FDA Officer")
+    officer_position = current_user.position if current_user else "Inspection Officer"
+    officer_agency = current_user.department if current_user else "Food and Drug Administration"
+    officer_employee_id = current_user.employee_id if current_user else "-"
+
     source_advisory_name = advisory.product_name
 
     # Soft delete the advisory
@@ -327,6 +334,25 @@ def convert_advisory_to_product(db: Session, advisory_id, data: RegisteredProduc
         request=request,
         region_code=region_code,
     )
+
+    # Schedule email notification to the officer
+    if background_tasks and officer_email:
+        background_tasks.add_task(
+            send_converted_product_email,
+            to_email=officer_email,
+            product_name=new_product.product_name,
+            previous_classification="Unregistered/Advisory",
+            new_classification="Registered",
+            registration_number=new_product.registration_number or "-",
+            manufacturer=new_product.brand_name or "-",
+            category=new_product.product_category or "Cosmetics",
+            officer_name=officer_name,
+            officer_position=officer_position or "Inspection Officer",
+            officer_agency=officer_agency or "Food and Drug Administration",
+            officer_employee_id=officer_employee_id or "-",
+            advisory_details=None,
+            source_url=None,
+        )
 
     return format_product_response(new_product, db)
 
