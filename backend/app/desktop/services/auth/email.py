@@ -9,6 +9,7 @@ TEMPLATE_PATH_PERSONNEL = Path(__file__).parent / "templates" / "personnel_otp_e
 TEMPLATE_PATH_ACTIVATION = Path(__file__).parent / "templates" / "user_activation_email.html"
 TEMPLATE_PATH_SUPERADMIN_INVITE = Path(__file__).parent / "templates" / "superadmin_invite_email.html"
 TEMPLATE_PATH_SUPERADMIN_ACTIVATION = Path(__file__).parent / "templates" / "superadmin_activation_email.html"
+TEMPLATE_PATH_CONVERTED_PRODUCT = Path(__file__).parent / "templates" / "converted_product_email.html"
 
 conf = ConnectionConfig(
     MAIL_USERNAME=settings.MAIL_USERNAME,
@@ -166,3 +167,132 @@ async def send_superadmin_activation_email(to_email: str):
 
     fm = FastMail(conf)
     await fm.send_message(message)
+
+
+def render_converted_product_email(
+    product_name: str,
+    previous_classification: str,
+    new_classification: str,
+    registration_number: str = "-",
+    manufacturer: str = "-",
+    category: str = "Cosmetics",
+    officer_name: str = "FDA Officer",
+    officer_position: str = None,
+    officer_agency: str = None,
+    officer_employee_id: str = None,
+    conversion_date: str = None,
+    advisory_details: str = None,
+    source_url: str = None,
+) -> str:
+    html = TEMPLATE_PATH_CONVERTED_PRODUCT.read_text(encoding="utf-8")
+
+    # Badges
+    registered_badge = '<span style="display:inline-block;padding:6px 14px;font-size:11.5px;font-weight:700;border-radius:20px;font-family:\'Poppins\',Arial,sans-serif;letter-spacing:0.3px;white-space:nowrap;background-color:#ecfdf5;color:#047857;border:1px solid #a7f3d0;">Registered</span>'
+    advisory_badge = '<span style="display:inline-block;padding:6px 14px;font-size:11.5px;font-weight:700;border-radius:20px;font-family:\'Poppins\',Arial,sans-serif;letter-spacing:0.3px;white-space:nowrap;background-color:#fef2f2;color:#b91c1c;border:1px solid #fecaca;">Unregistered/Advisory</span>'
+
+    prev_badge = advisory_badge if ("unreg" in previous_classification.lower() or "advis" in previous_classification.lower()) else registered_badge
+    new_badge = advisory_badge if ("unreg" in new_classification.lower() or "advis" in new_classification.lower()) else registered_badge
+
+    # Officer Meta
+    meta_parts = []
+    if officer_position and officer_position != "-":
+        meta_parts.append(officer_position)
+    if officer_agency and officer_agency != "-":
+        meta_parts.append(officer_agency)
+    if officer_employee_id and officer_employee_id != "-":
+        meta_parts.append(f"ID: {officer_employee_id}")
+
+    officer_meta_html = ""
+    if meta_parts:
+        officer_meta_html = f'<span style="display:block;font-size:11px;color:#64748b;margin-top:3px;font-weight:400;">{" · ".join(meta_parts)}</span>'
+
+    # Extra rows (advisory details & source url)
+    extra_rows = []
+    if advisory_details and advisory_details.strip() and advisory_details.strip() != "-":
+        extra_rows.append(f'''
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 11px 18px; width: 38%; color: #64748b; font-weight: 600; font-size: 13px; vertical-align: top;">Details / Remarks</td>
+            <td style="padding: 11px 18px; width: 62%; color: #1e293b; font-weight: 500; font-size: 12px; line-height: 1.6; vertical-align: top; text-align: right; word-break: break-word;">{advisory_details}</td>
+          </tr>
+        ''')
+    if source_url and source_url.strip() and source_url.strip() != "-":
+        extra_rows.append(f'''
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 11px 18px; width: 38%; color: #64748b; font-weight: 600; font-size: 13px; vertical-align: top;">Source Reference</td>
+            <td style="padding: 11px 18px; width: 62%; font-size: 12px; vertical-align: top; text-align: right; word-break: break-all;">
+              <a href="{source_url}" target="_blank" style="color:#0D9488;text-decoration:underline;">{source_url}</a>
+            </td>
+          </tr>
+        ''')
+
+    extra_rows_html = "".join(extra_rows)
+
+    # Defaults
+    if not conversion_date:
+        from datetime import datetime
+        conversion_date = datetime.now().strftime("%b %d, %Y %I:%M %p")
+
+    # Replace placeholders
+    html = html.replace("{{PRODUCT_NAME}}", product_name or "-")
+    html = html.replace("{{PREVIOUS_CLASSIFICATION}}", previous_classification or "-")
+    html = html.replace("{{NEW_CLASSIFICATION}}", new_classification or "-")
+    html = html.replace("{{REGISTRATION_NUMBER}}", registration_number or "-")
+    html = html.replace("{{MANUFACTURER}}", manufacturer or "-")
+    html = html.replace("{{CATEGORY}}", category or "Cosmetics")
+    html = html.replace("{{OFFICER_NAME}}", officer_name or "-")
+    html = html.replace("{{OFFICER_META_HTML}}", officer_meta_html)
+    html = html.replace("{{CONVERSION_DATE}}", conversion_date)
+    html = html.replace("{{PREVIOUS_BADGE_HTML}}", prev_badge)
+    html = html.replace("{{NEW_BADGE_HTML}}", new_badge)
+    html = html.replace("{{EXTRA_ROWS_HTML}}", extra_rows_html)
+
+    return html
+
+
+async def send_converted_product_email(
+    to_email: str,
+    product_name: str,
+    previous_classification: str,
+    new_classification: str,
+    registration_number: str = "-",
+    manufacturer: str = "-",
+    category: str = "Cosmetics",
+    officer_name: str = "FDA Officer",
+    officer_position: str = None,
+    officer_agency: str = None,
+    officer_employee_id: str = None,
+    conversion_date: str = None,
+    advisory_details: str = None,
+    source_url: str = None,
+):
+    html_body = render_converted_product_email(
+        product_name=product_name,
+        previous_classification=previous_classification,
+        new_classification=new_classification,
+        registration_number=registration_number,
+        manufacturer=manufacturer,
+        category=category,
+        officer_name=officer_name,
+        officer_position=officer_position,
+        officer_agency=officer_agency,
+        officer_employee_id=officer_employee_id,
+        conversion_date=conversion_date,
+        advisory_details=advisory_details,
+        source_url=source_url,
+    )
+
+    subject = f"Product Classification Notice: {product_name} ({previous_classification} → {new_classification})"
+
+    message = MessageSchema(
+        subject=subject,
+        recipients=[to_email],
+        body=html_body,
+        subtype=MessageType.html,
+    )
+
+    try:
+        fm = FastMail(conf)
+        await fm.send_message(message)
+        print(f"Successfully sent conversion notice email to {to_email}")
+    except Exception as e:
+        print(f"Warning: Failed to send conversion email to {to_email}: {e}")
