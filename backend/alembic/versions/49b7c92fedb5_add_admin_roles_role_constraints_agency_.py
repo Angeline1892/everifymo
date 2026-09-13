@@ -22,8 +22,8 @@ def upgrade() -> None:
     """Upgrade schema."""
 
     # 1. Backfill: rename the old 'superadmin' role value to 'national_admin'
-    #    before the constraint below would otherwise reject it.
-    op.execute("UPDATE users SET role = 'national_admin' WHERE role = 'superadmin'")
+    #    and ensure region_id is NULL (as national_admin has no assigned region).
+    op.execute("UPDATE users SET role = 'national_admin', region_id = NULL WHERE role = 'superadmin' OR role = 'national_admin'")
 
     # 2. Restrict role to the five valid values.
     op.execute("""
