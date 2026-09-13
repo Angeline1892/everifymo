@@ -88,3 +88,28 @@ def assert_employee_id_available(db: Session, employee_id: str | None, exclude_u
         query = query.filter(User.user_id != exclude_user_id)
     if query.first():
         raise HTTPException(status_code=400, detail="This Employee ID is already in use.")
+
+
+def get_agency_admins_for(db: Session, target: User) -> list[User]:
+    """Returns all Admin-role users (FDA or LEA) in the same region and same
+    agency as `target`. Used to scope notifications/actions to the admins
+    responsible for a given personnel account — e.g. the 'Notify Admin to
+    Reset Password' button, which must not broadcast to all national admins.
+
+    Deliberately excludes National Admins: per the current role model,
+    National Admin does not manage Personnel directly — that's Admin's job,
+    scoped to region + agency.
+    """
+    if target.region_id is None:
+        return []
+
+    target_agency = agency_of(target.role)
+    if target_agency is None:
+        return []
+
+    candidates = (
+        db.query(User)
+        .filter(User.role.in_(Role.ADMIN_ROLES), User.region_id == target.region_id)
+        .all()
+    )
+    return [u for u in candidates if agency_of(u.role) == target_agency]
