@@ -40,6 +40,7 @@ TEMPLATE_PATH_ADMIN_ACTIVATION = TEMPLATES_DIR / "admin_activation_email.html"
 TEMPLATE_PATH_NATIONAL_ADMIN_ACTIVATION = TEMPLATES_DIR / "national_admin_activation_email.html"
 
 TEMPLATE_PATH_PERSONNEL_RESET_PASSWORD = TEMPLATES_DIR / "personnel_reset_password_email.html"
+TEMPLATE_PATH_PERSONNEL_INFO_UPDATED = TEMPLATES_DIR / "personnel_info_updated_email.html"
 
 AGENCY_DISPLAY_NAMES = {
     "fda_personnel": "FDA",
@@ -49,12 +50,7 @@ AGENCY_DISPLAY_NAMES = {
     "FDA": "FDA",
     "LEA-CIDG": "LEA-CIDG",
 }
-TEMPLATE_PATH = Path(__file__).parent / "templates" / "invite_email.html"
-TEMPLATE_PATH_SUPERADMIN = Path(__file__).parent / "templates" / "superadmin_otp_email.html"
-TEMPLATE_PATH_PERSONNEL = Path(__file__).parent / "templates" / "personnel_otp_email.html"
-TEMPLATE_PATH_ACTIVATION = Path(__file__).parent / "templates" / "user_activation_email.html"
-TEMPLATE_PATH_SUPERADMIN_INVITE = Path(__file__).parent / "templates" / "superadmin_invite_email.html"
-TEMPLATE_PATH_SUPERADMIN_ACTIVATION = Path(__file__).parent / "templates" / "superadmin_activation_email.html"
+
 TEMPLATE_PATH_CONVERTED_PRODUCT = Path(__file__).parent / "templates" / "converted_product_email.html"
 
 conf = ConnectionConfig(
@@ -195,8 +191,19 @@ async def send_personnel_reset_password_email(to_email: str, full_name: str, tem
     )
     await _send(to_email, "Your ICMDA password has been reset", html_body)
 
-    fm = FastMail(conf)
-    await fm.send_message(message)
+
+# ---------------------------------------------------------------------------
+# Info updated — personnel only, triggered by an admin from Edit Info.
+# No field values in the email itself; the user checks Profile Settings
+# in-app to see what changed.
+# ---------------------------------------------------------------------------
+ 
+async def send_personnel_info_updated_email(to_email: str, full_name: str) -> None:
+    html_body = _render(
+        TEMPLATE_PATH_PERSONNEL_INFO_UPDATED,
+        FULL_NAME=full_name,
+    )
+    await _send(to_email, "Your ICMDA account information has been updated", html_body)
 
 
 def render_converted_product_email(
