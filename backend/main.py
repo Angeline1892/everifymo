@@ -7,19 +7,21 @@ from fastapi.middleware.cors import CORSMiddleware
 """ from app.routers.auth.invite import router as invite_router
 from app.routers.regions.regions import router as regions_router """
 
-from app.desktop.routers.auth.superadmin_login import router as superadmin_login_router
+from app.desktop.routers.auth.national_admin_login import router as national_admin_login_router
 from app.desktop.routers.auth.password_reset import router as password_reset_router
 from app.desktop.routers.auth.sessions import router as sessions_router
 from app.desktop.routers.auth import registration
-from app.desktop.routers.auth.invite import router as invite_router
 from app.desktop.routers.regions.regions import router as regions_router
-from app.desktop.routers.user_management.management import router as user_management_router
-from app.desktop.routers.admin_management import management as admin_management_router
+
+from app.desktop.routers.national_admin_management.management import router as national_admin_management_router
+from app.desktop.routers.personnel_management.management import router as personnel_management_router
+from app.desktop.routers.admin_management.management import router as admin_management_router  # NEW
+
+from app.desktop.routers.auth.admin_login import router as admin_login_router
 from app.desktop.routers.auth.personnel_login import router as personnel_login_router
 from app.desktop.routers.auth.password_change import router as password_change_router
 from app.desktop.routers.profile_setting import profile as profile_router
-from app.desktop.routers.auth.superadmin_invite_public import router as superadmin_invite_public_router
-from everifymo.backend.app.desktop.routers.admin_notifications.admin_notifications import router as admin_notifications_router
+from app.desktop.routers.admin_notifications.admin_notifications import router as admin_notifications_router
 from app.desktop.routers.audit_logs.audit_logs import router as audit_logs_router  
 from app.desktop.routers.notifications.notifications import router as notifications_router  # ADDED     
 
@@ -98,7 +100,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(invite_router)
 app.include_router(regions_router)
 app.include_router(registration.router)
 app.include_router(registered_product_router)
@@ -119,12 +120,14 @@ def root():
 
 
 
-app.include_router(superadmin_login_router)
+app.include_router(national_admin_login_router)
 app.include_router(password_reset_router)
 app.include_router(sessions_router)
 
-app.include_router(user_management_router)
-app.include_router(admin_management_router.router)
+app.include_router(admin_login_router)
+app.include_router(personnel_management_router)
+app.include_router(national_admin_management_router)
+app.include_router(admin_management_router)  # NEW
 
 app.include_router(walkin_drafts_router)
 app.include_router(all_drafts_router)
@@ -147,7 +150,6 @@ app.include_router(verification_list_router)
 app.include_router(personnel_login_router)
 app.include_router(password_change_router)
 app.include_router(profile_router.router)
-app.include_router(superadmin_invite_public_router)
 app.include_router(admin_notifications_router)
 app.include_router(audit_logs_router)
 app.include_router(notifications_router)  # ADDED

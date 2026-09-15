@@ -12,7 +12,7 @@ from app.core.constants import AuditAction
 
 from app.models.users import User
 from app.models.account_invitation_tokens import AccountInvitationToken
-from everifymo.backend.app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.services.admin_notifications import admin_notification_service as notification_service
 from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 
 

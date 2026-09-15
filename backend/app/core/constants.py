@@ -79,6 +79,7 @@ class AuditAction:
     EDIT_PERSONNEL_INFO = "EDIT_PERSONNEL_INFO"
     RESET_PERSONNEL_PASSWORD = "RESET_PERSONNEL_PASSWORD"
     PERSONNEL_REQUEST_PASSWORD_RESET = "PERSONNEL_REQUEST_PASSWORD_RESET"
+    PERSONNEL_SELF_ACTIVATED = "PERSONNEL_SELF_ACTIVATED"
 
     # Admin (FDA/LEA agency admin) account management — National Admin
     # (or eventually a peer agency admin, see handoff open decision #4)
