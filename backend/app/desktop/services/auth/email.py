@@ -40,6 +40,7 @@ TEMPLATE_PATH_ADMIN_ACTIVATION = TEMPLATES_DIR / "admin_activation_email.html"
 TEMPLATE_PATH_NATIONAL_ADMIN_ACTIVATION = TEMPLATES_DIR / "national_admin_activation_email.html"
 
 TEMPLATE_PATH_PERSONNEL_RESET_PASSWORD = TEMPLATES_DIR / "personnel_reset_password_email.html"
+TEMPLATE_PATH_PERSONNEL_INFO_UPDATED = TEMPLATES_DIR / "personnel_info_updated_email.html"
 
 AGENCY_DISPLAY_NAMES = {
     "fda_personnel": "FDA",
@@ -187,3 +188,17 @@ async def send_personnel_reset_password_email(to_email: str, full_name: str, tem
         TEMP_PASSWORD=temp_password,
     )
     await _send(to_email, "Your ICMDA password has been reset", html_body)
+
+
+# ---------------------------------------------------------------------------
+# Info updated — personnel only, triggered by an admin from Edit Info.
+# No field values in the email itself; the user checks Profile Settings
+# in-app to see what changed.
+# ---------------------------------------------------------------------------
+ 
+async def send_personnel_info_updated_email(to_email: str, full_name: str) -> None:
+    html_body = _render(
+        TEMPLATE_PATH_PERSONNEL_INFO_UPDATED,
+        FULL_NAME=full_name,
+    )
+    await _send(to_email, "Your ICMDA account information has been updated", html_body)

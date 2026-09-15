@@ -1,4 +1,3 @@
-
 import re
 import secrets
 from sqlalchemy.orm import Session
@@ -50,6 +49,7 @@ def edit_personnel_info(db: Session, actor: User, target_id, updates: dict, requ
     db.commit()
 
     target_id_val, target_email = target.user_id, target.email
+    full_name = f"{target.first_name} {target.last_name}".strip()
     region_code = get_user_region_code(db, target)
 
     write_audit_log(
@@ -58,7 +58,8 @@ def edit_personnel_info(db: Session, actor: User, target_id, updates: dict, requ
         old_value=old_value, new_value=updates,
         request=request, region_code=region_code,
     )
-    return target_id_val
+
+    return target_id_val, target_email, full_name
 
 
 def reset_personnel_password(db: Session, actor: User, target_id, request=None):

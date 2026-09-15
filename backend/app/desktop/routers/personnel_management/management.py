@@ -14,6 +14,7 @@ from app.desktop.services.auth.invite import create_invited_account
 from app.desktop.services.auth.email import (
     send_personnel_invite_email,
     send_personnel_reset_password_email,
+    send_personnel_info_updated_email,
 )
 from app.desktop.services.account_status import (
     compute_display_status, suspend_account, reactivate_account, unlock_account,
@@ -108,10 +109,12 @@ async def unlock(user_id: uuid.UUID, http_request: Request,
 
 
 @router.patch("/{user_id}")
-async def edit_personnel(user_id: uuid.UUID, payload: EditPersonnelInfoRequest, http_request: Request,
+async def edit_personnel(user_id: uuid.UUID, payload: EditPersonnelInfoRequest, background_tasks: BackgroundTasks, http_request: Request,
                           db: Session = Depends(get_db), current_user: User = Depends(get_current_agency_admin)):
     updates = payload.model_dump(exclude_unset=True)
-    return {"message": "Personnel info updated", "user_id": str(edit_personnel_info(db, current_user, user_id, updates, request=http_request))}
+    target_id, target_email, full_name = edit_personnel_info(db, current_user, user_id, updates, request=http_request)
+    background_tasks.add_task(send_personnel_info_updated_email, target_email, full_name)
+    return {"message": "Personnel info updated", "user_id": str(target_id)}
 
 
 @router.post("/{user_id}/reset-password")
