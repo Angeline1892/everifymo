@@ -1,3 +1,4 @@
+# backend/app/database/sessions.py
 import uuid
 
 from sqlalchemy import create_engine, event, text
@@ -38,6 +39,7 @@ def reset_rls_context_on_checkout(dbapi_conn, connection_record, connection_prox
     cursor = dbapi_conn.cursor()
     cursor.execute("SET app.bypass_rls = 'false'")
     cursor.execute("SET app.current_region_id = ''")
+    cursor.execute("SET app.current_agency = ''")
     cursor.close()
 
 
@@ -47,8 +49,10 @@ def reapply_rls_context(session, transaction, connection):
         return
     bypass = session.info.get("bypass_rls", False)
     region_id = session.info.get("region_id", "")
+    agency = session.info.get("agency", "")
     connection.execute(text("SET app.bypass_rls = :val"), {"val": "true" if bypass else "false"})
     connection.execute(text("SET app.current_region_id = :region"), {"region": region_id})
+    connection.execute(text("SET app.current_agency = :agency"), {"agency": agency})
 
 
 def set_bypass_rls(db, value: bool = True):
@@ -62,3 +66,10 @@ def set_region_context(db, region_id: str | None):
     db.info["region_id"] = region_id
     if _is_postgres():
         db.execute(text("SET app.current_region_id = :region"), {"region": region_id})
+
+
+def set_agency_context(db, agency: str | None):
+    agency = agency or ""
+    db.info["agency"] = agency
+    if _is_postgres():
+        db.execute(text("SET app.current_agency = :agency"), {"agency": agency})

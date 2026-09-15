@@ -1,8 +1,10 @@
 # backend/app/desktop/schemas/auth/registration.py
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 from enum import Enum
+
+from app.core.security import validate_password_strength
 
 
 class TokenStatus(str, Enum):
@@ -24,16 +26,22 @@ class ValidateTokenResponse(BaseModel):
 
 
 class RegistrationCompleteRequest(BaseModel):
+    """Password-only now — the admin who created this account already
+    supplied first/last/position/employee_id/contact_number/department."""
     invite_token: str
+    password: str = Field(..., min_length=8)
+    confirm_password: str = Field(..., min_length=8)
 
-    first_name: str = Field(..., min_length=1, max_length=100)
-    last_name: str = Field(..., min_length=1, max_length=100)
-    position: str = Field(..., min_length=1, max_length=150)
+    @field_validator("password")
+    @classmethod
+    def check_password_strength(cls, v: str) -> str:
+        return validate_password_strength(v)
 
-    middle_name: str | None = Field(None, max_length=100)
-    employee_id: str | None = Field(None, max_length=50)
-    contact_number: str | None = Field(None, max_length=20)
-    department: str | None = Field(None, max_length=150)
+    @model_validator(mode="after")
+    def check_passwords_match(self):
+        if self.password != self.confirm_password:
+            raise ValueError("Passwords do not match.")
+        return self
 
 
 class RegistrationCompleteResponse(BaseModel):
@@ -48,9 +56,10 @@ class ResendInviteRequest(BaseModel):
 class ResendInviteResponse(BaseModel):
     message: str
 
-# added for resend request and response
+
 class RequestResendRequest(BaseModel):
     invite_token: str
+
 
 class RequestResendResponse(BaseModel):
     message: str

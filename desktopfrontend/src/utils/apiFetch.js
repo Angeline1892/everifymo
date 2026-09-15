@@ -59,8 +59,8 @@ export async function apiFetch(path, options = {}) {
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('agency');
       window.location.href = agency === 'superadmin'
-        ? '/universal-login?tab=superadmin'
-        : '/universal-login';
+      ? '/universal-login?tab=national-admin'
+      : '/universal-login';
       throw new Error('Session expired. Please log in again.');
     }
     response = await fetch(`${BASE_URL}${path}`, {

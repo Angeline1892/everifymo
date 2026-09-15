@@ -345,6 +345,16 @@
   font-size: 12px;
 }
 
+.FDAAdminActionsPlaceholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
 .FDAAdminEmailCell {
   color: #1B4332;
   font-weight: 500;
