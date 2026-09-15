@@ -5,18 +5,18 @@ from app.core.security import validate_password_strength
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
-    portal: Literal["superadmin", "personnel"]
+    portal: Literal["national-admin", "interagency-admin", "personnel"]
 
 class VerifyResetOtpRequest(BaseModel):
     email: EmailStr
     otp: constr(min_length=4)
-    portal: Literal["superadmin", "personnel"]   # <-- NEW
+    portal: Literal["national-admin", "interagency-admin", "personnel"]
 
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
     otp: constr(min_length=4)
     new_password: str
-    portal: Literal["superadmin", "personnel"]   # <-- NEW
+    portal: Literal["national-admin", "interagency-admin", "personnel"]
 
     @field_validator("new_password")
     @classmethod
