@@ -9,51 +9,76 @@ document.addEventListener("DOMContentLoaded", () => {
 
   whenSessionReady(() => {
 
+    const verifyToggle = document.getElementById('verify-toggle');
+
+    // load saved state (default true if never set)
+    chrome.storage.local.get(['verifyButtonEnabled'], (result) => {
+      verifyToggle.checked = result.verifyButtonEnabled !== false;
+    });
+
+    // save on change
+    verifyToggle.addEventListener('change', () => {
+      chrome.storage.local.set({ verifyButtonEnabled: verifyToggle.checked });
+    });
+
+    // popup always open home page first instead result page
+    lastProductTitle = '';
+    lastProductUrl = '';
+    lastVerificationStatus = 'home';
+
+    chrome.storage.local.set({
+      productTitle: '',
+      productUrl: '',
+      productStatus: 'home'
+    });
+
+    showState('home');
+
     //babalikan 3
-    chrome.storage.local.get(
-      ['productTitle', 'productPlatform', 'productUrl', 'productStatus'],
-      (data) => {
+    // chrome.storage.local.get(
+    //   ['productTitle', 'productPlatform', 'productUrl', 'productStatus'],
+    //   (data) => {
 
-        const title = data.productTitle;
-        const url = data.productUrl;
-        const status = data.productStatus || 'idle'; // here are the states: 'registered', 'unregistered', 'suspicious', 'home', 'idle', 'scanning'
+    //     const title = data.productTitle;
+    //     const url = data.productUrl;
+    //     const status = data.productStatus || 'idle'; // here are the states: 'registered', 'unregistered', 'suspicious', 'home', 'idle', 'scanning'
 
-        lastProductTitle = title || '';
-        lastProductUrl = url || '';
-        lastVerificationStatus = status;
+    //     lastProductTitle = title || '';
+    //     lastProductUrl = url || '';
+    //     lastVerificationStatus = status;
 
-        chrome.storage.local.set({
-          productTitle: title,
-          productUrl: url,
-          productStatus: 'home'
-        });
+    //     chrome.storage.local.set({
+    //       productTitle: title,
+    //       productUrl: url,
+    //       productStatus: 'home'
+    //     });
 
-        if (status === 'registered') {
-          const el = document.getElementById('product-name-registered');
-          if (el) el.value = title;
-          showState('registered');
+    //     if (status === 'registered') {
+    //       const el = document.getElementById('product-name-registered');
+    //       if (el) el.value = title;
+    //       showState('registered');
 
-        } else if (status === 'unregistered') {
-          const el = document.getElementById('product-name-unregistered');
-          if (el) el.value = title;
-          showState('unregistered');
+    //     } else if (status === 'unregistered') {
+    //       const el = document.getElementById('product-name-unregistered');
+    //       if (el) el.value = title;
+    //       showState('unregistered');
 
-        } else if (status === 'suspicious') {
-          const el = document.getElementById('product-name-suspicious');
-          if (el) el.value = title;
-          showState('suspicious');
+    //     } else if (status === 'suspicious') {
+    //       const el = document.getElementById('product-name-suspicious');
+    //       if (el) el.value = title;
+    //       showState('suspicious');
 
-        } else if (status === 'home') {
-          showState('home');
+    //     } else if (status === 'home') {
+    //       showState('home');
 
-        } else if (status === 'scanning') {
-          showState('scanning');
+    //     } else if (status === 'scanning') {
+    //       showState('scanning');
 
-        } else {
-          showState('idle');
-        }
-      }
-    );
+    //     } else {
+    //       showState('idle');
+    //     }
+    //   }
+    // );
 
     applyAuthView();
 
