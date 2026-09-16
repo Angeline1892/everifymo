@@ -145,8 +145,8 @@ def verify_otp_for_user(db: Session, user: User, otp: str, http_request: Request
                     backoff = backoff_fn(user.failed_otp_attempts)
                     user.locked_until = datetime.now(timezone.utc) + timedelta(seconds=backoff)
                     db.commit()
-                    notification_service.create_notification_for_all_superadmins(
-                        db=db,
+                    notification_service.notify_self_service_account_event(
+                        db=db, target=user,
                         event_type=NotificationEventType.FAILED_LOGIN_WARNING,
                         title="Last active account under repeated attack",
                         message=(
@@ -155,7 +155,6 @@ def verify_otp_for_user(db: Session, user: User, otp: str, http_request: Request
                             f"Account was throttled (locked out for {backoff}s) rather "
                             f"than permanently locked. Investigate immediately."
                         ),
-                        related_user_id=user.user_id,
                     )
                     raise throttled_cls(retry_after_seconds=backoff)
 
@@ -170,12 +169,11 @@ def verify_otp_for_user(db: Session, user: User, otp: str, http_request: Request
             region_code = get_user_region_code(db, user) if user_role != Role.NATIONAL_ADMIN else None
 
             db.commit()
-            notification_service.create_notification_for_all_superadmins(
-                db=db,
+            notification_service.notify_self_service_account_event(
+                db=db, target=user,
                 event_type=NotificationEventType.ACCOUNT_LOCKED,
                 title="Account locked out",
                 message=f"{user_email} has been locked out after {attempts} failed OTP attempts.",
-                related_user_id=user_id,
             )
             write_audit_log(
                 db,
@@ -196,12 +194,11 @@ def verify_otp_for_user(db: Session, user: User, otp: str, http_request: Request
         db.commit()
 
         if user.failed_otp_attempts == 3:
-            notification_service.create_notification_for_all_superadmins(
-                db=db,
+            notification_service.notify_self_service_account_event(
+                db=db, target=user,
                 event_type=NotificationEventType.FAILED_LOGIN_WARNING,
                 title="Repeated failed OTP attempts",
                 message=f"{user.failed_otp_attempts} failed OTP attempts on {user.email}.",
-                related_user_id=user.user_id,
             )
 
         raise ValueError("Invalid OTP.")

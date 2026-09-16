@@ -26,6 +26,7 @@ from app.models.notifications import Notification  # personnel-facing table - du
 from app.models.users import User
 from app.models.account_invitation_tokens import AccountInvitationToken
 from app.core.constants import Role
+from app.desktop.services.account_status.guards import agency_of
 from app.desktop.schemas.admin_notifications.notification_enums import (
     NotificationEventType,
 )
@@ -144,6 +145,96 @@ def notify_regional_admin_workspace(
     return new_rows
 
 
+def notify_account_event(
+    db: Session,
+    actor: User,
+    target_user_id,
+    target_role: str,
+    target_region_id,
+    event_type: NotificationEventType,
+    title: str,
+    message: str,
+) -> None:
+    """
+    ONE routing function for every shared account_status call site
+    (invite, activate, suspend, reactivate, unlock, resend, delete) -
+    these are shared across admin AND personnel targets, so the right
+    workspace has to be picked per-call rather than hardcoded.
+
+    Routing rule - notifications stay inside the ACTOR's own workspace:
+    - target is personnel -> always the actor's own regional workspace
+      (only Admins manage Personnel, so actor is always fda_admin/lea_admin
+      here - never national_admin).
+    - target is national_admin/fda_admin/lea_admin -> National Admin
+      workspace if the actor IS national_admin, otherwise the actor's own
+      regional workspace (they're managing a co-admin in their region).
+    """
+    if target_role in Role.PERSONNEL_ROLES:
+        notify_regional_admin_workspace(
+            db=db, agency_admin_role=actor.role, region_id=target_region_id,
+            agency=agency_of(actor.role), event_type=event_type,
+            title=title, message=message, related_user_id=target_user_id,
+        )
+    elif actor.role == Role.NATIONAL_ADMIN:
+        notify_national_admin_workspace(
+            db=db, event_type=event_type, title=title, message=message,
+            related_user_id=target_user_id,
+            agency=agency_of(target_role),  # None if target is national_admin
+            region_id=target_region_id,
+        )
+    else:
+        notify_regional_admin_workspace(
+            db=db, agency_admin_role=actor.role, region_id=actor.region_id,
+            agency=agency_of(actor.role), event_type=event_type,
+            title=title, message=message, related_user_id=target_user_id,
+        )
+
+
+def notify_self_service_account_event(
+    db: Session,
+    target: User,
+    event_type: NotificationEventType,
+    title: str,
+    message: str,
+) -> None:
+    """
+    For events with NO acting admin - the account holder triggered this
+    on themselves (completing registration, requesting a resend from the
+    public invite-expired page, before they even have a session).
+
+    Routes by who CAN ACT on this account next, not who performed the
+    action:
+    - personnel target -> their own region+agency admin workspace only
+      (personnel skip pending_approval entirely, so this is really just
+      "here's an update on an account you manage").
+    - fda_admin/lea_admin target -> national_admin (can always activate
+      them, per activate_account's permission check) PLUS peer co-admins
+      sharing that same role+region (can also activate them).
+    - national_admin target -> national_admin peers only.
+    """
+    if target.role in Role.PERSONNEL_ROLES:
+        agency_admin_role = Role.FDA_ADMIN if target.role == Role.FDA_PERSONNEL else Role.LEA_ADMIN
+        notify_regional_admin_workspace(
+            db=db, agency_admin_role=agency_admin_role, region_id=target.region_id,
+            agency=agency_of(target.role), event_type=event_type,
+            title=title, message=message, related_user_id=target.user_id,
+        )
+        return
+
+    notify_national_admin_workspace(
+        db=db, event_type=event_type, title=title, message=message,
+        related_user_id=target.user_id,
+        agency=agency_of(target.role),  # None if target is national_admin
+        region_id=target.region_id,
+    )
+    if target.role in Role.ADMIN_ROLES:  # fda_admin/lea_admin also have region peers who can act
+        notify_regional_admin_workspace(
+            db=db, agency_admin_role=target.role, region_id=target.region_id,
+            agency=agency_of(target.role), event_type=event_type,
+            title=title, message=message, related_user_id=target.user_id,
+        )
+
+
 def notify_personnel_profile_updated(
     db: Session,
     personnel: User,
@@ -195,18 +286,15 @@ def _synthetic_id(event_type: NotificationEventType, user_id: uuid.UUID) -> uuid
 
 def _get_stale_invite_notifications(db: Session, recipient: User) -> List[NotificationOut]:
     """
-    Admin accounts still at status='invited', past the staleness
-    threshold, whose token HASN'T expired yet. Mutually exclusive with
-    _get_expired_invite_notifications.
+    Admin AND personnel accounts still at status='invited', past the
+    staleness threshold, token not yet expired.
 
-    SCOPED TO THE RECIPIENT'S OWN WORKSPACE - this was a real gap in the
-    old flat-superadmin version, which queried every invited user with
-    no filter at all:
-    - national_admin sees stale invites for ANY admin account (any
-      agency/region), since national_admin has no region of its own.
-    - fda_admin/lea_admin sees ONLY stale invites for co-admins sharing
-      their own role + region. Personnel never appear here at all -
-      they don't go through this invite flow anymore.
+    SCOPED TO THE RECIPIENT'S OWN WORKSPACE:
+    - national_admin sees stale invites for any admin-tier account
+      (national_admin/fda_admin/lea_admin), any region - never personnel.
+    - fda_admin/lea_admin sees stale invites for BOTH their own co-admin
+      role AND the personnel role under their own agency, filtered to
+      their own region_id.
     """
     cutoff = datetime.now(timezone.utc) - timedelta(days=INVITE_STALE_AFTER_DAYS)
     now = datetime.now(timezone.utc)
@@ -225,8 +313,9 @@ def _get_stale_invite_notifications(db: Session, recipient: User) -> List[Notifi
     if recipient.role == Role.NATIONAL_ADMIN:
         query = query.filter(User.role.in_(Role.ADMIN_ROLES | {Role.NATIONAL_ADMIN}))
     else:
+        personnel_role = Role.FDA_PERSONNEL if recipient.role == Role.FDA_ADMIN else Role.LEA_PERSONNEL
         query = query.filter(
-            User.role == recipient.role,
+            User.role.in_({recipient.role, personnel_role}),
             User.region_id == recipient.region_id,
         )
 
@@ -250,8 +339,8 @@ def _get_stale_invite_notifications(db: Session, recipient: User) -> List[Notifi
 
 
 def _get_expired_invite_notifications(db: Session, recipient: User) -> List[NotificationOut]:
-    """Same scoping rule as _get_stale_invite_notifications, but for
-    admin accounts whose invite token fully expired unused."""
+    """Same scoping fix as _get_stale_invite_notifications, for invites
+    whose token fully expired unused."""
     now = datetime.now(timezone.utc)
 
     query = (
@@ -267,8 +356,9 @@ def _get_expired_invite_notifications(db: Session, recipient: User) -> List[Noti
     if recipient.role == Role.NATIONAL_ADMIN:
         query = query.filter(User.role.in_(Role.ADMIN_ROLES | {Role.NATIONAL_ADMIN}))
     else:
+        personnel_role = Role.FDA_PERSONNEL if recipient.role == Role.FDA_ADMIN else Role.LEA_PERSONNEL
         query = query.filter(
-            User.role == recipient.role,
+            User.role.in_({recipient.role, personnel_role}),
             User.region_id == recipient.region_id,
         )
 

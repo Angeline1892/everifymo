@@ -20,7 +20,8 @@ from app.core.dependencies import get_current_user
 from app.core.security import hash_password, verify_password
 from app.desktop.services.admin_notifications import admin_notification_service as notification_service
 from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
-from app.desktop.services.account_status.guards import get_agency_admins_for
+
+from app.desktop.services.account_status.guards import agency_of
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -150,12 +151,11 @@ def update_profile(
     # ...unchanged notification + audit log code below...
 
     if update_data:
-        notification_service.create_notification_for_all_superadmins(
-            db=db,
+        notification_service.notify_self_service_account_event(
+            db=db, target=current_user,
             event_type=NotificationEventType.ACCOUNT_INFO_UPDATED,
             title="Profile information updated",
             message=f"{current_user.email} updated their profile information.",
-            related_user_id=current_user.user_id,
         )
 
         write_audit_log(
@@ -202,12 +202,11 @@ def change_password(
     )
     db.commit()
 
-    notification_service.create_notification_for_all_superadmins(
-        db=db,
+    notification_service.notify_self_service_account_event(
+        db=db, target=current_user,
         event_type=NotificationEventType.PASSWORD_CHANGED,
         title="Password changed",
         message=f"{current_user.email} changed their password.",
-        related_user_id=current_user.user_id,
     )
 
     password_action = (
@@ -263,7 +262,15 @@ def request_password_reset(
         region_code=get_user_region_code(db, current_user),
     )
 
-    # TODO(notification targeting): notify this user's agency admins
-    # (region + agency scoped) — being wired in separately, not here.
+    agency_admin_role = Role.FDA_ADMIN if current_user.role == Role.FDA_PERSONNEL else Role.LEA_ADMIN
+
+    notification_service.notify_regional_admin_workspace(
+        db=db, agency_admin_role=agency_admin_role, region_id=current_user.region_id,
+        agency=agency_of(current_user.role),
+        event_type=NotificationEventType.PASSWORD_RESET_REQUESTED,
+        title="Password reset requested",
+        message=f"{current_user.email} requested a password reset.",
+        related_user_id=current_user.user_id,
+    )
 
     return {"message": "Your request has been sent to the administrator."}

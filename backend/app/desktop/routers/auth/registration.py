@@ -125,12 +125,11 @@ def complete_registration(data: RegistrationCompleteRequest, http_request: Reque
     region_code = get_user_region_code(db, user_row) if user_row.region_id else None
 
     if is_personnel:
-        notification_service.create_notification_for_all_superadmins(
-            db=db,
-            event_type=NotificationEventType.REGISTRATION_ACCOMPLISHED,
-            title="Registration completed",
+        notification_service.notify_self_service_account_event(
+            db=db, target=user_row,
+            event_type=NotificationEventType.ACCOUNT_ACTIVATED,
+            title="Personnel registration completed",
             message=f"{user_email} completed registration and their account is now active.",
-            related_user_id=user_id,
         )
 
         write_audit_log(
@@ -146,12 +145,11 @@ def complete_registration(data: RegistrationCompleteRequest, http_request: Reque
             region_code=region_code,
         )
     else:
-        notification_service.create_notification_for_all_superadmins(
-            db=db,
-            event_type=NotificationEventType.REGISTRATION_ACCOMPLISHED,
-            title="Registration completed",
+        notification_service.notify_self_service_account_event(
+            db=db, target=user_row,
+            event_type=NotificationEventType.ACCOUNT_PENDING_APPROVAL,
+            title="Registration completed - awaiting approval",
             message=f"{user_email} completed registration and is now awaiting approval.",
-            related_user_id=user_id,
         )
 
         write_audit_log(
@@ -210,12 +208,11 @@ def resend_invite(data: ResendInviteRequest, background_tasks: BackgroundTasks, 
             else:
                 background_tasks.add_task(send_personnel_invite_email, user_row.email, agency_name, region_name, new_token.invite_token)
 
-    notification_service.create_notification_for_all_superadmins(
-        db=db,
+    notification_service.notify_self_service_account_event(
+        db=db, target=user_row,
         event_type=NotificationEventType.RESEND_LINK_REQUESTED,
         title="Invitation link resent",
         message=f"{user_row.email if user_row else 'A user'} generated a new invitation link after theirs expired.",
-        related_user_id=old_token_row.user_id,
     )
 
     if user_row:
@@ -257,12 +254,11 @@ def request_resend(data: RequestResendRequest, http_request: Request, db: Sessio
     db.commit()
 
     user_row = db.query(User).filter(User.user_id == token_row.user_id).first()
-    notification_service.create_notification_for_all_superadmins(
-        db=db,
+    notification_service.notify_self_service_account_event(
+        db=db, target=user_row,
         event_type=NotificationEventType.RESEND_LINK_REQUESTED,
         title="Resend requested",
         message=f"{user_row.email if user_row else 'A user'} requested a new invitation link.",
-        related_user_id=token_row.user_id,
     )
 
     if user_row:

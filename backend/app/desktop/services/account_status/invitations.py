@@ -34,10 +34,12 @@ def resend_invite_link(db: Session, actor, target_id, request=None):
     target_id_val, target_email, target_role = target.user_id, target.email, target.role
     region_code = get_user_region_code(db, target) if target.region_id else None
 
-    notification_service.create_notification_for_all_superadmins(
-        db=db, event_type=NotificationEventType.RESEND_LINK_REQUESTED,
-        title="Invitation resent", message=f"Invitation resent to {target_email}.",
-        related_user_id=target_id_val,
+    notification_service.notify_account_event(
+        db=db, actor=actor, target_user_id=target_id_val,
+        target_role=target_role, target_region_id=target.region_id,
+        event_type=NotificationEventType.RESEND_LINK_REQUESTED,
+        title="Invitation resent",
+        message=f"Invitation resent to {target_email}.",
     )
     write_audit_log(
         db, user=actor, action=action_for_role(target_role, "INVITE_RESENT"),

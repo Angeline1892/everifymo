@@ -87,12 +87,11 @@ def _handle_failed_attempt(db: Session, user: User, http_request: Request | None
         region_code = get_user_region_code(db, user)
         db.commit()
 
-        notification_service.create_notification_for_all_superadmins(
-            db=db,
+        notification_service.notify_self_service_account_event(
+            db=db, target=user,
             event_type=NotificationEventType.ACCOUNT_LOCKED,
             title="Account locked out",
             message=f"{user_email} has been locked out after {attempts} failed login attempts.",
-            related_user_id=user_id,
         )
         write_audit_log(
             db,
@@ -110,12 +109,11 @@ def _handle_failed_attempt(db: Session, user: User, http_request: Request | None
         )
     elif attempts == 3:
         db.commit()
-        notification_service.create_notification_for_all_superadmins(
-            db=db,
+        notification_service.notify_self_service_account_event(
+            db=db, target=user,
             event_type=NotificationEventType.FAILED_LOGIN_WARNING,
             title="Repeated failed login attempts",
             message=f"{attempts} failed attempts on {user.email}.",
-            related_user_id=user.user_id,
         )
     else:
         db.commit()

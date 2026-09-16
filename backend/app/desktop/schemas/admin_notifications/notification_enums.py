@@ -91,3 +91,9 @@ class NotificationEventType(str, Enum):
     # audience as step 1, so everyone in that workspace knows the pending
     # request was fulfilled, not just the admin who did it.
     PASSWORD_RESET_COMPLETED = "password_reset_completed"
+
+    # Personnel invited via the same deep-link flow as admins - unlike
+    # admins, personnel skip pending_approval entirely and go straight to
+    # active once they set their password (see the note on
+    # ACCOUNT_ACTIVATED below about where that trigger actually lives).
+    PERSONNEL_INVITED = "personnel_invited"

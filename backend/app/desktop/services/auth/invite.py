@@ -78,12 +78,20 @@ def create_invited_account(
 
     inviting_admin = db.query(User).filter(User.user_id == created_by).first()
 
-    notification_service.create_notification_for_all_superadmins(
-        db=db,
-        event_type=NotificationEventType.PERSONNEL_INVITED,
-        title="New account invited",
+    # Event type/title branch by target role - same underlying flow
+    # (invite link + 2-day token) for everyone, just worded differently.
+    if role in Role.PERSONNEL_ROLES:
+        event_type = NotificationEventType.PERSONNEL_INVITED
+        title = "New personnel invited"
+    else:
+        event_type = NotificationEventType.ADMIN_INVITED
+        title = "New admin invited"
+
+    notification_service.notify_account_event(
+        db=db, actor=inviting_admin, target_user_id=user_id,
+        target_role=role, target_region_id=region_id,
+        event_type=event_type, title=title,
         message=f"{user_email} was invited as {role.replace('_', ' ')}.",
-        related_user_id=user_id,
     )
 
     write_audit_log(
@@ -128,14 +136,13 @@ def activate_account(db: Session, target_id, activated_by, request=None):
     db.commit()
     # no db.refresh(target)
 
-    notification_service.create_notification_for_all_superadmins(
-        db=db,
+    notification_service.notify_account_event(
+        db=db, actor=activated_by, target_user_id=target_id_val,
+        target_role=target.role, target_region_id=target.region_id,
         event_type=NotificationEventType.ACCOUNT_ACTIVATED,
         title="Account activated",
         message=f"{target_email} has been activated and is now active.",
-        related_user_id=target_id_val,
     )
-
     write_audit_log(
         db,
         user=activated_by,
