@@ -1,5 +1,6 @@
 import './national-admin-css.css';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { apiFetch } from '../../utils/apiFetch';
 import { createPortal } from 'react-dom';
 import {
   Send,
@@ -22,106 +23,18 @@ import {
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
 
-// Initial realistic mock accounts for National Admin
-const INITIAL_NATIONAL_ADMINS = [
-  {
-    id: 'na-001',
-    first_name: 'Kristine',
-    last_name: 'Santos',
-    fullname: 'Kristine Santos',
-    email: 'kristine.santos@everifymo.gov.ph',
-    invitation_date: '2026-01-15',
-    expiration_date: '2026-01-17',
-    status: 'Active',
-    is_locked: false,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-002',
-    first_name: 'Alexander',
-    last_name: 'Reyes',
-    fullname: 'Alexander Reyes',
-    email: 'alex.reyes@everifymo.gov.ph',
-    invitation_date: '2026-02-01',
-    expiration_date: '2026-02-03',
-    status: 'Active',
-    is_locked: false,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-003',
-    first_name: 'Maria Elena',
-    last_name: 'Bautista',
-    fullname: 'Maria Elena Bautista',
-    email: 'maria.bautista@everifymo.gov.ph',
-    invitation_date: '2026-02-14',
-    expiration_date: '2026-02-16',
-    status: 'Suspended',
-    is_locked: false,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-004',
-    first_name: 'Jonathan',
-    last_name: 'Cruz',
-    fullname: 'Jonathan Cruz',
-    email: 'jonathan.cruz@everifymo.gov.ph',
-    invitation_date: '2026-02-20',
-    expiration_date: '2026-02-22',
-    status: 'Locked',
-    is_locked: true,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-005',
-    first_name: 'Patricia',
-    last_name: 'Villanueva',
-    fullname: 'Patricia Villanueva',
-    email: 'patricia.villanueva@everifymo.gov.ph',
-    invitation_date: '2026-02-28',
-    expiration_date: '2026-03-02',
-    status: 'Active',
-    is_locked: false,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-006',
-    first_name: 'Eduardo',
-    last_name: 'Mendoza',
-    fullname: 'Eduardo Mendoza',
-    email: 'eduardo.mendoza@everifymo.gov.ph',
-    invitation_date: '2026-03-01',
-    expiration_date: '2026-03-03',
-    status: 'Invited',
-    is_locked: false,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-007',
-    first_name: 'Corazon',
-    last_name: 'Aquino',
-    fullname: 'Corazon Aquino',
-    email: 'cory.aquino@everifymo.gov.ph',
-    invitation_date: '2026-02-10',
-    expiration_date: '2026-02-12',
-    status: 'Link Expired',
-    is_locked: false,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-008',
-    first_name: 'Danilo',
-    last_name: 'Gutierrez',
-    fullname: 'Danilo Gutierrez',
-    email: 'danilo.gutierrez@everifymo.gov.ph',
-    invitation_date: '2026-03-04',
-    expiration_date: '2026-03-06',
-    status: 'Pending Approval',
-    is_active: false,
-    is_locked: false,
-    role: 'National Administrator',
-  },
-];
+
+function extractErrorMessage(errorData, fallback) {
+    const detail = errorData?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+        return detail.map(d => d?.msg || JSON.stringify(d)).join(' ');
+    }
+    if (detail && typeof detail === 'object') {
+        return detail.msg || detail.message || JSON.stringify(detail);
+    }
+    return fallback;
+}
 
 export function computeAdminStatus(admin) {
   if (!admin) return '';
@@ -230,6 +143,7 @@ function NationalAdminActionDropdown({
   const [openUpward, setOpenUpward] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const triggerRef = useRef(null);
+
 
   const handleToggle = (e) => {
     e.stopPropagation();
@@ -358,16 +272,6 @@ function NationalAdminActionDropdown({
                 >
                   <RotateCcw size={14} /> Reactivate Account
                 </button>
-                <div className="NAMDropdownDivider" />
-                <button
-                  className="NAMDropdownItem danger"
-                  onClick={() => {
-                    onAction('delete');
-                    toggleDropdown();
-                  }}
-                >
-                  <Trash2 size={14} /> Delete Account
-                </button>
               </>
             )}
           </div>,
@@ -455,7 +359,6 @@ function NationalAdminConfirmModal({ open, actionType, onConfirm, onCancel }) {
 
 function AddNationalAdminModal({ open, onClose, onAddSuccess }) {
   const [firstName, setFirstName] = useState('');
-  const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [firstNameError, setFirstNameError] = useState('');
@@ -466,7 +369,6 @@ function AddNationalAdminModal({ open, onClose, onAddSuccess }) {
 
   function handleClose() {
     setFirstName('');
-    setMiddleName('');
     setLastName('');
     setEmail('');
     setFirstNameError('');
@@ -477,57 +379,48 @@ function AddNationalAdminModal({ open, onClose, onAddSuccess }) {
     onClose();
   }
 
-  function handleSend() {
-    let hasError = false;
-    setFirstNameError('');
-    setLastNameError('');
-    setEmailError('');
+  async function handleSend() {
+  let hasError = false;
+  setFirstNameError('');
+  setLastNameError('');
+  setEmailError('');
 
-    if (!firstName.trim()) {
-      setFirstNameError('First Name is required.');
+  if (!firstName.trim()) { setFirstNameError('First Name is required.'); hasError = true; }
+  if (!lastName.trim()) { setLastNameError('Last Name is required.'); hasError = true; }
+  if (!email.trim()) {
+    setEmailError('Email address is required.');
+    hasError = true;
+  } else {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setEmailError('Please enter a valid email address.');
       hasError = true;
     }
-
-    if (!lastName.trim()) {
-      setLastNameError('Last Name is required.');
-      hasError = true;
-    }
-
-    if (!email.trim()) {
-      setEmailError('Email address is required.');
-      hasError = true;
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.trim())) {
-        setEmailError('Please enter a valid email address.');
-        hasError = true;
-      }
-    }
-
-    if (hasError) return;
-
-    setSending(true);
-
-    // Simulate sending invitation with interactive state update
-    setTimeout(() => {
-      setSending(false);
-      setSuccessMsg(`National Admin invitation email has been sent to ${email.trim()}`);
-      const parts = [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean);
-      onAddSuccess({
-        id: `na-${Date.now()}`,
-        first_name: firstName.trim(),
-        middle_name: middleName.trim() || null,
-        last_name: lastName.trim(),
-        fullname: parts.join(' '),
-        email: email.trim(),
-        invitation_date: new Date().toISOString().split('T')[0],
-        expiration_date: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString().split('T')[0],
-        status: 'Invited',
-        is_locked: false,
-        role: 'National Administrator',
-      });
-    }, 600);
   }
+  if (hasError) return;
+
+  setSending(true);
+  try {
+    const res = await apiFetch('/national-admin-management', {
+      method: 'POST',
+      body: JSON.stringify({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        email: email.trim(),
+      }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(extractErrorMessage(errData, 'Failed to send invitation.'));
+    }
+    setSuccessMsg(`National Admin invitation email has been sent to ${email.trim()}`);
+    onAddSuccess(); // now just triggers a refetch, see below
+  } catch (err) {
+    setEmailError(err.message);
+  } finally {
+    setSending(false);
+  }
+}
 
   function handleDone() {
     handleClose();
@@ -548,8 +441,8 @@ function AddNationalAdminModal({ open, onClose, onAddSuccess }) {
 
         {!successMsg ? (
           <>
-            {/* Row 1: Name Fields (3 columns) */}
-            <div className="NAMFieldRow3">
+            {/* Row 1: Name Fields */}
+            <div className="NAMFieldRow">
               <div className="NAMFormGroup">
                 <label className="NAMLabel">
                   First Name <span className="NAMRequired">*</span>
@@ -570,21 +463,6 @@ function AddNationalAdminModal({ open, onClose, onAddSuccess }) {
                   />
                 </div>
                 {firstNameError && <span className="NAMFieldError">{firstNameError}</span>}
-              </div>
-
-              <div className="NAMFormGroup">
-                <label className="NAMLabel">Middle Name</label>
-                <div className="NAMInputWrapper">
-                  <User className="NAMInputIcon" size={16} />
-                  <input
-                    type="text"
-                    className="NAMInput with-icon"
-                    placeholder="Optional"
-                    value={middleName}
-                    onChange={(e) => setMiddleName(e.target.value)}
-                    disabled={sending}
-                  />
-                </div>
               </div>
 
               <div className="NAMFormGroup">
@@ -759,8 +637,10 @@ function NationalAdminViewModal({ open, nationalAdmin, onClose }) {
 
 
 export default function NationalAdminNewAdminManagement() {
-  const [nationalAdmins, setNationalAdmins] = useState(INITIAL_NATIONAL_ADMINS);
-  const [nationalAdminLoading, setNationalAdminLoading] = useState(false);
+  const [nationalAdmins, setNationalAdmins] = useState([]);
+  const [nationalAdminLoading, setNationalAdminLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+  const [myUserId, setMyUserId] = useState(null); 
   const [nationalAdminStatusFilter, setNationalAdminStatusFilter] = useState('All');
   const [nationalAdminSearchQuery, setNationalAdminSearchQuery] = useState('');
   const [nationalAdminViewAdmin, setNationalAdminViewAdmin] = useState(null);
@@ -772,8 +652,54 @@ export default function NationalAdminNewAdminManagement() {
     targetId: null,
   });
 
+
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(10);
+
+  const fetchNationalAdmins = useCallback(async (silent = false) => {
+    if (!silent) setNationalAdminLoading(true);
+    setFetchError('');
+    try {
+      const res = await apiFetch('/national-admin-management');
+      if (!res.ok) throw new Error('Failed to load national admins.');
+      const data = await res.json();
+      setNationalAdmins(
+        data.map((a) => ({
+          id: a.user_id,
+          first_name: a.first_name,
+          middle_name: a.middle_name,
+          last_name: a.last_name,
+          fullname: [a.first_name, a.middle_name, a.last_name].filter(Boolean).join(' '),
+          email: a.email,
+          invitation_date: a.invitation_date,
+          expiration_date: a.expiration_date,
+          status: a.status,
+          is_locked: a.is_locked,
+          role: 'National Administrator',
+        }))
+      );
+    } catch (err) {
+      setFetchError(err.message || 'Something went wrong.');
+    } finally {
+      if (!silent) setNationalAdminLoading(false);
+    }
+  }, []);
+
+    const fetchMyProfile = useCallback(async () => {  // ⬅️ ADD
+    try {
+      const res = await apiFetch('/profile');
+      if (!res.ok) return;
+      const data = await res.json();
+      setMyUserId(data.user_id);
+    } catch (err) {
+      console.error('Failed to fetch current admin profile:', err);
+    }
+  }, []);
+
+useEffect(() => {
+  fetchNationalAdmins();
+  fetchMyProfile();
+}, [fetchNationalAdmins, fetchMyProfile]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -795,46 +721,47 @@ export default function NationalAdminNewAdminManagement() {
     setNationalAdminAddModalOpen(true);
   }
 
-  function handleAddSuccess(newAdmin) {
-    setNationalAdmins((prev) => [newAdmin, ...prev]);
+  function handleAddSuccess() {
+    fetchNationalAdmins(true);
   }
 
   function openConfirm(actionType, adminId) {
     setNationalAdminConfirmModal({ open: true, actionType, targetId: adminId });
   }
 
-  function handleConfirmAction() {
-    const { actionType, targetId } = nationalAdminConfirmModal;
+  async function handleConfirmAction() {
+  const { actionType, targetId } = nationalAdminConfirmModal;
+  const actionPathMap = {
+    suspend: 'suspend',
+    reactivate: 'reactivate',
+    activate: 'activate',
+    unlock: 'unlock',
+    resend: 'resend-link',
+  };
 
-    setNationalAdmins((prev) =>
-      prev
-        .map((admin) => {
-          if (admin.id !== targetId) return admin;
+  setNationalAdminConfirmModal({ open: false, actionType: '', targetId: null });
 
-          switch (actionType) {
-            case 'suspend':
-              return { ...admin, status: 'Suspended', is_active: false };
-            case 'reactivate':
-            case 'activate':
-              return { ...admin, status: 'Active', is_active: true, is_locked: false };
-            case 'unlock':
-              return { ...admin, status: 'Active', is_active: true, is_locked: false };
-            case 'resend':
-              return {
-                ...admin,
-                status: 'Invited',
-                invitation_date: new Date().toISOString().split('T')[0],
-              };
-            default:
-              return admin;
-          }
-        })
-        .filter((admin) => (actionType === 'delete' ? admin.id !== targetId : true))
-    );
-
-    setNationalAdminConfirmModal({ open: false, actionType: '', targetId: null });
+  try {
+    if (actionType === 'delete') {
+      const res = await apiFetch(`/national-admin-management/${targetId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(errData, 'Delete failed.'));
+      }
+    } else {
+      const path = actionPathMap[actionType];
+      if (!path) return;
+      const res = await apiFetch(`/national-admin-management/${targetId}/${path}`, { method: 'POST' });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(errData, 'Action failed.'));
+      }
+    }
+    await fetchNationalAdmins(true);
+  } catch (err) {
+    setFetchError(err.message || 'Something went wrong.');
   }
-
+}
   function handleCancelConfirm() {
     setNationalAdminConfirmModal({ open: false, actionType: '', targetId: null });
   }
@@ -1005,9 +932,10 @@ export default function NationalAdminNewAdminManagement() {
                           <NationalAdminStatusBadge status={admin} />
                         </td>
                         <td>
+                          {myUserId !== null ? (
                           <NationalAdminActionDropdown
                             nationalAdmin={admin}
-                            isSelf={false}
+                            isSelf={admin.id === myUserId} 
                             isOpen={nationalAdminActiveDropdownId === admin.id}
                             toggleDropdown={() =>
                               setNationalAdminActiveDropdownId(
@@ -1017,6 +945,9 @@ export default function NationalAdminNewAdminManagement() {
                             onAction={(type) => openConfirm(type, admin.id)}
                             onView={() => setNationalAdminViewAdmin(admin)}
                           />
+                           ) : (
+                            <span className="NAMActionsPlaceholder">—</span>
+                          )}
                         </td>
                       </tr>
                     ))

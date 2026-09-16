@@ -1,5 +1,5 @@
 //desktopfrontend/src/pages/emailtemplates/invitation-status.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'   
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ClockAlert, Link, CircleCheckBig } from 'lucide-react'
 import { API_BASE_URL } from '../../utils/apiConfig'
@@ -9,6 +9,12 @@ function DeepLinkStatus() {
     const navigate = useNavigate()
 
     const { status: linkStatus, invite_token, resend_already_requested } = location.state || {}
+    
+    useEffect(() => {
+        if (linkStatus === 'valid') {
+            navigate('/create-new-password', { state: location.state, replace: true })
+        }
+    }, [linkStatus])
 
     const [requested, setRequested] = useState(!!resend_already_requested)
     const [resendNotice, setResendNotice] = useState(
@@ -81,6 +87,7 @@ function DeepLinkStatus() {
 
     const content = statusContent[linkStatus]
 
+    if (linkStatus === 'valid') return null   // NEW: brief blank frame while the redirect above fires
     if (!content) return <p>Something went wrong.</p>
 
     return (
