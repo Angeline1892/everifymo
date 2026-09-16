@@ -1,5 +1,6 @@
 // merged lea-save-drafts.jsx
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import './lea-css.css';
 import Sidebar from '../component/sidebar';
@@ -47,6 +48,7 @@ function LeaSavedDraft() {
 
     // ADDED — dropdown menu open/close state per row, and view-modal data
     const [openDropdownId, setOpenDropdownId] = useState(null);
+    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
     const [viewModalData, setViewModalData] = useState(null);
 
     // ADDED — fetches the real combined drafts list on page load
@@ -130,10 +132,37 @@ function LeaSavedDraft() {
         }, 1200);
     };
 
-    // ADDED — dropdown open/close toggle per row, same pattern as fda-saved-draft.jsx
-    const toggleDropdown = (draftId) => {
-        setOpenDropdownId(openDropdownId === draftId ? null : draftId);
+    // ADDED — dropdown open/close toggle per row with portal positioning
+    const toggleDropdown = (draftId, e) => {
+        if (openDropdownId === draftId) {
+            setOpenDropdownId(null);
+        } else {
+            if (e && e.currentTarget) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const openUpward = spaceBelow < 120;
+                setDropdownPos({
+                    top: openUpward ? Math.max(8, rect.top - 84) : rect.bottom + 4,
+                    left: Math.max(8, rect.right - 190),
+                });
+            }
+            setOpenDropdownId(draftId);
+        }
     };
+
+    useEffect(() => {
+        if (!openDropdownId) return;
+        const handleOutsideClick = (event) => {
+            if (
+                !event.target.closest('.LeaDropdownMenu') &&
+                !event.target.closest('.LeaDropdownTrigger')
+            ) {
+                setOpenDropdownId(null);
+            }
+        };
+        document.addEventListener('click', handleOutsideClick);
+        return () => document.removeEventListener('click', handleOutsideClick);
+    }, [openDropdownId]);
 
     // Filtering and sorting calculations
     // Filtering and sorting — still done client-side, on the real
@@ -192,7 +221,7 @@ function LeaSavedDraft() {
                         </div>
                     </div>
 
-                    <div className="VerificationTabs" style={{ marginBottom: '20px', marginLeft: '40px' }}>
+                    <div className="VerificationTabs" style={{ marginBottom: '20px' }}>
                         <div className="VerificationTabsButton">
                             <button
                                 className={`ButtonTab ${activeTab === 'All' ? 'active' : ''}`}
@@ -336,33 +365,47 @@ function LeaSavedDraft() {
                                                         </button>
                                                         <button
                                                             className="LeaDropdownTrigger"
-                                                            onClick={() => toggleDropdown(draft.draft_id)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleDropdown(draft.draft_id, e);
+                                                            }}
                                                         >
                                                             <MoreVertical size={15} />
                                                         </button>
 
-                                                        {openDropdownId === draft.draft_id && (
-                                                            <div className="LeaDropdownMenu">
-                                                                <button
-                                                                    className="LeaDropdownItem"
-                                                                    onClick={() => {
-                                                                        setOpenDropdownId(null);
-                                                                        handleEditDraft(draft);
+                                                        {openDropdownId === draft.draft_id &&
+                                                            createPortal(
+                                                                <div
+                                                                    className="LeaDropdownMenu"
+                                                                    style={{
+                                                                        position: 'fixed',
+                                                                        top: `${dropdownPos.top}px`,
+                                                                        left: `${dropdownPos.left}px`,
+                                                                        zIndex: 9999,
+                                                                        width:`150px`,
                                                                     }}
                                                                 >
-                                                                    <PenLine size={14} /> Continue Editing
-                                                                </button>
-                                                                <button
-                                                                    className="LeaDropdownItem"
-                                                                    onClick={() => {
-                                                                        setOpenDropdownId(null);
-                                                                        handleDeleteClick(draft);
-                                                                    }}
-                                                                >
-                                                                    <Trash2 size={14} /> Delete Draft
-                                                                </button>
-                                                            </div>
-                                                        )}
+                                                                    <button
+                                                                        className="LeaDropdownItem"
+                                                                        onClick={() => {
+                                                                            setOpenDropdownId(null);
+                                                                            handleEditDraft(draft);
+                                                                        }}
+                                                                    >
+                                                                        <PenLine size={14} /> Continue Editing
+                                                                    </button>
+                                                                    <button
+                                                                        className="LeaDropdownItem"
+                                                                        onClick={() => {
+                                                                            setOpenDropdownId(null);
+                                                                            handleDeleteClick(draft);
+                                                                        }}
+                                                                    >
+                                                                        <Trash2 size={14} /> Delete Draft
+                                                                    </button>
+                                                                </div>,
+                                                                document.body
+                                                            )}
                                                     </div>
                                                 </td>
                                             </tr>

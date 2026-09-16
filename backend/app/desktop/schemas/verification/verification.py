@@ -213,3 +213,84 @@ class LeaVerificationQueueCounts(BaseModel):
     fda_response_count: int
     initiated_count: int
     dismissed_count: int
+    completed_count: int
+
+
+# added by Darlene --start
+# Result choices for LEA FDA response items
+class LeaFdaResponseResultChoice(str, Enum):
+    registered = "registered"
+    unregistered = "unregistered"
+    rejected = "rejected"
+
+# Left panel detail for the LEA FDA response tab 
+class LeaFdaResponseListItem(BaseModel):
+    request_id: UUID
+    complaint_id: UUID
+    case_reference: str
+    product_name: str
+    manufacturer: str | None
+    product_category: str | None
+    responded_at: datetime
+    verification_result: LeaFdaResponseResultChoice
+
+# Right panel detail for the LEA FDA response tab
+class LeaFdaResponseDetailResponse(BaseModel):
+    request_id: UUID
+    complaint_id: UUID
+    case_reference: str
+    product_title: str
+    manufacturer: str | None
+    complainant_name: str | None
+    product_category: str | None
+    logged_at: datetime
+    source: str
+    verification_result: LeaFdaResponseResultChoice
+    responded_at: datetime
+    verifier_name: str | None
+
+    # unregistered
+    unregistered_reason: str | None
+    response_notes: str | None # this one field serves BOTH registered and unregistered
+    field_operation_notes: str | None
+
+    # registered
+    cpr_number: str | None
+    cpr_expiry: date | None
+
+    # rejected
+    rejection_reason: str | None
+
+# Optional, confirm later if it becomes required.
+class LeaInitiateTakedownRequest(BaseModel):
+    field_operation_notes: str | None = None
+
+class LeaFdaResponseActionResponse(BaseModel):
+    request_id: UUID
+    complaint_id: UUID
+    complaint_status: str
+    lea_acknowledged_at: datetime | None
+
+class LeaClosedReasonChoice(str, Enum):
+    completed = "completed"
+    registered = "registered"
+    rejected = "rejected"
+
+class LeaClosedCaseListItem(BaseModel):
+    complaint_id: UUID
+    case_reference: str
+    product_title: str
+    manufacturer: str | None
+    product_category: str | None
+    date_filed: datetime
+    date_closed: datetime | None
+    closed_by_name: str | None
+    reason_closed: LeaClosedReasonChoice
+    reason_detail: str | None # reason closed explanation sa loob ng view
+
+class LeaClosedCaseListResponse(BaseModel):
+    items: list[LeaClosedCaseListItem]
+    total: int
+    page: int
+    page_size: int
+# added by Darlene --end

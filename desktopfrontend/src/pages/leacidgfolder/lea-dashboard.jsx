@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './lea-css.css';
 import Sidebar from '../component/sidebar';
@@ -8,100 +8,157 @@ import {
   Footprints
 } from 'lucide-react';
 
+const API_BASE = 'http://127.0.0.1:8000';
+
 function LeaDashboard() {
   const navigate = useNavigate();
   const [hoveredLineIndex, setHoveredLineIndex] = useState(null);
   const [hoveredBarGroupIndex, setHoveredBarGroupIndex] = useState(null);
 
-  // Line chart dataset with mock values
-  const lineDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const intakeData = [4, 8, 15, 6, 18, 12, 22];
-  const forwardedData = [2, 5, 10, 4, 12, 8, 15];
+  const [awaitingFdaCases, setAwaitingFdaCases] = useState([]);
+  const [recentComplaints, setRecentComplaints] = useState([]);
+  const [walkinCount, setWalkinCount] = useState(0);
+  const [sentCount, setSentCount] = useState(0);
+  const [takedownsCount, setTakedownsCount] = useState(0);
+
+  const [intakeData, setIntakeData] = useState([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  const [forwardedData, setForwardedData] = useState([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  const [pipelineData, setPipelineData] = useState([
+    { label: '—', ops: 0, takedowns: 0 },
+    { label: '—', ops: 0, takedowns: 0 },
+    { label: '—', ops: 0, takedowns: 0 },
+    { label: '—', ops: 0, takedowns: 0 }
+  ]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const fetchData = async () => {
+      try {
+        // 1. Fetch awaiting FDA cases
+        const awaitingRes = await fetch(`${API_BASE}/verification-requests/awaiting-fda`, { headers });
+        let awaitingData = [];
+        if (awaitingRes.ok) {
+          awaitingData = await awaitingRes.json();
+          const mappedAwaiting = awaitingData.map(item => ({
+            id: item.request_id,
+            product: item.product_name,
+            manufacturer: item.manufacturer || '—',
+            caseNumber: item.case_reference,
+            type: item.source === 'walk_in' ? 'Walk-in' : 'Extension'
+          }));
+          setAwaitingFdaCases(mappedAwaiting);
+        }
+
+        // 2. Fetch all walk-in complaints for count and recent table
+        const complaintsRes = await fetch(`${API_BASE}/complaints/walkin/`, { headers });
+        let complaintsData = [];
+        if (complaintsRes.ok) {
+          complaintsData = await complaintsRes.json();
+        }
+
+        // 3. Fetch counts
+        const countsRes = await fetch(`${API_BASE}/verification-requests/counts`, { headers });
+        if (countsRes.ok) {
+          const countsData = await countsRes.json();
+          setSentCount(countsData.verification_queue_count + countsData.completed_count + countsData.rejected_count);
+        }
+
+        const leaCountsRes = await fetch(`${API_BASE}/verification-requests/lea-counts`, { headers });
+        if (leaCountsRes.ok) {
+          const leaCountsData = await leaCountsRes.json();
+          setTakedownsCount(leaCountsData.completed_count);
+        }
+
+        // 4. Fetch trends data
+        const trendsRes = await fetch(`${API_BASE}/complaints/trends`, { headers });
+        if (trendsRes.ok) {
+          const trendsData = await trendsRes.json();
+          setIntakeData(trendsData.intake_data);
+          setForwardedData(trendsData.forwarded_data);
+          if (trendsData.pipeline_data && trendsData.pipeline_data.length > 0) {
+            setPipelineData(trendsData.pipeline_data);
+          }
+        }
+
+        // Map real walk-in complaints for recent complaints table:
+        const mappedRecent = complaintsData.map(c => {
+          return {
+            id: c.case_reference,
+            product: c.product_title,
+            manufacturer: c.manufacturer || '—',
+            complainant: c.complainant_name || '—',
+            status: c.status,
+            logged: c.created_at ? new Date(c.created_at).toLocaleString() : '—',
+            rawDate: c.created_at ? new Date(c.created_at) : new Date(0)
+          };
+        })
+        .sort((a, b) => b.rawDate - a.rawDate)
+        .slice(0, 4);
+
+        setRecentComplaints(mappedRecent);
+
+        // Walk-in intakes total count:
+        setWalkinCount(complaintsData.length);
+
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Line chart dataset representing months of the year
+  const lineDays = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   // SVG Line Chart math
   const width = 800;
   const height = 250;
   const padX = 45;
   const padY = 25;
-  const maxY = 24;
+  
+  // Calculate dynamic max value for Y axis (min 10)
+  const maxIntake = Math.max(...intakeData);
+  const maxForwarded = Math.max(...forwardedData);
+  const maxY = Math.max(10, Math.ceil(Math.max(maxIntake, maxForwarded) * 1.2));
 
   const getX = (index) => padX + index * ((width - padX * 2) / (lineDays.length - 1));
-  const getY = (val) => height - padY - (val / maxY) * (height - padY * 2);
+  const getY = (val) => height - padY - (val / (maxY || 1)) * (height - padY * 2);
 
   // SVG Bar Chart math & data
-  const pipelineData = [
-    { label: 'W18', ops: 6, takedowns: 3 },
-    { label: 'W19', ops: 9, takedowns: 5 },
-    { label: 'W20', ops: 11, takedowns: 8 },
-    { label: 'W21', ops: 14, takedowns: 11 }
-  ];
   const barPadLeft = 50;
   const barPadRight = 20;
   const padT = 15;
-  const maxBarY = 16;
+  
+  // Calculate dynamic max value for Bar Y axis (min 10)
+  const maxOps = Math.max(...pipelineData.map(d => d.ops));
+  const maxTakedowns = Math.max(...pipelineData.map(d => d.takedowns));
+  const maxBarY = Math.max(10, Math.ceil(Math.max(maxOps, maxTakedowns) * 1.2));
+
   const plotWidth = width - barPadLeft - barPadRight;
-  const groupWidth = plotWidth / pipelineData.length;
+  const groupWidth = plotWidth / (pipelineData.length || 4);
   const barWidth = 48; // Width of each column bar
   const barGap = 8;   // Gap between the two bars inside a group
 
-  const getBarY = (val) => height - padY - (val / maxBarY) * (height - padY - padT);
-  const getBarHeight = (val) => (val / maxBarY) * (height - padY - padT);
+  const getBarY = (val) => height - padY - (val / (maxBarY || 1)) * (height - padY - padT);
+  const getBarHeight = (val) => (val / (maxBarY || 1)) * (height - padY - padT);
 
-  // Awaiting FDA verification cases mock dataset
-  const awaitingFdaCases = [
-    {
-      id: 1,
-      product: "HerbalSlim Capsules",
-      manufacturer: "NatureFit Labs",
-      caseNumber: "ICM-2025-00185",
-      type: "Walk-in"
-    }
-  ];
-
-  // Recent walk-in complaints mock dataset for dashboard table matching screenshot
-  const recentComplaints = [
-    {
-      id: 'ICM-2025-00185',
-      product: 'HerbalSlim Capsules',
-      manufacturer: 'NatureFit Labs',
-      complainant: 'M. Reyes',
-      status: 'pending_verification',
-      logged: '2026-05-17 10:42',
-    },
-    {
-      id: 'ICM-2025-00187',
-      product: 'PureVita Multivitamin',
-      manufacturer: 'Vita Manufacturing Inc.',
-      complainant: 'J. Cruz',
-      status: 'verified',
-      logged: '2026-05-16 11:21',
-    },
-    {
-      id: 'ICM-2025-00188',
-      product: 'Acne Clear Soap',
-      manufacturer: 'DermaPure',
-      complainant: 'A. Santos',
-      status: 'forwarded_to_lea',
-      logged: '2026-05-15 16:55',
-    },
-    {
-      id: 'ICM-2025-00191',
-      product: 'FreshBreath Mouthwash',
-      manufacturer: 'OralCare PH',
-      complainant: 'R. Tan',
-      status: 'pending_verification',
-      logged: '2026-05-18 08:02',
-    }
-  ];
+  // Live datasets loaded from backend APIs
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
-      case 'pending_verification':
-        return 'badge-pending-verification';
-      case 'verified':
-        return 'badge-verified';
-      case 'forwarded_to_lea':
-        return 'badge-forwarded-to-lea';
+      case 'queued':
+        return 'WcStatus-queued';
+      case 'pending':
+        return 'WcStatus-pending';
+      case 'confirmed_registered':
+        return 'WcStatus-confirmed-registered';
+      case 'confirmed_unregistered':
+        return 'WcStatus-confirmed-unregistered';
+      case 'rejected':
+        return 'WcStatus-rejected';
       default:
         return '';
     }
@@ -109,12 +166,16 @@ function LeaDashboard() {
 
   const getStatusLabel = (status) => {
     switch (status) {
-      case 'pending_verification':
-        return 'Pending Verification';
-      case 'verified':
-        return 'Verified';
-      case 'forwarded_to_lea':
-        return 'Forwarded to LEA';
+      case 'queued':
+        return 'Ready to Send';
+      case 'pending':
+        return 'Pending FDA Verification';
+      case 'confirmed_registered':
+        return 'Confirmed Registered';
+      case 'confirmed_unregistered':
+        return 'Confirmed Unregistered';
+      case 'rejected':
+        return 'Verification Rejected';
       default:
         return status;
     }
@@ -142,6 +203,39 @@ function LeaDashboard() {
   const intakePath = createSmoothPath(intakePoints);
   const forwardedPath = createSmoothPath(forwardedPoints);
 
+  // Smooth Area generator for gradient fill
+  const createAreaPath = (pts) => {
+    const linePath = createSmoothPath(pts);
+    if (!linePath) return '';
+    const firstX = pts[0].x;
+    const lastX = pts[pts.length - 1].x;
+    const baselineY = height - padY;
+    return `${linePath} L ${lastX},${baselineY} L ${firstX},${baselineY} Z`;
+  };
+
+  const intakeArea = createAreaPath(intakePoints);
+  const forwardedArea = createAreaPath(forwardedPoints);
+
+  // Dynamic Gridline Ticks for Line Chart
+  const numLineTicks = 5;
+  const lineTicks = Array.from({ length: numLineTicks }, (_, i) => {
+    const val = (maxY / (numLineTicks - 1)) * i;
+    return {
+      value: Math.round(val),
+      y: getY(val)
+    };
+  });
+
+  // Dynamic Gridline Ticks for Bar Chart
+  const numBarTicks = 5;
+  const barTicks = Array.from({ length: numBarTicks }, (_, i) => {
+    const val = (maxBarY / (numBarTicks - 1)) * i;
+    return {
+      value: Math.round(val),
+      y: getBarY(val)
+    };
+  });
+
 
 
   return (
@@ -162,21 +256,21 @@ function LeaDashboard() {
               <div className='statTopRow'>
                 <span className='statLabel'>Walk-in intakes</span>
               </div>
-              <div className='statValue'>35</div>
+              <div className='statValue'>{walkinCount}</div>
             </div>
 
             <div className='LeaStatCard'>
               <div className='statTopRow'>
                 <span className='statLabel'>Verification requests sent</span>
               </div>
-              <div className='statValue'>28</div>
+              <div className='statValue'>{sentCount}</div>
             </div>
 
             <div className='LeaStatCard'>
               <div className='statTopRow'>
                 <span className='statLabel'>Takedowns completed</span>
               </div>
-              <div className='statValue'>16</div>
+              <div className='statValue'>{takedownsCount}</div>
             </div>
           </div>
 
@@ -202,24 +296,37 @@ function LeaDashboard() {
                   </div>
                 </div>
 
-                {/* Line Chart SVG */}
-                <div className='svgChartWrapper'>
-                  <svg className='interactiveLineSvg' viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
-
-                    {/* Horizontal Dashed Gridlines */}
-                    {[0, 6, 12, 18, 24].map((val) => {
-                      const y = getY(val);
-                      return (
-                        <g key={val}>
-                          <line x1={padX} y1={y} x2={width - padX} y2={y} stroke="#e2e8f0" strokeDasharray="2 2" strokeWidth="1" />
-                          <text x={padX - 10} y={y + 4} className='yAxisText'>{val}</text>
-                        </g>
-                      );
-                    })}
-
-                    {/* Smooth Curves (No Gradient Fill as in image) */}
-                    <path d={intakePath} fill="none" stroke="#07476F" strokeWidth="2.5" strokeLinecap="round" />
-                    <path d={forwardedPath} fill="none" stroke="#14B8A6" strokeWidth="2.5" strokeLinecap="round" />
+                 {/* Line Chart SVG */}
+                 <div className='svgChartWrapper'>
+                   <svg className='interactiveLineSvg' viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+                     <defs>
+                       <linearGradient id="intakeGradient" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="0%" stopColor="#07476F" stopOpacity="0.25" />
+                         <stop offset="100%" stopColor="#07476F" stopOpacity="0" />
+                       </linearGradient>
+                       <linearGradient id="forwardedGradient" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="0%" stopColor="#14B8A6" stopOpacity="0.25" />
+                         <stop offset="100%" stopColor="#14B8A6" stopOpacity="0" />
+                       </linearGradient>
+                     </defs>
+ 
+                     {/* Horizontal Dashed Gridlines */}
+                     {lineTicks.map((tick, idx) => {
+                       return (
+                         <g key={idx}>
+                           <line x1={padX} y1={tick.y} x2={width - padX} y2={tick.y} stroke="#e2e8f0" strokeDasharray="2 2" strokeWidth="1" />
+                           <text x={padX - 10} y={tick.y + 4} className='yAxisText'>{tick.value}</text>
+                         </g>
+                       );
+                     })}
+ 
+                     {/* Gradient Fills under Curves */}
+                     <path d={intakeArea} fill="url(#intakeGradient)" opacity="0.6" style={{ transition: 'all 0.3s ease' }} />
+                     <path d={forwardedArea} fill="url(#forwardedGradient)" opacity="0.6" style={{ transition: 'all 0.3s ease' }} />
+ 
+                     {/* Smooth Curves */}
+                     <path d={intakePath} fill="none" stroke="#07476F" strokeWidth="2.5" strokeLinecap="round" />
+                     <path d={forwardedPath} fill="none" stroke="#14B8A6" strokeWidth="2.5" strokeLinecap="round" />
 
                     {/* Points & Day Labels */}
                     {intakePoints.map((pt, i) => {
@@ -309,12 +416,11 @@ function LeaDashboard() {
                 <div className='svgChartWrapper'>
                   <svg className='interactiveBarSvg' viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
                     {/* Horizontal Dashed Gridlines */}
-                    {[0, 4, 8, 12, 16].map((val) => {
-                      const y = getBarY(val);
+                    {barTicks.map((tick, idx) => {
                       return (
-                        <g key={val}>
-                          <line x1={barPadLeft} y1={y} x2={width - barPadRight} y2={y} stroke="#e2e8f0" strokeDasharray="2 2" strokeWidth="1" />
-                          <text x={barPadLeft - 10} y={y + 4} className='yAxisText'>{val}</text>
+                        <g key={idx}>
+                          <line x1={barPadLeft} y1={tick.y} x2={width - barPadRight} y2={tick.y} stroke="#e2e8f0" strokeDasharray="2 2" strokeWidth="1" />
+                          <text x={barPadLeft - 10} y={tick.y + 4} className='yAxisText'>{tick.value}</text>
                         </g>
                       );
                     })}
@@ -482,7 +588,7 @@ function LeaDashboard() {
                       </td>
                       <td className='ComplainantCol'>{complaint.complainant}</td>
                       <td>
-                        <span className={`DashboardStatusBadge ${getStatusBadgeClass(complaint.status)}`}>
+                        <span className={`WcStatusBadge ${getStatusBadgeClass(complaint.status)}`}>
                           {getStatusLabel(complaint.status)}
                         </span>
                       </td>

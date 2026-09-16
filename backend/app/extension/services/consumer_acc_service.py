@@ -197,7 +197,7 @@ def request_password_reset(db: Session, email: str):
     consumer = db.query(ConsumerAccount).filter(ConsumerAccount.email == email).first()
 
     if not consumer:
-        raise HTTPException(status_code=404, detail="No account found with this email.")
+        raise HTTPException(status_code=404, detail="Account doesn't exist.")
 
     if not consumer.is_verified:
         raise HTTPException(status_code=400, detail="Please verify your account before changing its password.")

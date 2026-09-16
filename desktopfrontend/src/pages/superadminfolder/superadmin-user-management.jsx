@@ -1,25 +1,15 @@
 // desktopfrontend/src/pages/superadminfolder/superadmin-user-management.jsx
 import './superadmin-css.css';
 import { useState, useEffect, useRef } from 'react';
-import { Send, UserCheck, UserX, TriangleAlert, CircleCheckBig, Mail, Eye, Trash2, MoreVertical, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Send, UserCheck, UserX, TriangleAlert, CircleCheckBig, Mail, Eye, Trash2, MoreVertical, RotateCcw, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
 import { apiFetch } from '../../utils/apiFetch';
 import { createPortal } from 'react-dom';
-
-
-const STATUS_META = {
-  Invited: { label: 'Invited', className: 'badge-pending' },
-  'Pending Approval': { label: 'Pending Approval', className: 'badge-for-activation' },
-  Active: { label: 'Active', className: 'badge-active' },
-  Suspended: { label: 'Suspended', className: 'badge-suspended' },
-  'Resend Requested': { label: 'Resend Requested', className: 'badge-pending' },
-  'Link Expired': { label: 'Link Expired', className: 'badge-expired' },
-  Locked: { label: 'Locked', className: 'badge-suspended' },
-};
+import { USER_STATUS_META } from './superadmin-status-colors';
 
 function StatusBadge({ status }) {
-  const meta = STATUS_META[status] || { label: status, className: '' };
+  const meta = USER_STATUS_META[status] || { label: status, className: '' };
   return <span className={`UMStatusBadge ${meta.className}`}>{meta.label}</span>;
 }
 
@@ -97,12 +87,9 @@ function UserMgmtActionDropdown({ user, onAction, onView }) {
               <button className="UserMgmtDropdownItem" onClick={() => { onAction('reactivate'); setIsOpen(false); }}>
                 <RotateCcw size={14} /> Reactivate Account
               </button>
-              <div className="UserMgmtDropdownDivider" />
-              <button className="UserMgmtDropdownItem danger" onClick={() => { onAction('delete'); setIsOpen(false); }}>
-                <Trash2 size={14} /> Delete Account
-              </button>
             </>
           )}
+          
           {['Resend Requested', 'Link Expired'].includes(displayStatus) && (
             <button className="UserMgmtDropdownItem" onClick={() => { onAction('resend'); setIsOpen(false); }}>
               <Send size={14} /> Resend Link
@@ -112,7 +99,7 @@ function UserMgmtActionDropdown({ user, onAction, onView }) {
             <>
               <div className="UserMgmtDropdownDivider" />
               <button className="UserMgmtDropdownItem danger" onClick={() => { onAction('delete'); setIsOpen(false); }}>
-                <Trash2 size={14} /> Delete Invitation
+                <Trash2 size={14} /> Delete Account
               </button>
             </>
           )}
@@ -209,7 +196,7 @@ function AddPersonnelModal({ open, onClose }) {
 
   useEffect(() => {
     if (open) {
-      fetch('http://127.0.0.1:8000/regions')
+      apiFetch('/regions')
         .then((res) => res.json())
         .then((data) => setRegions(data))
         .catch((err) => console.error('Failed to load regions', err));
@@ -633,22 +620,22 @@ function SuperAdminUserManagement() {
                 {
                   label: 'Pending Approval',
                   value: users.filter((u) => (u.display_status || u.status) === 'Pending Approval').length,
-                  className: 'stat-activation',
+                  className: 'stat-pending',
                 },
                 {
                   label: 'Invited',
                   value: users.filter((u) => ['Invited', 'Resend Requested'].includes(u.display_status || u.status)).length,
-                  className: 'stat-pending',
+                  className: 'stat-invited',
                 },
                 {
                   label: 'Link Expired',
                   value: users.filter((u) => (u.display_status || u.status) === 'Link Expired').length,
-                  className: 'stat-suspended',
+                  className: 'stat-expired',
                 },
                 {
                   label: 'Locked',
                   value: users.filter((u) => (u.display_status || u.status) === 'Locked').length,
-                  className: 'stat-suspended',
+                  className: 'stat-locked',
                 },
               ].map((s) => (
                 <div key={s.label} className={`UMStatCard ${s.className}`}>
@@ -660,26 +647,41 @@ function SuperAdminUserManagement() {
 
             {/* Filter Bar */}
             <div className="UserMgmtFiltersContainer">
-              <span className="UserMgmtFilterLabel">Filter by Status:</span>
-              <select
-                className="UserMgmtSelectFilter"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="All">All</option>
-                <option value="Invited">Invited</option>
-                <option value="Resend Requested">Resend Requested</option>
-                <option value="Link Expired">Link Expired</option>
-                <option value="Pending Approval">Pending Approval</option>
-                <option value="Active">Active</option>
-                <option value="Suspended">Suspended</option>
-                <option value="Locked">Locked</option>
-              </select>
-            </div>
+              <div className="UserMgmtFilterRowContainer">
+                <span className="UserMgmtFilterLabel">STATUS</span>
+                <select
+                  className="UserMgmtSelectFilter"
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="All">All</option>
+                  <option value="Invited">Invited</option>
+                  <option value="Resend Requested">Resend Requested</option>
+                  <option value="Link Expired">Link Expired</option>
+                  <option value="Pending Approval">Pending Approval</option>
+                  <option value="Active">Active</option>
+                  <option value="Suspended">Suspended</option>
+                  <option value="Locked">Locked </option>
+                </select>
+              </div>
 
+              {statusFilter !== 'All' && (
+                <button
+                  className="BtnClearFiltersIcon"
+                  aria-label="Clear Filters"
+                  title="Clear Filters"
+                  onClick={() => {
+                    setStatusFilter('All');
+                    setCurrentPage(1);
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
             {/* Table */}
             <div className="UMTableWrapper">
               <table className="UMTable">

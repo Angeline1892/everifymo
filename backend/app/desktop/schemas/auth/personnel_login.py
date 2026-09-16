@@ -1,3 +1,4 @@
+# backend/app/desktop/schemas/auth/personnel_login.py   
 from pydantic import BaseModel, EmailStr
 from typing import Literal
 

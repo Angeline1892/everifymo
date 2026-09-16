@@ -1,5 +1,6 @@
 import './superadmin-css.css';
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Send,
   UserX,
@@ -15,10 +16,12 @@ import {
   RotateCcw,
   ChevronLeft,
   ChevronRight,
+  X,
 } from 'lucide-react';
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
 import { apiFetch } from '../../utils/apiFetch';
+import { ADMIN_STATUS_META } from './superadmin-status-colors';
 
 // Decode current superadmin's user_id from the JWT access token payload
 function getCurrentAdminId() {
@@ -34,8 +37,15 @@ function getCurrentAdminId() {
 
 // Maps backend SuperadminListItem -> frontend row shape
 function mapAdmin(item) {
+  const firstName = item.first_name || item.firstName || '';
+  const lastName = item.last_name || item.lastName || '';
+  const fullName = item.fullname || item.full_name || item.fullName || (firstName || lastName ? `${firstName} ${lastName}`.trim() : '');
+
   return {
     id: item.admin_id,
+    first_name: firstName,
+    last_name: lastName,
+    fullname: fullName,
     email: item.email,
     invitation_date: item.invitation_date ? item.invitation_date.split('T')[0] : null,
     expiration_date: item.expiration_date ? item.expiration_date.split('T')[0] : null,
@@ -44,18 +54,8 @@ function mapAdmin(item) {
   };
 }
 
-const STATUS_META = {
-  Invited: { label: 'Invited', className: 'sam-badge-invited' },
-  'Link Expired': { label: 'Link Expired', className: 'sam-badge-expired' },
-  'Resend Requested': { label: 'Resend Requested', className: 'sam-badge-pending' },
-  Active: { label: 'Active', className: 'sam-badge-active' },
-  Suspended: { label: 'Suspended', className: 'sam-badge-suspended' },
-  'Pending Approval': { label: 'Pending Approval', className: 'sam-badge-pending' },
-  Locked: { label: 'Locked', className: 'sam-badge-locked' },
-};
-
 function SAMStatusBadge({ status }) {
-  const meta = STATUS_META[status] || { label: status, className: '' };
+  const meta = ADMIN_STATUS_META[status] || { label: status, className: '' };
   return <span className={`SAMStatusBadge ${meta.className}`}>{meta.label}</span>;
 }
 
@@ -63,6 +63,7 @@ function SAMStatusBadge({ status }) {
 function SAMActionDropdown({ admin, isSelf, isOpen, toggleDropdown, onAction, onView }) {
   const status = admin.status;
   const [openUpward, setOpenUpward] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const triggerRef = useRef(null);
 
   const handleToggle = (e) => {
@@ -70,7 +71,12 @@ function SAMActionDropdown({ admin, isSelf, isOpen, toggleDropdown, onAction, on
     if (!isOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      setOpenUpward(spaceBelow < 170);
+      const upward = spaceBelow < 170;
+      setOpenUpward(upward);
+      setMenuPos({
+        top: upward ? Math.max(8, rect.top - 150) : rect.bottom + 4,
+        left: Math.max(8, rect.right - 190),
+      });
     }
     toggleDropdown();
   };
@@ -87,8 +93,18 @@ function SAMActionDropdown({ admin, isSelf, isOpen, toggleDropdown, onAction, on
         <MoreVertical size={16} />
       </button>
 
-      {isOpen && (
-        <div className={`SAMDropdownMenu ${openUpward ? 'open-upward' : ''}`}>
+      {isOpen &&
+        createPortal(
+          <div
+            className={`SAMDropdownMenu ${openUpward ? 'open-upward' : ''}`}
+            style={{
+              position: 'fixed',
+              top: `${menuPos.top}px`,
+              left: `${menuPos.left}px`,
+              zIndex: 9999,
+              width:`150px`,
+            }}
+          >
           <button
             className="SAMDropdownItem"
             onClick={() => {
@@ -99,8 +115,8 @@ function SAMActionDropdown({ admin, isSelf, isOpen, toggleDropdown, onAction, on
             <Eye size={14} /> View Details
           </button>
 
-          {/* Invited / Resend Requested / Link Expired — Resend Invitation */}
-          {['Invited', 'Resend Requested', 'Link Expired'].includes(status) && (
+          {/* Resend Requested / Link Expired — Resend Invitation */}
+          {['Resend Requested', 'Link Expired'].includes(status) && (
             <button
               className="SAMDropdownItem"
               onClick={() => {
@@ -123,7 +139,7 @@ function SAMActionDropdown({ admin, isSelf, isOpen, toggleDropdown, onAction, on
                   toggleDropdown();
                 }}
               >
-                <Trash2 size={14} /> Delete Invitation
+                <Trash2 size={14} /> Delete Account
               </button>
             </>
           )}
@@ -167,16 +183,6 @@ function SAMActionDropdown({ admin, isSelf, isOpen, toggleDropdown, onAction, on
               >
                 <UserX size={14} /> Suspend Account
               </button>
-              <div className="SAMDropdownDivider" />
-              <button
-                className="SAMDropdownItem danger"
-                onClick={() => {
-                  onAction('delete');
-                  toggleDropdown();
-                }}
-              >
-                <Trash2 size={14} /> Delete Account
-              </button>
             </>
           )}
 
@@ -205,8 +211,9 @@ function SAMActionDropdown({ admin, isSelf, isOpen, toggleDropdown, onAction, on
               </button>
             </>
           )}
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
@@ -282,13 +289,21 @@ function SAMConfirmModal({ open, actionType, onConfirm, onCancel }) {
 }
 
 function AddSuperadminModal({ open, onClose }) {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [firstNameError, setFirstNameError] = useState('');
+  const [lastNameError, setLastNameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [sending, setSending] = useState(false);
 
   function handleClose() {
+    setFirstName('');
+    setLastName('');
     setEmail('');
+    setFirstNameError('');
+    setLastNameError('');
     setEmailError('');
     setSuccessMsg('');
     setSending(false);
@@ -296,25 +311,44 @@ function AddSuperadminModal({ open, onClose }) {
   }
 
   async function handleSend() {
+    let hasError = false;
+    setFirstNameError('');
+    setLastNameError('');
     setEmailError('');
+
+    if (!firstName.trim()) {
+      setFirstNameError('First Name is required.');
+      hasError = true;
+    }
+
+    if (!lastName.trim()) {
+      setLastNameError('Last Name is required.');
+      hasError = true;
+    }
 
     if (!email.trim()) {
       setEmailError('Email address is required.');
-      return;
+      hasError = true;
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        setEmailError('Please enter a valid email address.');
+        hasError = true;
+      }
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setEmailError('Please enter a valid email address.');
-      return;
-    }
+    if (hasError) return;
 
     setSending(true);
 
     try {
       const response = await apiFetch('/admin/superadmins/invite', {
         method: 'POST',
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          email: email.trim(),
+        }),
       });
 
       if (!response.ok) {
@@ -331,8 +365,16 @@ function AddSuperadminModal({ open, onClose }) {
   }
 
   function handleDone() {
-    onClose({ email: email.trim() });
+    onClose({
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+    });
+    setFirstName('');
+    setLastName('');
     setEmail('');
+    setFirstNameError('');
+    setLastNameError('');
     setEmailError('');
     setSuccessMsg('');
     setSending(false);
@@ -346,12 +388,53 @@ function AddSuperadminModal({ open, onClose }) {
         <div className="SAMModalHeader">
           <h3 className="SAMModalTitle">Add Superadmin</h3>
           <p className="SAMModalSubtitle">
-            Enter the email address of the new Superadmin personnel. They will receive an email invitation to set up their password.
+            Enter the name and email address of the new Superadmin personnel. They will receive an email invitation to set up their password.
           </p>
         </div>
 
         {!successMsg ? (
           <>
+            <div className="SAMFormGroup">
+              <label className="SAMLabel">
+                First Name <span className="SAMRequired">*</span>
+              </label>
+
+              <input
+                type="text"
+                className={`SAMInput ${firstNameError ? 'input-error' : ''}`}
+                placeholder="e.g. Juan"
+                value={firstName}
+                onChange={(e) => {
+                  setFirstName(e.target.value);
+                  if (firstNameError) setFirstNameError('');
+                }}
+                disabled={sending}
+                autoFocus
+              />
+
+              {firstNameError && <span className="SAMFieldError">{firstNameError}</span>}
+            </div>
+
+            <div className="SAMFormGroup">
+              <label className="SAMLabel">
+                Last Name <span className="SAMRequired">*</span>
+              </label>
+
+              <input
+                type="text"
+                className={`SAMInput ${lastNameError ? 'input-error' : ''}`}
+                placeholder="e.g. Dela Cruz"
+                value={lastName}
+                onChange={(e) => {
+                  setLastName(e.target.value);
+                  if (lastNameError) setLastNameError('');
+                }}
+                disabled={sending}
+              />
+
+              {lastNameError && <span className="SAMFieldError">{lastNameError}</span>}
+            </div>
+
             <div className="SAMFormGroup">
               <label className="SAMLabel">
                 Email Address <span className="SAMRequired">*</span>
@@ -377,7 +460,6 @@ function AddSuperadminModal({ open, onClose }) {
                   }
                 }}
                 disabled={sending}
-                autoFocus
               />
 
               {emailError && <span className="SAMFieldError">{emailError}</span>}
@@ -419,6 +501,8 @@ function AddSuperadminModal({ open, onClose }) {
 function ViewAdminModal({ open, admin, onClose }) {
   if (!open || !admin) return null;
 
+  const showExpiration = ['Invited', 'Resend Requested', 'Link Expired'].includes(admin.status);
+
   return (
     <div className="SAMModalOverlay">
       <div className="SAMModal SAMViewModal">
@@ -432,6 +516,10 @@ function ViewAdminModal({ open, admin, onClose }) {
 
         <div className="SAMViewDetails">
           <div className="SAMDetailRow">
+            <span className="SAMDetailLabel">Full Name:</span>
+            <span className="SAMDetailValue">{admin.fullname || (admin.first_name || admin.last_name ? `${admin.first_name} ${admin.last_name}`.trim() : '') || '—'}</span>
+          </div>
+          <div className="SAMDetailRow">
             <span className="SAMDetailLabel">Email Address:</span>
             <span className="SAMDetailValue SAMEmail">{admin.email}</span>
           </div>
@@ -439,10 +527,12 @@ function ViewAdminModal({ open, admin, onClose }) {
             <span className="SAMDetailLabel">Invitation Date:</span>
             <span className="SAMDetailValue">{admin.invitation_date || '—'}</span>
           </div>
-          <div className="SAMDetailRow">
-            <span className="SAMDetailLabel">Expiration Date:</span>
-            <span className="SAMDetailValue">{admin.expiration_date || '—'}</span>
-          </div>
+          {showExpiration && (
+            <div className="SAMDetailRow">
+              <span className="SAMDetailLabel">Expiration Date:</span>
+              <span className="SAMDetailValue">{admin.expiration_date || '—'}</span>
+            </div>
+          )}
           <div className="SAMDetailRow">
             <span className="SAMDetailLabel">Role:</span>
             <span className="SAMDetailValue">Super Administrator</span>
@@ -486,7 +576,10 @@ export default function SuperAdminAdminManagement() {
 
   useEffect(() => {
     function handleOutsideClick(event) {
-      if (!event.target.closest('.SAMDropdownWrapper')) {
+      if (
+        !event.target.closest('.SAMDropdownWrapper') &&
+        !event.target.closest('.SAMDropdownMenu')
+      ) {
         setActiveDropdownId(null);
       }
     }
@@ -569,9 +662,11 @@ export default function SuperAdminAdminManagement() {
 
   const filteredAdmins = admins.filter((a) => {
     const matchesStatus = statusFilter === 'All' || a.status === statusFilter;
+    const query = searchQuery.toLowerCase().trim();
     const matchesSearch =
-      !searchQuery.trim() ||
-      a.email.toLowerCase().includes(searchQuery.toLowerCase().trim());
+      !query ||
+      a.email.toLowerCase().includes(query) ||
+      (a.fullname && a.fullname.toLowerCase().includes(query));
     return matchesStatus && matchesSearch;
   });
 
@@ -664,24 +759,41 @@ export default function SuperAdminAdminManagement() {
               </div>
 
               <div className="SAMFilterGroup">
-                <span className="SAMFilterLabel">Filter by Status:</span>
-                <select
-                  className="SAMSelectFilter"
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                >
-                  <option value="All">All</option>
-                  <option value="Invited">Invited</option>
-                  <option value="Resend Requested">Resend Requested</option>
+                <div className="SAMFilterItem">
+                  <span className="SAMFilterLabel">STATUS</span>
+                  <select
+                    className="SAMSelectFilter"
+                    value={statusFilter}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <option value="All">All</option>
+                    <option value="Invited">Invited</option>
+                    <option value="Resend Requested">Resend Requested</option>
                   <option value="Link Expired">Link Expired</option>
-                  <option value="Pending Approval">Pending Approval</option>
-                  <option value="Active">Active</option>
-                  <option value="Suspended">Suspended</option>
-                  <option value="Locked">Locked</option>
-                </select>
+                    <option value="Pending Approval">Pending Approval</option>
+                    <option value="Active">Active</option>
+                    <option value="Suspended">Suspended</option>
+                    <option value="Locked">Locked</option>
+                  </select>
+                </div>
+
+                {(searchQuery !== '' || statusFilter !== 'All') && (
+                  <button
+                    className="BtnClearFiltersIcon"
+                    aria-label="Clear Filters"
+                    title="Clear Filters"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setStatusFilter('All');
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -690,6 +802,7 @@ export default function SuperAdminAdminManagement() {
                 <thead>
                   <tr>
                     <th style={{ width: '60px' }}>#</th>
+                    <th>Full Name</th>
                     <th>Email</th>
                     <th>Invitation Date</th>
                     <th>Expiration Date</th>
@@ -700,7 +813,7 @@ export default function SuperAdminAdminManagement() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={6} className="SAMNoResults">
+                      <td colSpan={7} className="SAMNoResults">
                         Loading superadmin records…
                       </td>
                     </tr>
@@ -708,6 +821,7 @@ export default function SuperAdminAdminManagement() {
                     displayedAdmins.map((admin, idx) => (
                       <tr key={admin.id}>
                         <td className="SAMTdCenter">{startIndex + idx + 1}</td>
+                        <td>{admin.fullname || (admin.first_name || admin.last_name ? `${admin.first_name} ${admin.last_name}`.trim() : '') || <span className="SAMEmpty">—</span>}</td>
                         <td className="SAMEmailCell">{admin.email}</td>
                         <td>{admin.invitation_date || <span className="SAMEmpty">—</span>}</td>
                         <td>{admin.expiration_date || <span className="SAMEmpty">—</span>}</td>
@@ -732,7 +846,7 @@ export default function SuperAdminAdminManagement() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="SAMNoResults">
+                      <td colSpan={7} className="SAMNoResults">
                         No superadmin records found.
                       </td>
                     </tr>

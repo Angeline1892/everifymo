@@ -26,6 +26,7 @@ h6 {
 .FdaDashboardMain {
   display: flex;
   height: 100vh;
+  overflow: hidden;
   background-color: #EDEDED;
 }
 
@@ -33,6 +34,7 @@ h6 {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
   height: 100vh;
   overflow: hidden;
   animation: fadeInUp 0.5s ease-out both;
@@ -43,6 +45,8 @@ h6 {
   padding: 32px;
   background-color: #f5f5f5;
   overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 @keyframes fadeInUp {
@@ -126,42 +130,69 @@ h6 {
 }
 
 .FdaPillContainer {
-  display: flex;
-  background: #EDEDED;
-  border: 1.5px solid rgba(0, 0, 0, 0.06);
-  border-radius: 20px;
-  padding: 1px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border-radius: 9999px;
+  padding: 5px;
+  gap: 4px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.FdaPillContainer::-webkit-scrollbar {
+  display: none;
 }
 
 .FdaPill {
-  border: none;
+  padding: 8px 18px;
   background: transparent;
-  color: #1B4332;
-  padding: 9px 16px;
-  border-radius: 18px;
-  font-size: 13px;
+  border: none;
+  border-radius: 9999px;
+  color: #51606f;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.FdaPill:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1B4332;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .FdaPill.active {
-  background: #1B4332;
-  color: #FDFDFD;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  border-radius: 9999px;
+  background: #1B4332 !important;
+  color: #FDFDFD !important;
+  box-shadow: 0 4px 12px rgba(27, 67, 50, 0.25);
 }
 
 .FdaPillCount {
   font-size: 11px;
-  background: rgba(31, 41, 55, 0.1);
-  color: #1F2937;
-  padding: 1px 7px;
-  border-radius: 10px;
-  font-weight: 600;
+  background: rgba(27, 67, 50, 0.08);
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: all 0.2s ease;
 }
 
 .FdaPill.active .FdaPillCount {
@@ -531,13 +562,39 @@ h6 {
   align-items: start;
 }
 
-.FdaProductTableCard {
-  overflow: visible !important;
+/* FdaProductTableCard — overflow: visible removed.
+   The base .FdaTableCard rule (overflow: hidden) now applies,
+   which correctly clips the table to the card's border-radius
+
+/* FdaProductTableWrapper — was overflow: visible !important which caused
+   the 10-column product table to bleed past the card and into the viewport.
+   Changed to overflow-x: auto so the table scrolls inside the card. */
+.FdaProductTableWrapper {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  max-height: none !important;
 }
 
-.FdaProductTableWrapper {
-  overflow: visible !important;
-  max-height: none !important;
+/* Wider min-width for the 10-column Registered/Unregistered product table.
+   Scoped to .FdaProductTableWrapper so the 7-column saved-drafts table
+   keeps its own (narrower) min-width from .FdaTable. */
+.FdaProductTableWrapper .FdaTable {
+  min-width: 1000px;
+}
+
+/* ---- Saved Drafts table responsive scroll container (fda-saved-draft.jsx) ----
+   Explicit overflow-x: auto on the wrapper div (even though the base
+   .FdaTableWrapper rule already sets it) to make the intent clear and
+   prevent any future override from accidentally breaking scroll.
+   min-width scoped to this wrapper so the 7-column table stays readable
+   at narrow Electron window widths without wrapping text. */
+.FdaSavedDraftTableWrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.FdaSavedDraftTableWrapper .FdaTable {
+  min-width: 900px;
 }
 
 /* BULK ACTIONS BAR */
@@ -633,16 +690,17 @@ h6 {
   border: 1px solid #EDEDED;
   overflow: hidden;
   width: 100%;
-  max-width: 1150px;
-  justify-self: center;
 }
 
 .FdaTableWrapper {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .FdaTable {
   width: 100%;
+  min-width: 800px;
   border-collapse: collapse;
 }
 
@@ -1381,9 +1439,12 @@ h6 {
 
 .FdaStatusGrid {
   display: grid;
-  grid-template-columns: 380px 1fr;
-  gap: 20px;
+  grid-template-columns: clamp(240px, 30vw, 380px) minmax(0, 1fr);
+  gap: 16px;
   align-items: start;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* LEFT: complaint list panel */
@@ -1394,6 +1455,7 @@ h6 {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .FdaCaseListSearch {
@@ -1491,6 +1553,8 @@ h6 {
   border: 1.5px solid #EDEDED;
   border-radius: 12px;
   padding: 24px;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .FdaDetailPanelHeader {
@@ -1841,35 +1905,55 @@ h6 {
 .FdaTabContainer {
   display: inline-flex;
   align-items: center;
-  background: #EDEDED;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
   border-radius: 9999px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 5px;
   gap: 4px;
   width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 
+.FdaTabContainer::-webkit-scrollbar {
+  display: none;
 }
 
 .FDAButtonTab {
-  padding: 8px 20px;
+  padding: 8px 18px;
   background: transparent;
-  border-radius: 20px;
-  color: #1B4332;
-  font-weight: 700;
-  font-family: 'Poppins', sans-serif;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
   border: none;
+  border-radius: 9999px;
+  color: #51606f;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.FDAButtonTab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1B4332;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .FDAButtonTab.active {
-  background: #1B4332;
-  color: #fff;
-}
-
-.FdaTabContainer button:not(.active):hover {
-  background: #d8d8d8;
+  border-radius: 9999px;
+  background: #1B4332 !important;
+  color: #FDFDFD !important;
+  box-shadow: 0 4px 12px rgba(27, 67, 50, 0.25);
 }
 
 /* Filter panel for FDA Verification — Completed & Rejected tabs (standalone, full width) */
@@ -2584,7 +2668,7 @@ h6 {
 /* SPLIT LAYOUT - RESPONSIVE & BALANCED */
 .FdaVerifSplitLayout {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: clamp(240px, 30vw, 380px) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
   min-width: 0;
@@ -2594,20 +2678,22 @@ h6 {
 
 /* QUEUE COLUMN */
 .FdaVerifQueueColumn {
+  background: #FDFDFD;
+  border: 1.5px solid #EDEDED;
+  border-radius: 12px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 10px;
   min-width: 0;
 }
 
 .FdaVerifFilterHeader {
+  padding: 14px;
+  border-bottom: 1.5px solid #EDEDED;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: #FDFDFD;
-  border: 1.5px solid #EDEDED;
-  border-radius: 10px;
-  padding: 10px;
+  background: transparent;
 }
 
 .FdaVerifSearchBox {
@@ -2633,6 +2719,7 @@ h6 {
   color: #030303;
   outline: none;
   transition: border-color 0.2s;
+  box-sizing: border-box;
 }
 
 .FdaVerifSearchInput:focus {
@@ -2682,44 +2769,43 @@ h6 {
 .FdaVerifCardsScrollList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  min-height: 340px;
 }
 
 /* QUEUE CARD */
 .FdaVerifCard {
-  background: #FDFDFD;
-  border: 1.5px solid #EDEDED;
-  border-radius: 10px;
-  padding: 12px;
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #EDEDED;
+  padding: 14px 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  transition: background 0.15s ease;
+  box-sizing: border-box;
 }
 
 .FdaVerifCard:hover {
-  border-color: #1B4332;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+  background: #f8fafc;
 }
 
 .FdaVerifCardSelected {
-  border-color: #1B4332 !important;
-  background: #FDFDFD;
-  box-shadow: 0 0 0 2px rgba(27, 67, 50, 0.15) !important;
+  background: rgba(27, 67, 50, 0.06) !important;
+  border-left: 3px solid #1B4332 !important;
 }
 
 .FdaVerifCardTop {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 6px;
 }
 
 .FdaVerifCaseId {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #13213C;
-  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(31, 41, 55, 0.55);
 }
 
 /* FIX 2 — added display: inline-block and width: fit-content so the colored
@@ -2753,9 +2839,9 @@ h6 {
 
 .FdaVerifProductName {
   font-size: 13.5px;
-  font-weight: 700;
+  font-weight: 600;
   color: #030303;
-  margin: 0;
+  margin: 0 0 2px 0;
   line-height: 1.3;
 }
 
@@ -2763,9 +2849,9 @@ h6 {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
-  color: #1F2937;
-  opacity: 0.75;
+  font-size: 11.5px;
+  color: rgba(31, 41, 55, 0.6);
+  margin-bottom: 6px;
 }
 
 .FdaVerifCardFooter {
@@ -2778,7 +2864,7 @@ h6 {
 }
 
 .FdaVerifCategoryTag {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   color: #13213C;
   background: rgba(19, 33, 60, 0.08);
@@ -2791,8 +2877,14 @@ h6 {
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: #1F2937;
-  opacity: 0.6;
+  color: rgba(31, 41, 55, 0.6);
+}
+
+.FdaVerifEmptyList {
+  padding: 32px 16px;
+  text-align: center;
+  color: rgba(31, 41, 55, 0.5);
+  font-size: 13px;
 }
 
 .FdaVerifStatusTagInProg {
@@ -3915,9 +4007,44 @@ h6 {
 }
 
 /* RESPONSIVE DESIGN */
-@media (max-width: 1200px) {
-  .FdaVerifSplitLayout {
-    grid-template-columns: 1fr;
+
+/* Compact left queue at small desktop widths (800px–1000px):
+   - narrows left panel so right details panel gains usable space
+   - hides secondary card elements (priority badge, date) that are not
+     essential when the panel is narrow; data remains in the DOM */
+@media (max-width: 1000px) {
+  .FdaVerifPriorityBadge {
+    display: none;
+  }
+  .FdaVerifDateReceived {
+    display: none;
+  }
+  .FdaVerifCard {
+    padding: 10px 12px;
+  }
+  .FdaVerifFilterHeader {
+    padding: 10px 12px;
+  }
+
+  /* Action buttons: keep icon, hide text label to save horizontal space */
+  .FdaVerifBtnRejectMode span,
+  .FdaVerifBtnOutline span,
+  .FdaVerifBtnPrimary span,
+  .FdaVerifBtnDanger span {
+    display: none;
+  }
+  .FdaVerifBtnRejectMode,
+  .FdaVerifBtnOutline,
+  .FdaVerifBtnPrimary,
+  .FdaVerifBtnDanger {
+    padding: 8px 10px;
+    gap: 0;
+  }
+
+  /* FDA Status page: hide status badge in left-panel cards when space is tight.
+     The badge data remains in the DOM; only the visual element is hidden. */
+  .FdaCaseCard .FdaBadge {
+    display: none;
   }
 }
 
@@ -4321,7 +4448,11 @@ h6 {
   outline: none;
   cursor: pointer;
   transition: 0.2s;
-  min-width: 140px;
+  /* Responsive: never overflow its container at small desktop widths */
+  min-width: 0;
+  width: 100%;
+  max-width: 160px;
+  box-sizing: border-box;
   color: #1F2937;
   font-family: var(--font-body);
 }
@@ -4772,6 +4903,7 @@ h6 {
 
 .FdaRecentComplaintsCard .RecentComplaintsTable {
   width: 100%;
+  min-width: 580px;
   border-collapse: collapse;
 }
 
@@ -5051,13 +5183,11 @@ h6 {
   animation: FdaSavedDraftToastIn 0.25s ease-out forwards;
 }
 
-/* Saved Drafts — override shared table clipping so the row dropdown can float freely */
-.FdaSavedDraftTableCard {
-  overflow: visible !important;
-}
+
 
 .FdaSavedDraftTableWrapper {
-  overflow: visible !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
   max-height: none !important;
 }
 
@@ -5151,7 +5281,7 @@ h6 {
 }
 
 /* 3. FILTER PANELS (Reports, Product DB, Verification Completed/Rejected) */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
 
   .FdaReportsFilterPanel,
   .FdaProductFilterPanel,
@@ -5159,39 +5289,144 @@ h6 {
   .FdaTableFiltersSection {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
+    padding: 14px 16px;
   }
 
-  .FdaSearchFixed {
+  .FdaSearchFixed,
+  .FdaSearchWrapper {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .FdaSearchInput {
     width: 100%;
   }
 
   .FdaFilterGroupsRight,
   .FdaTableFilterControls {
-    margin-left: 0;
-    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: center;
+    flex-wrap: nowrap !important;
+    margin-left: auto;
+    margin-right: auto;
+    width: auto;
+    max-width: 100%;
+    gap: 8px;
   }
 
   .FdaTableSearchInputWrap {
     min-width: 0;
     width: 100%;
   }
+
+  .FdaFilterGroup,
+  .FdaFilterItem {
+    flex: 0 1 auto;
+    min-width: 0;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .FdaFilterGroup label {
+    font-size: 10.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+  }
+
+  .FdaFilterGroup select,
+  .FdaFilterGroup input[type="date"],
+  .FdaVerifDateInput,
+  .FdaTableFilterInput,
+  .FdaTableFilterSelect {
+    width: auto;
+    min-width: 0;
+    max-width: 125px;
+    flex: 0 1 auto;
+    flex-shrink: 1;
+    padding: 0 8px;
+    font-size: 12px;
+    height: 36px;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+
+  .BtnClearFiltersIcon {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    margin-bottom: 3px;
+  }
+
+  .BtnClearFilters {
+    height: 36px;
+    padding: 0 10px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 900px) {
+
+  .FdaFilterGroupsRight,
+  .FdaTableFilterControls {
+    gap: 6px;
+  }
+
+  .FdaFilterGroup select,
+  .FdaFilterGroup input[type="date"],
+  .FdaVerifDateInput,
+  .FdaTableFilterInput,
+  .FdaTableFilterSelect {
+    max-width: 110px;
+    padding: 0 6px;
+    font-size: 11.5px;
+    height: 34px;
+  }
+
+  .FdaFilterGroup label {
+    font-size: 10px;
+  }
 }
 
 @media (max-width: 560px) {
 
+  .FdaFilterGroupsRight,
+  .FdaTableFilterControls {
+    flex-wrap: nowrap !important;
+    justify-content: center;
+    gap: 4px;
+  }
+
   .FdaFilterGroup,
   .FdaFilterGroup select,
-  .FdaFilterGroup input[type="date"] {
-    width: 100%;
+  .FdaFilterGroup input[type="date"],
+  .FdaVerifDateInput {
+    width: auto;
+    min-width: 0;
+    max-width: 95px;
+    flex: 0 1 auto;
+    flex-shrink: 1;
+    padding: 0 4px;
+    font-size: 11px;
+    height: 32px;
   }
 }
 
-/* 4. FDA STATUS UPDATE PAGE — left case list + right detail panel */
-/*    (previously had NO responsive handling — main gap found) */
+
+
+/* 4. FDA STATUS UPDATE & VERIFICATION SPLIT LAYOUT — stack on compact screens */
 @media (max-width: 1024px) {
-  .FdaStatusGrid {
-    grid-template-columns: 1fr;
-  }
+  /* FdaStatusGrid: DO NOT stack — keep side-by-side at all desktop widths.
+     The clamp() on grid-template-columns already handles shrinking the left panel.
+     Only the FdaStatusGrid stacking rule is removed; FdaCaseList overflow is kept. */
 
   .FdaCaseList {
     overflow-y: visible;
@@ -5302,4 +5537,68 @@ h6 {
     justify-content: center;
     flex-wrap: wrap;
   }
+}
+
+/* ADDED — Word document (.docx) preview container rendered via Mammoth */
+.FdaVerifDocDocxPreview {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  display: block;
+}
+
+.FdaVerifDocxContent {
+  width: 100%;
+  max-width: 100%;
+  background: #FFFFFF;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 24px 32px;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1F2937;
+}
+
+.FdaVerifDocxContent h1,
+.FdaVerifDocxContent h2,
+.FdaVerifDocxContent h3,
+.FdaVerifDocxContent h4 {
+  color: #13213C;
+  font-weight: 700;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+}
+
+.FdaVerifDocxContent p {
+  margin-bottom: 1em;
+}
+
+.FdaVerifDocxContent table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.FdaVerifDocxContent th,
+.FdaVerifDocxContent td {
+  border: 1px solid #D1D5DB;
+  padding: 8px 12px;
+  font-size: 12.5px;
+}
+
+/* toast based color (if no email) */
+.FdaVerifToast_warning {
+  border-left-color: #D97706;
+}
+.FdaVerifToast_warning .FdaVerifToastIconWrap {
+  color: #D97706;
 }

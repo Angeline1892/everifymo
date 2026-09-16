@@ -7,25 +7,19 @@ import TopBar from "../component/top-bar";
 import { apiFetch } from '../../utils/apiFetch';
 import './fda-css.css';
 import {
-  AlertTriangle,
-  Footprints,
-  Globe,
-  CheckCircle,
-  Package
+    AlertTriangle,
+    Footprints,
+    Globe,
+    CheckCircle,
+    Package
 } from 'lucide-react';
-import { allConsumerReports, getTrendData, getReportStats } from './reportData';
-
 function FDADashboard() {
     const navigate = useNavigate();
     const [hoveredMonthIndex, setHoveredMonthIndex] = useState(null);
     const [hoveredTakedownIndex, setHoveredTakedownIndex] = useState(null);
-    const reportStats = useMemo(() => getReportStats(allConsumerReports), []);
-    const awaitingVerificationCases = useMemo(() => allConsumerReports.filter(report => report.status === "Pending Verification"), []);
-    const recentComplaints = useMemo(() => {
-        return [...allConsumerReports]
-            .sort((a, b) => new Date(b.dateReceived.replace(/-/g, '/')) - new Date(a.dateReceived.replace(/-/g, '/')))
-            .slice(0, 6);
-    }, []);
+    const [reports, setReports] = useState([]);
+    const [awaitingVerificationCases, setAwaitingVerificationCases] = useState([]);
+    const [completedUnregisteredProducts, setCompletedUnregisteredProducts] = useState([]);
 
     const [registeredCount, setRegisteredCount] = useState(0);
     const [unregisteredCount, setUnregisteredCount] = useState(0);
@@ -33,7 +27,7 @@ function FDADashboard() {
     const [convertedToUnregCount, setConvertedToUnregCount] = useState(0);
 
     useEffect(() => {
-        const fetchProductCounts = async () => {
+        const fetchDashboardData = async () => {
             try {
                 const regRes = await apiFetch('/registered-products/');
                 if (regRes.ok) {
@@ -41,58 +35,240 @@ function FDADashboard() {
                     setRegisteredCount(regData.length);
                     const convertedReg = regData.filter(item => item.converted_from_advisory_id).length;
                     setConvertedToRegCount(convertedReg);
-                    
-                    const unregRes = await apiFetch('/unregistered-advisories/');
-                    if (unregRes.ok) {
-                        const unregData = await unregRes.json();
-                        setUnregisteredCount(unregData.length);
-                        const convertedUnreg = unregData.filter(item => item.converted_from_product_id).length;
-                        setConvertedToUnregCount(convertedUnreg);
-                    }
+                }
+
+                const unregRes = await apiFetch('/unregistered-advisories/');
+                if (unregRes.ok) {
+                    const unregData = await unregRes.json();
+                    setUnregisteredCount(unregData.length);
+                    const convertedUnreg = unregData.filter(item => item.converted_from_product_id).length;
+                    setConvertedToUnregCount(convertedUnreg);
+                }
+
+                const repRes = await apiFetch('/complaints/fda-reports');
+                if (repRes.ok) {
+                    const repData = await repRes.json();
+                    setReports(repData);
+                }
+
+                const awaitRes = await apiFetch('/verification-requests/awaiting-fda');
+                if (awaitRes.ok) {
+                    const awaitData = await awaitRes.json();
+                    setAwaitingVerificationCases(awaitData.map(item => ({
+                        id: item.request_id,
+                        caseId: item.case_reference,
+                        product: item.product_name,
+                        manufacturer: item.manufacturer || '—',
+                        status: "Pending Verification",
+                        leaConfirmation: true
+                    })));
+                }
+
+                const unregCompletedRes = await apiFetch('/verification-requests/completed?verification_result=unregistered&page=1&page_size=500');
+                if (unregCompletedRes.ok) {
+                    const unregCompletedData = await unregCompletedRes.json();
+                    setCompletedUnregisteredProducts(unregCompletedData.items || []);
                 }
             } catch (err) {
-                console.error("Error fetching product counts:", err);
+                console.error("Error fetching dashboard data:", err);
             }
         };
-        fetchProductCounts();
+        fetchDashboardData();
 
-        // Auto-fetch counts every 3 seconds to keep dashboard updated in real-time
-        const interval = setInterval(fetchProductCounts, 3000);
+        // Auto-fetch data every 3 seconds to keep dashboard updated in real-time
+        const interval = setInterval(fetchDashboardData, 3000);
         return () => clearInterval(interval);
     }, []);
 
-    const takedownData = {
-        months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-        requested: [2, 4, 1, 5, 8, 3, 6, 4, 7, 5, 9, 4],
-        completed: [1, 3, 1, 4, 6, 2, 5, 3, 6, 4, 8, 3]
-    };
+    const normalizedReports = useMemo(() => {
+        return reports.map(r => {
+            let sourceLabel = r.source;
+            if (r.source === 'extension') sourceLabel = 'Browser Extension';
+            if (r.source === 'walk_in') sourceLabel = 'Walk-in';
 
-    const getBarY = (val) => 195 - (val / 10) * 150;
-    const getBarHeight = (val) => (val / 10) * 150;
+            let statusLabel = r.status;
+            if (r.status === 'under_review') statusLabel = 'Under Review';
+            else if (r.status === 'takedown_requested') statusLabel = 'Forwarded to LEA';
+            else if (r.status === 'takedown_initiated') statusLabel = 'Operation in Progress';
+            else if (r.status === 'completed') statusLabel = 'Takedown Completed';
+            else if (r.status === 'dismissed') statusLabel = 'Case Closed';
 
-    const categoryGradient = reportStats.categoryMix.reduce((acc, item) => {
-        const previous = acc.ranges[acc.ranges.length - 1]?.end ?? 0;
-        const size = Math.round((item.value / reportStats.total) * 100);
-        const start = previous;
-        const end = start + size;
-        acc.ranges.push({ color: item.color, start, end });
-        return acc;
-    }, { ranges: [] }).ranges;
+            let dateStr = '—';
+            if (r.created_at) {
+                const d = new Date(r.created_at);
+                const pad = (num) => String(num).padStart(2, '0');
+                dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            }
 
-    const trendData = useMemo(() => getTrendData(allConsumerReports), []);
+            return {
+                id: r.complaint_id,
+                caseId: r.case_reference,
+                product: r.product_title,
+                manufacturer: r.manufacturer || '—',
+                category: r.product_category || '—',
+                source: sourceLabel,
+                status: statusLabel,
+                dateReceived: dateStr,
+                created_at: r.created_at
+            };
+        });
+    }, [reports]);
 
-    const chartConfig = {
+    const reportStats = useMemo(() => {
+        const total = normalizedReports.length;
+        const browserExtension = normalizedReports.filter(r => r.source === 'Browser Extension').length;
+        const walkIn = normalizedReports.filter(r => r.source === 'Walk-in').length;
+        const takedownCompleted = normalizedReports.filter(r => r.status === 'Takedown Completed').length;
+
+        return {
+            browserExtension,
+            walkIn,
+            takedownsCompleted: takedownCompleted,
+            total
+        };
+    }, [normalizedReports]);
+
+    const unregisteredCategoryStats = useMemo(() => {
+        const total = completedUnregisteredProducts.length;
+
+        const categoryCounts = {
+            "Cosmetics": 0,
+            "Food": 0,
+            "Drugs": 0,
+            "Medical Devices": 0
+        };
+
+        completedUnregisteredProducts.forEach(item => {
+            const cat = item.product_category;
+            if (cat === "Cosmetics") {
+                categoryCounts["Cosmetics"] += 1;
+            } else if (cat === "Food" || cat === "Supplement") {
+                categoryCounts["Food"] += 1;
+            } else if (cat === "Pharmaceutical" || cat === "Drugs") {
+                categoryCounts["Drugs"] += 1;
+            } else if (cat === "Medical Device" || cat === "Med Device" || cat === "Devices" || cat === "Medical Devices") {
+                categoryCounts["Medical Devices"] += 1;
+            }
+        });
+
+        const categoryMix = [
+            { label: 'Cosmetics', value: categoryCounts['Cosmetics'], color: '#2563eb' },
+            { label: 'Food', value: categoryCounts['Food'], color: '#10b981' },
+            { label: 'Drugs', value: categoryCounts['Drugs'], color: '#06b6d4' },
+            { label: 'Medical Devices', value: categoryCounts['Medical Devices'], color: '#f59e0b' }
+        ];
+
+        return {
+            total,
+            categoryMix
+        };
+    }, [completedUnregisteredProducts]);
+
+    const recentComplaints = useMemo(() => {
+        return [...normalizedReports]
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            .slice(0, 6);
+    }, [normalizedReports]);
+
+    const trendData = useMemo(() => {
+        const browserValues = Array(12).fill(0);
+        const walkinValues = Array(12).fill(0);
+
+        normalizedReports.forEach(report => {
+            if (!report.created_at) return;
+            const date = new Date(report.created_at);
+            const monthIndex = date.getMonth();
+            if (monthIndex >= 0 && monthIndex < 12) {
+                if (report.source === 'Browser Extension') {
+                    browserValues[monthIndex] += 1;
+                } else if (report.source === 'Walk-in') {
+                    walkinValues[monthIndex] += 1;
+                }
+            }
+        });
+
+        return {
+            months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            browserValues,
+            walkinValues
+        };
+    }, [normalizedReports]);
+
+    const takedownData = useMemo(() => {
+        const requested = Array(12).fill(0);
+        const completed = Array(12).fill(0);
+
+        normalizedReports.forEach(report => {
+            if (!report.created_at) return;
+            const date = new Date(report.created_at);
+            const monthIndex = date.getMonth();
+            if (monthIndex >= 0 && monthIndex < 12) {
+                if (report.status === 'Forwarded to LEA' || report.status === 'Operation in Progress' || report.status === 'Takedown Completed') {
+                    requested[monthIndex] += 1;
+                }
+                if (report.status === 'Takedown Completed') {
+                    completed[monthIndex] += 1;
+                }
+            }
+        });
+
+        return {
+            months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            requested,
+            completed
+        };
+    }, [normalizedReports]);
+
+    const maxVal = useMemo(() => {
+        return Math.max(4, ...trendData.browserValues, ...trendData.walkinValues);
+    }, [trendData]);
+
+    const maxTakedownVal = useMemo(() => {
+        return Math.max(10, ...takedownData.requested, ...takedownData.completed);
+    }, [takedownData]);
+
+    const getBarY = (val) => 195 - (val / maxTakedownVal) * 150;
+    const getBarHeight = (val) => (val / maxTakedownVal) * 150;
+
+    const categoryGradient = useMemo(() => {
+        return unregisteredCategoryStats.categoryMix.reduce((acc, item) => {
+            const previous = acc.ranges[acc.ranges.length - 1]?.end ?? 0;
+            const size = unregisteredCategoryStats.total > 0 ? Math.round((item.value / unregisteredCategoryStats.total) * 100) : 0;
+            const start = previous;
+            const end = start + size;
+            acc.ranges.push({ color: item.color, start, end });
+            return acc;
+        }, { ranges: [] }).ranges;
+    }, [unregisteredCategoryStats]);
+
+    const donutStyle = useMemo(() => ({
+        background: unregisteredCategoryStats.total > 0 && categoryGradient.length > 0
+            ? `conic-gradient(${categoryGradient.map(seg => `${seg.color} ${seg.start}% ${seg.end}%`).join(', ')})`
+            : '#e2e8f0'
+    }), [categoryGradient, unregisteredCategoryStats.total]);
+
+    const chartConfig = useMemo(() => ({
         width: 640,
         height: 280,
         paddingX: 45,
         paddingY: 35,
-        maxValue: 4
-    };
+        maxValue: maxVal
+    }), [maxVal]);
 
     const xStep = (chartConfig.width - chartConfig.paddingX * 2) / (trendData.months.length - 1);
 
     const getPointY = (value) =>
         chartConfig.height - chartConfig.paddingY - (value / chartConfig.maxValue) * (chartConfig.height - chartConfig.paddingY * 2);
+
+    const gridTicks = useMemo(() => {
+        const step = maxVal / 4;
+        return Array.from({ length: 5 }, (_, i) => Number((step * i).toFixed(1)));
+    }, [maxVal]);
+
+    const takedownTicks = useMemo(() => {
+        const step = maxTakedownVal / 5;
+        return Array.from({ length: 6 }, (_, i) => Number((step * i).toFixed(1)));
+    }, [maxTakedownVal]);
 
     const buildPointData = (values) => values.map((value, index) => ({
         x: chartConfig.paddingX + index * xStep,
@@ -132,9 +308,7 @@ function FDADashboard() {
     const browserPath = createSmoothPath(browserPoints);
     const walkinPath = createSmoothPath(walkinPoints);
 
-    const donutStyle = {
-        background: `conic-gradient(${categoryGradient.map(seg => `${seg.color} ${seg.start}% ${seg.end}%`).join(', ')})`
-    };
+
 
     return (
         <div className="FdaDashboardMain">
@@ -269,7 +443,7 @@ function FDADashboard() {
                                         </defs>
 
                                         {/* Y-Axis Gridlines */}
-                                        {[0, 1, 2, 3, 4].map((val) => {
+                                        {gridTicks.map((val) => {
                                             const y = getPointY(val);
                                             return (
                                                 <g key={val}>
@@ -409,7 +583,7 @@ function FDADashboard() {
                                 <div className="FdaTrendChart">
                                     <svg viewBox="0 0 640 240" role="img" aria-label="Takedown actions bar chart" className="FdaTrendSvg">
                                         {/* Y-Axis Gridlines */}
-                                        {[0, 2, 4, 6, 8, 10].map((val) => {
+                                        {takedownTicks.map((val) => {
                                             const y = getBarY(val);
                                             return (
                                                 <g key={val}>
@@ -541,14 +715,14 @@ function FDADashboard() {
                                 <div className="FdaCategorySubtitle">Unregistered product reports</div>
                                 <div className="FdaDonutChartWrapper">
                                     <div className="FdaDonutChart" style={donutStyle}>
-                                        <div className="FdaDonutCenter">{reportStats.total}</div>
+                                        <div className="FdaDonutCenter">{unregisteredCategoryStats.total}</div>
                                     </div>
                                     <div className="FdaCategoryLegend">
-                                        {reportStats.categoryMix.map((item) => (
+                                        {unregisteredCategoryStats.categoryMix.map((item) => (
                                             <div key={item.label} className="FdaCategoryLegendItem">
                                                 <span className="FdaLegendMarker" style={{ background: item.color }} />
                                                 <span>{item.label}</span>
-                                                <strong>{Math.round((item.value / reportStats.total) * 100)}%</strong>
+                                                <strong>{unregisteredCategoryStats.total > 0 ? Math.round((item.value / unregisteredCategoryStats.total) * 100) : 0}%</strong>
                                             </div>
                                         ))}
                                     </div>

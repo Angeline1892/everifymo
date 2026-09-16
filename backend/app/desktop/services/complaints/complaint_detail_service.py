@@ -1,3 +1,4 @@
+# backend/app/desktop/services/complaints/complaint_detail_service.py
 from uuid import UUID
 
 from fastapi import HTTPException

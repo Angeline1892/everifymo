@@ -1,3 +1,5 @@
+import { loadPartial } from "./partial-loader.js";
+
 document.addEventListener('DOMContentLoaded', async () => {
   const navSlot = document.getElementById('nav-slot');
   if (navSlot) {

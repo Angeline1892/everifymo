@@ -47,9 +47,9 @@ const SuperadminEmailAddAdmin = ({
           max-width: 520px;
           margin: 0 auto;
           background-color: #ffffff;
-          border-radius: 18px;
+          border-radius: 16px;
           overflow: hidden;
-          box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
         }
 
         /* ── Header ── */
@@ -131,16 +131,16 @@ const SuperadminEmailAddAdmin = ({
 
         .SuperadminEmailCTA {
           display: inline-block;
-          padding: 14px 36px;
+          padding: 13px 32px;
           background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
           color: #ffffff !important;
           text-decoration: none;
           font-family: 'Poppins', sans-serif;
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 700;
           border-radius: 10px;
           letter-spacing: 0.3px;
-          box-shadow: 0 6px 20px rgba(13, 148, 136, 0.4);
+          box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
         }
 
         /* ── Divider ── */
@@ -156,6 +156,7 @@ const SuperadminEmailAddAdmin = ({
           color: #9ca3af !important;
           font-style: italic;
           text-align: center;
+          line-height: 1.6;
         }
 
         /* ── Footer ── */

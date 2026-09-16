@@ -1,11 +1,10 @@
 # backend/app/desktop/services/Product_database/unregistered_advisory_service.py
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy import func
-from fastapi import HTTPException, status
-
-from fastapi import Request
+from fastapi import HTTPException, status, Request, BackgroundTasks
 from app.core.audit import write_audit_log, get_user_region_code
 from app.core.constants import AuditAction
+from app.desktop.services.auth.email import send_converted_product_email
 
 from app.models.unregistered_advisories import UnregisteredAdvisory
 from app.models.registered_products import RegisteredProduct
@@ -15,6 +14,7 @@ from app.desktop.schemas.Product_database.unregistered_advisories import (
     UnregisteredAdvisoryCreate,
     UnregisteredAdvisoryUpdate
 )
+from app.desktop.services.Product_database.csv_sync import sync_registered_products_to_csv, sync_unregistered_advisories_to_csv
 
 
 def format_advisory_response(advisory: UnregisteredAdvisory, db: Session):
@@ -85,6 +85,33 @@ def get_all_unregistered_advisories(db: Session, current_user: User):
 
 
 def create_unregistered_advisory(db: Session, data: UnregisteredAdvisoryCreate, current_user, request: Request = None):
+    # Check duplicate product name
+    existing_name = db.query(UnregisteredAdvisory).filter(
+        func.lower(UnregisteredAdvisory.product_name) == func.lower(data.product_name),
+        UnregisteredAdvisory.deleted_at.is_(None)
+    ).first()
+
+    if existing_name:
+        region_name = None
+        if existing_name.added_by:
+            creator = db.query(User).filter(User.user_id == existing_name.added_by).first()
+            if creator and creator.region_id:
+                from app.models.regions import Region
+                region = db.query(Region).filter(Region.region_id == creator.region_id).first()
+                if region:
+                    region_name = region.region_name
+
+        if region_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Duplicate product name detected. This product already exists in the database (Region: {region_name})."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Duplicate product name detected. This product already exists in the database."
+            )
+
     region_code = get_user_region_code(db, current_user)
     current_user_id = current_user.user_id
     current_user_role = current_user.role
@@ -101,6 +128,7 @@ def create_unregistered_advisory(db: Session, data: UnregisteredAdvisoryCreate, 
     db.add(new_advisory)
     db.commit()
     db.refresh(new_advisory)
+    sync_unregistered_advisories_to_csv(db)
 
     write_audit_log(
         db,
@@ -135,6 +163,34 @@ def update_unregistered_advisory(db: Session, advisory_id, data: UnregisteredAdv
             detail="Unregistered advisory not found."
         )
 
+    # Check duplicate product name excluding current advisory
+    existing_name = db.query(UnregisteredAdvisory).filter(
+        func.lower(UnregisteredAdvisory.product_name) == func.lower(data.product_name),
+        UnregisteredAdvisory.advisory_id != advisory_id,
+        UnregisteredAdvisory.deleted_at.is_(None)
+    ).first()
+
+    if existing_name:
+        region_name = None
+        if existing_name.added_by:
+            creator = db.query(User).filter(User.user_id == existing_name.added_by).first()
+            if creator and creator.region_id:
+                from app.models.regions import Region
+                region = db.query(Region).filter(Region.region_id == creator.region_id).first()
+                if region:
+                    region_name = region.region_name
+
+        if region_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Duplicate product name detected. This product already exists in the database (Region: {region_name})."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Duplicate product name detected. This product already exists in the database."
+            )
+
     old_value = {
         "product_name": advisory.product_name,
         "advisory_details": advisory.advisory_details,
@@ -152,6 +208,7 @@ def update_unregistered_advisory(db: Session, advisory_id, data: UnregisteredAdv
 
     db.commit()
     db.refresh(advisory)
+    sync_unregistered_advisories_to_csv(db)
 
     write_audit_log(
         db,
@@ -175,7 +232,7 @@ def update_unregistered_advisory(db: Session, advisory_id, data: UnregisteredAdv
     return format_advisory_response(advisory, db)
 
 
-def convert_product_to_advisory(db: Session, product_id, data: UnregisteredAdvisoryCreate, current_user, request: Request = None):
+def convert_product_to_advisory(db: Session, product_id, data: UnregisteredAdvisoryCreate, current_user, request: Request = None, background_tasks: BackgroundTasks = None):
     product = db.query(RegisteredProduct).filter(
         RegisteredProduct.product_id == product_id,
         RegisteredProduct.deleted_at.is_(None)
@@ -188,9 +245,20 @@ def convert_product_to_advisory(db: Session, product_id, data: UnregisteredAdvis
         )
 
     region_code = get_user_region_code(db, current_user)
-    current_user_id = current_user.user_id
-    current_user_role = current_user.role
+    current_user_id = current_user.user_id if current_user else None
+    current_user_role = current_user.role if current_user else None
+    officer_email = current_user.email if current_user else None
+    officer_first_name = current_user.first_name if current_user else None
+    officer_last_name = current_user.last_name if current_user else None
+    officer_name = " ".join(filter(None, [officer_first_name, officer_last_name])) or (officer_email or "FDA Officer")
+    officer_position = current_user.position if current_user else "Inspection Officer"
+    officer_agency = current_user.department if current_user else "Food and Drug Administration"
+    officer_employee_id = current_user.employee_id if current_user else "-"
+
     source_product_name = product.product_name
+    source_reg_number = product.registration_number or "-"
+    source_brand_name = product.brand_name or "-"
+    source_category = product.product_category or "Cosmetics"
 
     # Soft delete the product
     product.deleted_at = func.now()
@@ -210,6 +278,8 @@ def convert_product_to_advisory(db: Session, product_id, data: UnregisteredAdvis
     db.add(new_advisory)
     db.commit()
     db.refresh(new_advisory)
+    sync_registered_products_to_csv(db)
+    sync_unregistered_advisories_to_csv(db)
 
     write_audit_log(
         db,
@@ -229,6 +299,25 @@ def convert_product_to_advisory(db: Session, product_id, data: UnregisteredAdvis
         request=request,
         region_code=region_code,
     )
+
+    # Schedule email notification to the officer
+    if background_tasks and officer_email:
+        background_tasks.add_task(
+            send_converted_product_email,
+            to_email=officer_email,
+            product_name=new_advisory.product_name,
+            previous_classification="Registered",
+            new_classification="Unregistered/Advisory",
+            registration_number=source_reg_number,
+            manufacturer=source_brand_name,
+            category=source_category,
+            officer_name=officer_name,
+            officer_position=officer_position or "Inspection Officer",
+            officer_agency=officer_agency or "Food and Drug Administration",
+            officer_employee_id=officer_employee_id or "-",
+            advisory_details=new_advisory.advisory_details,
+            source_url=new_advisory.source_url,
+        )
 
     return format_advisory_response(new_advisory, db)
 
@@ -257,6 +346,7 @@ def delete_unregistered_advisory(db: Session, advisory_id, current_user, request
     advisory.deleted_by = current_user_id
 
     db.commit()
+    sync_unregistered_advisories_to_csv(db)
 
     write_audit_log(
         db,

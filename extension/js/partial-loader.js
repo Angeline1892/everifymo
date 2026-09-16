@@ -1,7 +1,7 @@
 // load-partial.js
 // Fetches an HTML fragment and injects it into a placeholder div.
 // Returns a promise so calling code can wait until it's actually in the DOM.
-async function loadPartial(url, targetId) {
+export async function loadPartial(url, targetId) {
   const target = document.getElementById(targetId);
   if (!target) return;
   const response = await fetch(chrome.runtime.getURL(url));

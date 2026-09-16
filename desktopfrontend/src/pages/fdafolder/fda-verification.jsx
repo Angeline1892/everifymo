@@ -739,7 +739,7 @@ function FDAVerification() {
       // omitted entirely when empty ('All Results') to let the backend return both.
       if (completedResultFilter) params.set('verification_result', completedResultFilter);
       params.set('page', String(completedPage));
-      params.set('page_size', '10');
+      params.set('page_size', '25');
 
       fetch(`${API_BASE}/verification-requests/completed?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -782,7 +782,7 @@ function FDAVerification() {
       if (rejectedDateFrom) params.set('date_from', rejectedDateFrom);
       if (rejectedDateTo) params.set('date_to', rejectedDateTo);
       params.set('page', String(rejectedPage));
-      params.set('page_size', '10');
+      params.set('page_size', '25');
 
       fetch(`${API_BASE}/verification-requests/rejected?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -1209,10 +1209,6 @@ function FDAVerification() {
                 id="fda-tab-verification-queue"
               >
                 Verification Queue
-                {/* CHANGED — was fdaQueueList.length; now uses the real count
-                    from queueCounts so this tab badge stays in sync with the
-                    stat card above from the single API call. */}
-                <span className="FdaPillCount">{queueCounts !== null ? queueCounts.verification_queue_count : '-'}</span>
               </button>
 
               <button
@@ -1221,8 +1217,6 @@ function FDAVerification() {
                 id="fda-tab-completed"
               >
                 Completed
-                {/* CHANGED — was fdaCompletedList.length; now uses queueCounts.completed_count. */}
-                <span className="FdaPillCount">{queueCounts !== null ? queueCounts.completed_count : '-'}</span>
               </button>
 
               <button
@@ -1231,8 +1225,6 @@ function FDAVerification() {
                 id="fda-tab-rejected"
               >
                 Rejected Requests
-                {/* CHANGED — was fdaRejectedList.length; now uses queueCounts.rejected_count. */}
-                <span className="FdaPillCount">{queueCounts !== null ? queueCounts.rejected_count : '-'}</span>
               </button>
             </div>
           </div>
@@ -1301,7 +1293,7 @@ function FDAVerification() {
                       <p className="FdaVerifEmptyText">There are currently no new verification requests matching your filter.</p>
                     </div>
                   ) : (() => {
-                    const QUEUE_PAGE_SIZE = 25;
+                    const QUEUE_PAGE_SIZE = 10;
                     const totalQueuePages = Math.ceil(filteredQueue.length / QUEUE_PAGE_SIZE) || 1;
                     const safeQueuePage = Math.min(Math.max(1, queuePage), totalQueuePages);
                     const queueStartIdx = (safeQueuePage - 1) * QUEUE_PAGE_SIZE;
@@ -1355,7 +1347,7 @@ function FDAVerification() {
                         })}
 
                         {filteredQueue.length > 0 && (
-                          <div className="FdaCaseListFooter" style={{ marginTop: '12px' }}>
+                          <div className="FdaCaseListFooter">
                             <span className="FdaFooterInfo">
                               Showing {queueStartIdx + 1}–{queueEndIdx} of {filteredQueue.length}
                             </span>
@@ -1949,10 +1941,10 @@ function FDAVerification() {
                         onChange={(e) => { setCompletedCategory(e.target.value); setCompletedPage(1); }}
                         id="fda-completed-category-filter"
                       >
-                        <option value="All">All Categories</option>
+                        <option value="">All Categories</option>
                         <option value="Cosmetics">Cosmetics</option>
                         <option value="Food">Food</option>
-                        <option value="Medical Devices">Medical Devices</option>
+                        <option value="Devices">Medical Devices</option>
                         <option value="Drugs">Drugs</option>
                       </select>
                     </div>
@@ -2197,7 +2189,7 @@ function FDAVerification() {
                         <option value="All">All Categories</option>
                         <option value="Cosmetics">Cosmetics</option>
                         <option value="Food">Food</option>
-                        <option value="Medical Devices">Medical Devices</option>
+                        <option value="Devices">Medical Devices</option>
                         <option value="Drugs">Drugs</option>
                       </select>
                     </div>

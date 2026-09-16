@@ -10,6 +10,7 @@ class AuditLogItem(BaseModel):
     timestamp: datetime
     user_id: Optional[UUID]
     user_name: Optional[str]
+    user_email: Optional[str]
     user_role: str
     agency: str
     region_code: Optional[str]

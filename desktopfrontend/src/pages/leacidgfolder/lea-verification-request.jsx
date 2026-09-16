@@ -1,6 +1,6 @@
-// merged lea-verification-request.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import mammoth from 'mammoth';
 import './lea-css.css'
 import Sidebar from '../component/sidebar'
 import TopBar from '../component/top-bar'
@@ -61,118 +61,52 @@ function GetSourceLabel(source) {
   return source;
 }
 
-// REMOVE THIS
-// BACKEND: Dummy cases for FDA Response tab. 
-const responseCases = [
-  {
-    id: 1,
-    status: "Unregistered",
-    caseNumber: "ICM-2025-00185",
-    product: "HerbalSlim Capsules",
-    manufacturer: "NatureFit Labs",
-    complainant: "M. Reyes",
-    category: "Drugs",
-    loggedDate: "2026-05-17 10:42",
-    source: "Walk-in Intake",
-    returnedDate: "2026-05-17 16:02",
-    sentDate: "2026-05-17 14:33",
-    description: "No CPR or LTO found for manufacturer. Recommend takedown coordination."
-  },
-  {
-    id: 2,
-    status: "Registered",
-    caseNumber: "ICM-2026-00412",
-    product: "GlowSkin Cream",
-    manufacturer: "Radiant Beauty Co.",
-    complainant: "A. Santos",
-    category: "Cosmetic",
-    loggedDate: "2026-06-01 09:15",
-    source: "Online Portal",
-    returnedDate: "2026-06-03 14:20",
-    sentDate: "2026-06-02 10:00",
-    description: "Valid CPR and LTO found. Product is fully registered and compliant."
-  },
-  {
-    id: 3,
-    status: "Rejected",
-    caseNumber: "ICM-2026-00188",
-    product: "PureVita Multivitamin",
-    manufacturer: "Vita Manufacturing Inc.",
-    complainant: "J. Cruz",
-    category: "Drugs",
-    loggedDate: "2026-05-16 11:21",
-    source: "Walk-in Intake",
-    returnedDate: "2026-05-17 09:00",
-    sentDate: "2026-05-16 14:00",
-    rejectionReason: "Incomplete product information. Please provide the complete manufacturer address and product lot number.",
-    rejectedBy: "Dr. M. Dela Cruz · FDA Verifier",
-  }
-];
 
-// REMOVE THIS
-// BACKEND: Dummy cases for Initiated Cases tab. 
-const initiatedCases = [
-  {
-    id: 1,
-    status: "Operation in Progress",
-    caseNumber: "ICM-2025-00185",
-    product: "HerbalSlim Capsules",
-    manufacturer: "NatureFit Labs",
-    complainant: "M. Reyes",
-    category: "Drugs",
-    loggedDate: "2026-05-17 10:42",
-    source: "Walk-in Intake",
-    returnedDate: "2026-05-17 16:02",
-    sentDate: "2026-05-17 14:33",
-    description: "No CPR or LTO found for manufacturer. Takedown enforcement initiated."
-  }
-];
 
-// REMOVE THIS
-// BACKEND: Dummy cases for Closed and Dismissed cases. 
-const dismissedCases = [
-  {
-    id: 1,
-    caseId: 'ICM-2025-00185',
-    product: 'HerbalSlim Capsules',
-    manufacturer: 'NatureFit Labs',
-    category: 'Drugs',
-    dateFiled: '2026-05-17',
-    dateClosed: '2026-05-20',
-    closedBy: 'Officer J. Domingo',
-    reasonClosed: 'Registered',
-  },
-  {
-    id: 2,
-    caseId: 'ICM-2026-00188',
-    product: 'PureVita Multivitamin',
-    manufacturer: 'Vita Manufacturing Inc.',
-    category: 'Drugs',
-    dateFiled: '2026-05-16',
-    dateClosed: '2026-05-21',
-    closedBy: 'Officer M. Santos',
-    reasonClosed: 'Rejected by FDA',
-  },
-];
+
+
+
+
+// ADDED (Part 1) — maps the human-readable dropdown option to the backend enum value
+function mapReasonClosedToBackend(value) {
+  if (value === 'Registered') return 'registered';
+  if (value === 'Rejected by FDA') return 'rejected';
+  if (value === 'Completed') return 'completed';
+  return '';
+}
+// ADDED (Part 1) — renders the backend enum value as a human-readable label
+function getReasonClosedLabel(reason) {
+  if (reason === 'registered') return 'Registered';
+  if (reason === 'rejected') return 'Rejected by FDA';
+  if (reason === 'completed') return 'Completed';
+  return reason;
+}
+// ADDED (Part 1) — returns the CSS className for the reason badge
+function getReasonClosedClass(reason) {
+  if (reason === 'registered') return 'ReasonRegistered';
+  if (reason === 'completed') return 'ReasonCompleted';
+  return 'ReasonRejected';
+}
 
 // Frontend queue pagination helper — matches the existing project .Pagination / .BtnPage design
-function QueuePagination({ currentPage, totalPages, totalItems, onPageChange }) {
-  if (totalPages <= 1) return null;
+function QueuePagination({ currentPage, totalPages, onPageChange }) {
+  const safeTotalPages = Math.max(1, totalPages || 1);
+  const safeCurrentPage = Math.min(Math.max(1, currentPage || 1), safeTotalPages);
   // Build page number list (max 5 visible)
-  const pageStart = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
-  const pageEnd = Math.min(totalPages, pageStart + 4);
+  const pageStart = Math.max(1, Math.min(safeCurrentPage - 2, safeTotalPages - 4));
+  const pageEnd = Math.min(safeTotalPages, pageStart + 4);
   const pages = Array.from({ length: pageEnd - pageStart + 1 }, (_, i) => pageStart + i);
   return (
     <div className="LeaVerifQueuePagination">
       <span className="LeaVerifQueuePageInfo">
-        Page {currentPage} of {totalPages}
+        Page {safeCurrentPage} of {safeTotalPages}
       </span>
       <div className="LeaVerifQueuePaginationControls">
         <button
           type="button"
           className="LeaVerifQueuePageBtn"
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
+          disabled={safeCurrentPage <= 1}
+          onClick={() => onPageChange(safeCurrentPage - 1)}
         >
           &lsaquo; Prev
         </button>
@@ -180,7 +114,7 @@ function QueuePagination({ currentPage, totalPages, totalItems, onPageChange }) 
           <button
             key={pg}
             type="button"
-            className={`LeaVerifQueuePageNum${currentPage === pg ? ' active' : ''}`}
+            className={`LeaVerifQueuePageNum${safeCurrentPage === pg ? ' active' : ''}`}
             onClick={() => onPageChange(pg)}
           >
             {pg}
@@ -189,8 +123,8 @@ function QueuePagination({ currentPage, totalPages, totalItems, onPageChange }) 
         <button
           type="button"
           className="LeaVerifQueuePageBtn"
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
+          disabled={safeCurrentPage >= safeTotalPages}
+          onClick={() => onPageChange(safeCurrentPage + 1)}
         >
           Next &rsaquo;
         </button>
@@ -204,9 +138,26 @@ function LeaVerificationRequest() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  //FOR BUTTON TABS ON VERIFICATION REQUEST
-  const [activeTab, setActiveTab] = useState('Ready to Send');
-  const [selectedResponse, setSelectedResponse] = useState(responseCases[0]);
+  // NOTE: Active tab state (defaults to 'Ready to Send')
+  const [activeTab, setActiveTab] = useState(
+    location.state?.activeTab || 'Ready to Send'
+  );
+  const [selectedResponse, setSelectedResponse] = useState(null);
+
+  // FDA Response States
+  const [fdaResponseList, setFdaResponseList] = useState([]);
+  const [fdaResponseLoading, setFdaResponseLoading] = useState(false);
+  const [selectedResponseId, setSelectedResponseId] = useState(null);
+  const [responseDetailLoading, setResponseDetailLoading] = useState(false);
+  const [hasLoadedFdaResponseOnce, setHasLoadedFdaResponseOnce] = useState(false);
+
+  // Initiated Cases States
+  const [initiatedList, setInitiatedList] = useState([]);
+  const [initiatedLoading, setInitiatedLoading] = useState(false);
+  const [selectedInitiatedId, setSelectedInitiatedId] = useState(null);
+  const [selectedInitiatedCase, setSelectedInitiatedCase] = useState(null);
+  const [initiatedDetailLoading, setInitiatedDetailLoading] = useState(false);
+  const [hasLoadedInitiatedOnce, setHasLoadedInitiatedOnce] = useState(false);
   const tabs = ['Ready to Send', 'Awaiting FDA', 'FDA Response', 'Initiated Cases', 'Closed Cases'];
   const handleTabClick = (tabName) => {
     if (activeTab === tabName) return;
@@ -223,16 +174,15 @@ function LeaVerificationRequest() {
   // NOTE: States for new form inputs
   // BACKEND: priority maps to priority column in verification_requests table
   const [priority, setPriority] = useState('standard');
-  // BACKEND: maps to field_operation_notes in verification_requests
-  const [fieldOperationNotes, setFieldOperationNotes] = useState('');
+  // CHANGED (Part 0) — split shared fieldOperationNotes into two independent variables
+  //   to prevent notes typed in one tab from bleeding into the other.
+  const [fdaTakedownNotes, setFdaTakedownNotes] = useState('');       // FDA Response — Initiate Takedown textarea; always blank per new selection
+  const [initiatedFieldNotes, setInitiatedFieldNotes] = useState(''); // Initiated Cases — progress note textarea; pre-filled from field_operation_notes
   // BACKEND: maps to notes_to_fda / complaint_statement in verification_requests
   // CHANGED: removed hardcoded default — now starts empty
   const [complaintStatement, setComplaintStatement] = useState('');
   // BACKEND: maps to product_code in verification_requests
   const [productCode, setProductCode] = useState('');
-
-  // NOTE: States for the new tabs' selected items
-  const [selectedInitiatedCase, setSelectedInitiatedCase] = useState(initiatedCases[0]);
 
   // MERGED-ADD — search & category filter state for Ready to Send / Awaiting FDA / FDA Response / Initiated Cases queues
   const [readySearch, setReadySearch] = useState('');
@@ -244,13 +194,19 @@ function LeaVerificationRequest() {
   const [initiatedSearch, setInitiatedSearch] = useState('');
   const [initiatedCategory, setInitiatedCategory] = useState('');
 
-  // Frontend-only queue pagination states (25 items per page)
-  const QUEUE_PAGE_SIZE = 25;
+  // Frontend-only queue pagination states (10 items per page)
+  const QUEUE_PAGE_SIZE = 10;
   const [readyPage, setReadyPage] = useState(1);
   const [awaitingPage, setAwaitingPage] = useState(1);
   const [responsePage, setResponsePage] = useState(1);
   const [initiatedPage, setInitiatedPage] = useState(1);
   const [closedPage, setClosedPage] = useState(1);
+  // ADDED (Part 1) — Closed Cases server-side state (replaces removed dummy dismissedCases array)
+  const [closedList, setClosedList] = useState([]);
+  const [closedTotal, setClosedTotal] = useState(0);
+  const [closedLoading, setClosedLoading] = useState(false);
+  const [hasLoadedClosedOnce, setHasLoadedClosedOnce] = useState(false);
+  const CLOSED_PAGE_SIZE = 25;
 
   // Reset to page 1 whenever search, category, or active tab changes
   useEffect(() => { setReadyPage(1); }, [readySearch, readyCategory, activeTab]);
@@ -263,7 +219,8 @@ function LeaVerificationRequest() {
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
-  useEffect(() => { setClosedPage(1); }, [dismissedSearch, filterCategory, filterDateFrom, filterDateTo, activeTab]);
+  const [filterReasonClosed, setFilterReasonClosed] = useState('');
+  useEffect(() => { setClosedPage(1); }, [dismissedSearch, filterCategory, filterReasonClosed, filterDateFrom, filterDateTo, activeTab]);
 
   // NOTE: Modal overlay, success alert, and read-only details modal states
   const [modalConfig, setModalConfig] = useState(null);
@@ -271,16 +228,16 @@ function LeaVerificationRequest() {
   const [errorMessage, setErrorMessage] = useState('');
   const [viewCaseModalData, setViewCaseModalData] = useState(null);
 
-  // ADDED — real state/fetch logic for Ready to Send tab (previously fully mock)
-  // ─── TAB 1: Ready to Send ────────────────────────────────────────────────
+
+  // TAB 1: Ready to Send
   const [readyList, setReadyList] = useState([]);
   const [readyLoading, setReadyLoading] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [currentDraftId, setCurrentDraftId] = useState(null);
 
-  // ADDED — real state/fetch logic for Awaiting FDA tab (previously fully mock)
-  // ─── TAB 2: Awaiting FDA ─────────────────────────────────────────────────
+
+  //  TAB 2: Awaiting FDA
   const [awaitingList, setAwaitingList] = useState([]);
   const [awaitingLoading, setAwaitingLoading] = useState(false);
   const [selectedAwaitingFda, setSelectedAwaitingFda] = useState(null);
@@ -292,6 +249,9 @@ function LeaVerificationRequest() {
   const [docPreviewUrl, setDocPreviewUrl] = useState(null);
   const [docPreviewLoading, setDocPreviewLoading] = useState(false);
   const [docPreviewError, setDocPreviewError] = useState(false);
+  const [docxHtml, setDocxHtml] = useState('');
+  const [docxLoading, setDocxLoading] = useState(false);
+  const [docxError, setDocxError] = useState(false);
 
   // ADDED — real counts for the 3 top stat cards, replaces the dummy-array .length
   const [leaCounts, setLeaCounts] = useState({ fda_response_count: 0, initiated_count: 0, dismissed_count: 0 });
@@ -307,10 +267,16 @@ function LeaVerificationRequest() {
   };
 
   // ADDED — GET /complaints/awaiting-verification-request
-  // ─── Fetch: Ready to Send list ───────────────────────────────────────────
+  //Fetch: Ready to Send list 
+  // ADDED — ref tracks first successful load so re-visits skip the skeleton (BUG 1 fix)
+  const [hasLoadedReadyOnce, setHasLoadedReadyOnce] = useState(false);
+
+  // CHANGED — only shows skeleton loading on first load, not every tab revisit (BUG 1 fix)
   const fetchReadyList = async () => {
     const token = localStorage.getItem('access_token');
-    setReadyLoading(true);
+    if (!hasLoadedReadyOnce) {
+      setReadyLoading(true);
+    }
     try {
       const res = await fetch(`${API_BASE}/complaints/awaiting-verification-request`, {
         headers: { authorization: `Bearer ${token}` },
@@ -322,6 +288,7 @@ function LeaVerificationRequest() {
       }
       const data = await res.json();
       setReadyList(data);
+      setHasLoadedReadyOnce(true);
     } catch {
       showError('Could not load the ready-to-send list.');
     } finally {
@@ -330,10 +297,19 @@ function LeaVerificationRequest() {
   };
 
   // ADDED — GET /complaints/{id}/verification-detail
-  // ─── Fetch: complaint verification detail (right panel) ──────────────────
+  //Fetch: complaint verification detail (right panel) 
+  // CHANGED — no longer blanks right panel on every card click (BUG 2 fix)
   const fetchComplaintDetail = async (complaintId) => {
     const token = localStorage.getItem('access_token');
-    setDetailLoading(true);
+
+    setProductCode('');
+    setPriority('standard');
+    setComplaintStatement('');
+    // Only show the loading message if nothing is currently displayed —
+    // otherwise keep the previous case visible while this one loads.
+    if (!selectedComplaint) {
+      setDetailLoading(true);
+    }
     try {
       const res = await fetch(`${API_BASE}/complaints/${complaintId}/verification-detail`, {
         headers: { authorization: `Bearer ${token}` },
@@ -353,7 +329,7 @@ function LeaVerificationRequest() {
   };
 
   // ADDED — GET /verification-requests/awaiting-fda
-  // ─── Fetch: Awaiting FDA list ─────────────────────────────────────────────
+  // Fetch: Awaiting FDA list
   const fetchAwaitingList = async () => {
     const token = localStorage.getItem('access_token');
     setAwaitingLoading(true);
@@ -375,6 +351,40 @@ function LeaVerificationRequest() {
       showError('Could not load awaiting FDA list.');
     } finally {
       setAwaitingLoading(false);
+    }
+  };
+
+  // ADDED — GET /verification-requests/fda-response
+  // Fetch: FDA Response list — replaces the old dummy responseCases array
+  const fetchFdaResponseList = async () => {
+    const token = localStorage.getItem('access_token');
+    if (!hasLoadedFdaResponseOnce) {
+      setFdaResponseLoading(true);
+    }
+    try {
+      const res = await fetch(`${API_BASE}/verification-requests/fda-response`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const msg = await parseBackendError(res);
+        showError(msg);
+        return;
+      }
+      const data = await res.json();
+      setFdaResponseList(data);
+      setHasLoadedFdaResponseOnce(true);
+      // Auto-select the first item if nothing is currently selected, or if
+      // the currently selected item no longer exists in the refreshed list.
+      if (data.length > 0 && !data.some((item) => item.request_id === selectedResponseId)) {
+        setSelectedResponseId(data[0].request_id);
+      } else if (data.length === 0) {
+        setSelectedResponseId(null);
+        setSelectedResponse(null);
+      }
+    } catch {
+      showError('Could not load the FDA Response list.');
+    } finally {
+      setFdaResponseLoading(false);
     }
   };
 
@@ -425,36 +435,242 @@ function LeaVerificationRequest() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ADDED — GET /complaints/initiated
+  // Fetch: Initiated Cases list — replaces the old dummy initiatedCases array
+  const fetchInitiatedList = async () => {
+    const token = localStorage.getItem('access_token');
+    if (!hasLoadedInitiatedOnce) {
+      setInitiatedLoading(true);
+    }
+    try {
+      const res = await fetch(`${API_BASE}/complaints/initiated`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const msg = await parseBackendError(res);
+        showError(msg);
+        return;
+      }
+      const data = await res.json();
+      setInitiatedList(data);
+      setHasLoadedInitiatedOnce(true);
+      if (data.length > 0 && !data.some((item) => item.complaint_id === selectedInitiatedId)) {
+        setSelectedInitiatedId(data[0].complaint_id);
+      } else if (data.length === 0) {
+        setSelectedInitiatedId(null);
+        setSelectedInitiatedCase(null);
+      }
+    } catch {
+      showError('Could not load the Initiated Cases list.');
+    } finally {
+      setInitiatedLoading(false);
+    }
+  };
+
   // ─── Fetch lists when tabs become active ─────────────────────────────────
+  // CHANGED — added FDA Response + Initiated Cases branches to the tab-switch effect
   useEffect(() => {
     if (activeTab === 'Ready to Send') {
       fetchReadyList();
     } else if (activeTab === 'Awaiting FDA') {
       fetchAwaitingList();
+    } else if (activeTab === 'FDA Response') {
+      fetchFdaResponseList();
+    } else if (activeTab === 'Initiated Cases') {
+      fetchInitiatedList();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
+  // ADDED — fetches right-panel detail whenever selectedResponseId changes; keeps previous
+  //          detail visible during the new fetch (no flicker, same pattern as BUG 2 fix)
+  useEffect(() => {
+    if (!selectedResponseId) return;
+    // CHANGED (Part 0) — always reset the Initiate Takedown textarea on each new selection;
+    // this note is for a brand-new action, not existing saved data.
+    setFdaTakedownNotes('');
+    const token = localStorage.getItem('access_token');
+    // Only show the loading state if nothing is currently displayed —
+    // keep the previous detail visible while the new one loads.
+    if (!selectedResponse) {
+      setResponseDetailLoading(true);
+    }
+    fetch(`${API_BASE}/verification-requests/fda-response/${selectedResponseId}`, {
+      headers: { authorization: `Bearer ${token}` },
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const msg = await parseBackendError(res);
+          showError(msg);
+          return;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data) setSelectedResponse(data);
+        // NOTE: fieldOperationNotes is intentionally NOT pre-filled here —
+        // the Initiate Takedown textarea always starts blank for a new note.
+      })
+      .catch(() => showError('Could not load FDA response details.'))
+      .finally(() => setResponseDetailLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedResponseId]);
+
+  // ADDED — fetches Initiated Cases right-panel detail whenever selectedInitiatedId changes.
+  //          Pre-fills fieldOperationNotes with the existing note so the officer can review/append.
+  useEffect(() => {
+    if (!selectedInitiatedId) return;
+    const token = localStorage.getItem('access_token');
+    if (!selectedInitiatedCase) {
+      setInitiatedDetailLoading(true);
+    }
+    fetch(`${API_BASE}/complaints/initiated/${selectedInitiatedId}`, {
+      headers: { authorization: `Bearer ${token}` },
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const msg = await parseBackendError(res);
+          showError(msg);
+          return;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data) {
+          setSelectedInitiatedCase(data);
+          // CHANGED (Part 0) — pre-fill initiatedFieldNotes (not the old shared fieldOperationNotes)
+          setInitiatedFieldNotes(data.field_operation_notes || '');
+        }
+      })
+      .catch(() => showError('Could not load case details.'))
+      .finally(() => setInitiatedDetailLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedInitiatedId]);
+
+  // Fetch extra detail fields (product_code, complaint_statement) for the selected
+  // Awaiting FDA request — the lean list response from GET /verification-requests/awaiting-fda
+  // does not include these fields. Merges them into selectedAwaitingFda so the right panel
+  // can display them. Silently falls back to '—' if the fetch fails.
+  useEffect(() => {
+    if (!selectedAwaitingFda?.request_id) return;
+    const token = localStorage.getItem('access_token');
+    fetch(`${API_BASE}/verification-requests/${selectedAwaitingFda.request_id}`, {
+      headers: { authorization: `Bearer ${token}` },
+    })
+      .then(async (res) => {
+        if (!res.ok) return;
+        return res.json();
+      })
+      .then((data) => {
+        if (data) {
+          setSelectedAwaitingFda((prev) => ({
+            ...prev,
+            product_code: data.product_code,
+            complaint_statement: data.complaint_statement,
+          }));
+        }
+      })
+      .catch(() => {}); // fields will display '—' as fallback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAwaitingFda?.request_id]);
+
+  // ADDED (Part 1) — server-side fetch for Closed Cases tab.
+  // Search input is debounced (300ms); all other filter/page changes fire immediately.
+  // Only runs when the Closed Cases tab is active.
+  useEffect(() => {
+    if (activeTab !== 'Closed Cases') return;
+    const token = localStorage.getItem('access_token');
+
+    const timer = setTimeout(() => {
+      if (!hasLoadedClosedOnce) {
+        setClosedLoading(true);
+      }
+
+      const params = new URLSearchParams();
+      if (dismissedSearch.trim()) params.set('search', dismissedSearch.trim());
+      if (filterCategory) params.set('category', filterCategory);
+      const reasonClosedParam = mapReasonClosedToBackend(filterReasonClosed);
+      if (reasonClosedParam) params.set('reason_closed', reasonClosedParam);
+      if (filterDateFrom) params.set('date_from', filterDateFrom);
+      if (filterDateTo) params.set('date_to', filterDateTo);
+      params.set('page', String(closedPage));
+      params.set('page_size', String(CLOSED_PAGE_SIZE));
+
+      fetch(`${API_BASE}/verification-requests/closed-cases?${params.toString()}`, {
+        headers: { authorization: `Bearer ${token}` },
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then((data) => {
+          setClosedList(data.items);
+          setClosedTotal(data.total);
+          setHasLoadedClosedOnce(true);
+        })
+        .catch(() => showError('Could not load closed cases.'))
+        .finally(() => setClosedLoading(false));
+    }, 300);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, dismissedSearch, filterCategory, filterReasonClosed, filterDateFrom, filterDateTo, closedPage]);
+
   // ADDED — fetches a preview blob from GET /shared-files/{file_id}/preview whenever
-  // docPreviewModal changes. Supports images and PDFs; other types are left to
+  // docPreviewModal changes. Supports images, PDFs, and Word (.docx via mammoth); other types are left to
   // the download-only fallback. Object URL is revoked on cleanup to avoid memory leaks.
   useEffect(() => {
     if (!docPreviewModal) {
       setDocPreviewUrl(null);
       setDocPreviewError(false);
+      setDocxHtml('');
+      setDocxLoading(false);
+      setDocxError(false);
       return;
     }
 
-    const isImage = docPreviewModal.mime_type?.startsWith('image/');
-    const isPdf = docPreviewModal.mime_type === 'application/pdf';
-    if (!isImage && !isPdf) return; // unsupported types keep the placeholder
+    const mime = docPreviewModal.mime_type || '';
+    const name = docPreviewModal.file_name || '';
+    const isImage = mime.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
+    const isPdf = mime === 'application/pdf' || /\.pdf$/i.test(name);
+    const isDocx = mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || /\.docx$/i.test(name);
+
+    if (!isImage && !isPdf && !isDocx) return; // unsupported types keep the placeholder
+
+    const fileId = docPreviewModal.file_id || docPreviewModal.id;
+    if (!fileId) return;
 
     let objectUrl = null;
+    const token = localStorage.getItem('access_token');
+
+    if (isDocx) {
+      setDocxLoading(true);
+      setDocxError(false);
+      fetch(`${API_BASE}/shared-files/${fileId}/preview`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.arrayBuffer();
+        })
+        .then((arrayBuffer) => mammoth.convertToHtml({ arrayBuffer }))
+        .then((result) => {
+          setDocxHtml(result.value);
+        })
+        .catch((err) => {
+          console.error('Docx conversion error:', err);
+          setDocxError(true);
+        })
+        .finally(() => {
+          setDocxLoading(false);
+        });
+      return;
+    }
+
     setDocPreviewLoading(true);
     setDocPreviewError(false);
 
-    const token = localStorage.getItem('access_token');
-    fetch(`${API_BASE}/shared-files/${docPreviewModal.file_id}/preview`, {
+    fetch(`${API_BASE}/shared-files/${fileId}/preview`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -474,7 +690,7 @@ function LeaVerificationRequest() {
   }, [docPreviewModal]);
 
   // ADDED — POST/PUT /drafts/verification/
-  // ─── Save Draft handler ───────────────────────────────────────────────────
+  // ─── Save Draft handler 
   const handleSaveDraft = async () => {
     if (!selectedComplaint) {
       showError('Please select a complaint first.');
@@ -670,7 +886,7 @@ function LeaVerificationRequest() {
         setModalConfig(null);
       },
     });
-};
+  };
 
   // MERGED-ADD — client-side search + category filtering for the four queue tabs
   const filteredReadyList = readyList.filter((item) => {
@@ -693,23 +909,27 @@ function LeaVerificationRequest() {
     return matchesSearch && matchesCategory;
   });
 
-  const filteredResponseCases = responseCases.filter((item) => {
+  // CHANGED — now filters against real backend field names from fdaResponseList
+  //            (was filtering dummy responseCases with .caseNumber / .product / .category)
+  const filteredResponseCases = fdaResponseList.filter((item) => {
     const q = responseSearch.toLowerCase().trim();
     const matchesSearch = !q ||
-      item.caseNumber.toLowerCase().includes(q) ||
-      item.product.toLowerCase().includes(q) ||
-      item.manufacturer.toLowerCase().includes(q);
-    const matchesCategory = !responseCategory || item.category === responseCategory;
+      (item.case_reference || '').toLowerCase().includes(q) ||
+      (item.product_name || '').toLowerCase().includes(q) ||
+      (item.manufacturer || '').toLowerCase().includes(q);
+    const matchesCategory = !responseCategory || item.product_category === responseCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const filteredInitiatedCases = initiatedCases.filter((item) => {
+  // CHANGED — now filters against real backend field names from initiatedList
+  //            (was filtering dummy initiatedCases with .caseNumber / .product / .category)
+  const filteredInitiatedCases = initiatedList.filter((item) => {
     const q = initiatedSearch.toLowerCase().trim();
     const matchesSearch = !q ||
-      item.caseNumber.toLowerCase().includes(q) ||
-      item.product.toLowerCase().includes(q) ||
-      item.manufacturer.toLowerCase().includes(q);
-    const matchesCategory = !initiatedCategory || item.category === initiatedCategory;
+      (item.case_reference || '').toLowerCase().includes(q) ||
+      (item.product_title || '').toLowerCase().includes(q) ||
+      (item.manufacturer || '').toLowerCase().includes(q);
+    const matchesCategory = !initiatedCategory || item.product_category === initiatedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -726,19 +946,8 @@ function LeaVerificationRequest() {
   const initiatedTotalPages = Math.ceil(filteredInitiatedCases.length / QUEUE_PAGE_SIZE) || 1;
   const paginatedInitiatedCases = filteredInitiatedCases.slice((initiatedPage - 1) * QUEUE_PAGE_SIZE, initiatedPage * QUEUE_PAGE_SIZE);
 
-  // NOTE: Filter logic for closed/dismissed complaints table rows
-  // MERGED-CHANGED — now also matches dismissedSearch against case ID / product / manufacturer
-  const filteredDismissed = dismissedCases.filter((c) => {
-    const q = dismissedSearch.toLowerCase().trim();
-    const matchSearch = !q ||
-      c.caseId.toLowerCase().includes(q) ||
-      c.product.toLowerCase().includes(q) ||
-      c.manufacturer.toLowerCase().includes(q);
-    const matchCategory = filterCategory ? c.category === filterCategory : true;
-    const matchFrom = filterDateFrom ? c.dateClosed >= filterDateFrom : true;
-    const matchTo = filterDateTo ? c.dateClosed <= filterDateTo : true;
-    return matchSearch && matchCategory && matchFrom && matchTo;
-  });
+  // CHANGED (Part 1) — removed filteredDismissed client-side filter (filtering now happens on the backend).
+  //                       The fetch useEffect below handles search/filter/pagination server-side.
 
   // NOTE: Trigger confirmation modals and success alerts for actions
   const handleActionButtonClick = (actionType, caseNumber, id) => {
@@ -804,7 +1013,7 @@ function LeaVerificationRequest() {
               return;
             }
 
-            const updated = await res.json();
+            await res.json();
 
             if (actionType === 'Recall Request') {
               // Recalled — this request no longer belongs in Awaiting FDA at all
@@ -825,8 +1034,104 @@ function LeaVerificationRequest() {
           return;
         }
 
-        // Existing behavior for the other action types (Initiate Takedown,
-        // Dismiss Case, Close Case, Acknowledge) — untouched, still local-only
+        // ADDED — POST /verification-requests/{id}/acknowledge (handles both Acknowledge + Dismiss Case)
+        if (actionType === 'Acknowledge' || actionType === 'Dismiss Case') {
+          const token = localStorage.getItem('access_token');
+          try {
+            const res = await fetch(`${API_BASE}/verification-requests/${id}/acknowledge`, {
+              method: 'POST',
+              headers: { authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) {
+              const msg = await parseBackendError(res);
+              showError(msg);
+              setModalConfig(null);
+              return;
+            }
+            setSuccessMessage(successText);
+            setModalConfig(null);
+            setTimeout(() => setSuccessMessage(''), 3000);
+            // Refresh the list (removes the now-acknowledged case) and the stat counts.
+            fetchFdaResponseList();
+            fetchLeaCounts();
+          } catch {
+            showError('Something went wrong. Please try again.');
+            setModalConfig(null);
+          }
+          return;
+        }
+
+        // ADDED — POST /verification-requests/{id}/initiate-takedown
+        if (actionType === 'Initiate Takedown') {
+          const token = localStorage.getItem('access_token');
+          try {
+            const res = await fetch(`${API_BASE}/verification-requests/${id}/initiate-takedown`, {
+              method: 'POST',
+              headers: {
+                authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                // CHANGED (Part 0) — uses fdaTakedownNotes, not the old shared fieldOperationNotes
+                field_operation_notes: fdaTakedownNotes.trim() ? fdaTakedownNotes.trim() : null,
+              }),
+            });
+            if (!res.ok) {
+              const msg = await parseBackendError(res);
+              showError(msg);
+              setModalConfig(null);
+              return;
+            }
+            setSuccessMessage(successText);
+            setModalConfig(null);
+            // CHANGED (Part 0) — reset fdaTakedownNotes, not the old shared fieldOperationNotes
+            setFdaTakedownNotes('');
+            setTimeout(() => setSuccessMessage(''), 3000);
+            fetchFdaResponseList();
+            fetchLeaCounts();
+          } catch {
+            showError('Something went wrong. Please try again.');
+            setModalConfig(null);
+          }
+          return;
+        }
+
+        // ADDED — POST /complaints/{id}/close-case
+        if (actionType === 'Close Case') {
+          const token = localStorage.getItem('access_token');
+          try {
+            const res = await fetch(`${API_BASE}/complaints/${id}/close-case`, {
+              method: 'POST',
+              headers: {
+                authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                // CHANGED (Part 0) — uses initiatedFieldNotes, not the old shared fieldOperationNotes
+                field_operation_notes: initiatedFieldNotes.trim() ? initiatedFieldNotes.trim() : null,
+              }),
+            });
+            if (!res.ok) {
+              const msg = await parseBackendError(res);
+              showError(msg);
+              setModalConfig(null);
+              return;
+            }
+            setSuccessMessage(successText);
+            setModalConfig(null);
+            // CHANGED (Part 0) — reset initiatedFieldNotes, not the old shared fieldOperationNotes
+            setInitiatedFieldNotes('');
+            setTimeout(() => setSuccessMessage(''), 3000);
+            fetchInitiatedList();
+            fetchLeaCounts();
+          } catch {
+            showError('Something went wrong. Please try again.');
+            setModalConfig(null);
+          }
+          return;
+        }
+
+        // Fallback for any future action types not yet wired.
         setSuccessMessage(successText);
         setModalConfig(null);
         setTimeout(() => {
@@ -940,7 +1245,7 @@ function LeaVerificationRequest() {
                   {/* LEFT PANEL */}
                   <div className="ReadytoSendQueue">
                     {/* MERGED-ADD — search bar + category filter dropdown */}
-                     <div className="ReadytoSendHeader">
+                    <div className="ReadytoSendHeader">
                       <p>Walk-in cases awaiting your request</p>
                       {/* MERGED-CHANGED — count now reflects filtered results */}
                       <span>{filteredReadyList.length}</span>
@@ -966,12 +1271,12 @@ function LeaVerificationRequest() {
                           <option value="">All Categories</option>
                           <option value="Cosmetics">Cosmetics</option>
                           <option value="Food">Food</option>
-                          <option value="Medical Devices">Medical Devices</option>
+                          <option value="Devices">Medical Devices</option>
                           <option value="Drugs">Drugs</option>
                         </select>
                       </div>
                     </div>
-                   
+
 
                     {readyLoading && (
                       <p style={{ padding: '12px', color: '#7a8796', fontSize: '13px' }}>Loading...</p>
@@ -995,22 +1300,13 @@ function LeaVerificationRequest() {
                         className={`QueueCard ${selectedComplaint?.complaint_id === item.complaint_id ? 'ActiveQueueCard' : ''}`}
                         onClick={() => fetchComplaintDetail(item.complaint_id)}
                       >
-                        <div className='QueueLabels'>
-                          <h4>{item.product_title}</h4>
-                          <p>{item.manufacturer || '—'}</p>
-                          <small>
-                            CASE ID: {item.case_reference}
-                          </small>
+                        <div className="QueueCardTopRow">
+                          <small style={{ margin: 0 }}>CASE ID: {item.case_reference}</small>
+                          <span className="QueueTagInline">{GetSourceLabel(item.source)}</span>
                         </div>
+                        <h4>{item.product_title}</h4>
+                        <p>{item.manufacturer || '—'}</p>
 
-                        <div className="QueueTag">
-                          <span>{GetSourceLabel(item.source)}</span>
-                        </div>
-
-                        {/* MERGED-ADD — category + date, matching old version's QueueCardFooterRow.
-                            FLAGGED: date field name not confirmed against the real API response for this
-                            list endpoint — using item.created_at as the best guess; please confirm the
-                            actual field the backend returns (or add it if it's missing from that endpoint). */}
                         <div className="QueueCardFooterRow">
                           <span className="QueueCategoryTag">{item.product_category || '—'}</span>
                           <span className="QueueDateTag">
@@ -1032,7 +1328,8 @@ function LeaVerificationRequest() {
                   <div className="VerificationDetails">
                     <div className="VerificationCard">
                       <div>
-                        {detailLoading ? (
+                        {/* CHANGED — was `detailLoading ? …` — now keeps previous case visible while new one loads (BUG 2 fix) */}
+                        {detailLoading && !selectedComplaint ? (
                           <p style={{ color: '#7a8796', fontSize: '13px' }}>Loading details...</p>
                         ) : selectedComplaint ? (
                           <>
@@ -1210,12 +1507,12 @@ function LeaVerificationRequest() {
                           <option value="">All Categories</option>
                           <option value="Cosmetics">Cosmetics</option>
                           <option value="Food">Food</option>
-                          <option value="Medical Devices">Medical Devices</option>
+                          <option value="Devices">Medical Devices</option>
                           <option value="Drugs">Drugs</option>
                         </select>
                       </div>
                     </div>
-                    
+
 
                     {awaitingLoading && (
                       <p style={{ padding: '12px', color: '#7a8796', fontSize: '13px' }}>Loading...</p>
@@ -1239,11 +1536,26 @@ function LeaVerificationRequest() {
                         className={`QueueCard ${selectedAwaitingFda?.request_id === item.request_id ? 'ActiveQueueCard' : ''}`}
                         onClick={() => setSelectedAwaitingFda(item)}
                       >
-                        {/* MERGED-CHANGED — restructured to match the reference UI: CASE ID + source tag on top row */}
-                        <div className="QueueCardTopRow">
-                          <small style={{ margin: 0 }}>CASE ID: {item.case_reference}</small>
-                          <span className="QueueTagInline">{GetSourceLabel(item.source)}</span>
-                        </div>
+                        {/* MERGED-CHANGED — restructured to match the reference UI: CASE ID + source tag + priority on top row */}
+                          <div className="QueueCardTopRow">
+                            <small style={{ margin: 0 }}>CASE ID: {item.case_reference}</small>
+
+                            <span className="QueueTagInline">
+                                  {GetSourceLabel(item.source)}
+                                </span>
+
+                                {item.priority && (
+                                  <span className={`QueueStatusBadge ${
+                                    (item.priority || '').toLowerCase() === 'standard'
+                                      ? 'registered'
+                                      : (item.priority || '').toLowerCase() === 'high'
+                                        ? 'rejected'
+                                        : 'unregistered'
+                                  }`}>
+                                    {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
+                                  </span>
+                                )}
+                              </div>
                         <h4>{item.product_name}</h4>
                         <p>{item.manufacturer || '—'}</p>
 
@@ -1302,12 +1614,42 @@ function LeaVerificationRequest() {
                                 <label>SOURCE</label>
                                 <p>{GetSourceLabel(selectedAwaitingFda.source)}</p>
                               </div>
+
+                                                            <div>
+                                <label>SOURCE</label>
+                                <p>{GetSourceLabel(selectedAwaitingFda.source)}</p>
+                              </div>
                             </div>
                           </>
                         ) : (
                           <p style={{ color: '#7a8796', fontSize: '13px' }}>Select a case from the list to view details.</p>
                         )}
                       </div>
+
+                      {selectedAwaitingFda && (
+                        <div className="VerificationRequestInfo">
+                          <h3>Verification Request</h3>
+                          <div className="VerificationRequestGrid">
+                            <div>
+                              <label>PRODUCT CODE</label>
+                              <p>{(selectedAwaitingFda.product_code && String(selectedAwaitingFda.product_code).trim()) || '—'}</p>
+                            </div>
+
+                            <div>
+                              <label>PRIORITY</label>
+                              <p>{selectedAwaitingFda.priority ? selectedAwaitingFda.priority.charAt(0).toUpperCase() + selectedAwaitingFda.priority.slice(1) : '—'}</p>
+                            </div>
+
+                            <div className="VerificationNotes">
+                              <label>NOTES TO FDA VERIFIER</label>
+                              <p style={{ fontWeight: 500, fontSize: '13px', lineHeight: '1.5', wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>
+                                {((selectedAwaitingFda.complaint_statement || selectedAwaitingFda.notes_to_fda) &&
+                                  String(selectedAwaitingFda.complaint_statement || selectedAwaitingFda.notes_to_fda).trim()) || '—'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       <div className='UpdateForResponse'>
                         <div className='StatusTitle'>
@@ -1360,7 +1702,7 @@ function LeaVerificationRequest() {
                   {/* LEFT PANEL */}
                   <div className="LEAResponseQueue">
                     {/* MERGED-ADD — search bar + category filter dropdown */}
-                     <div className="LEAResponseHeader">
+                    <div className="LEAResponseHeader">
                       <p>FDA confirmations received</p>
                       {/* REMOVE THIS */}
                       {/* BACKEND: count of responseCases */}
@@ -1368,7 +1710,7 @@ function LeaVerificationRequest() {
                       <span>{filteredResponseCases.length}</span>
                     </div>
                     <div className="LeaVerifQueueFilterHeader">
-                      
+
                       <div className="LeaSearchWrapper">
                         <Search size={16} className="LeaSearchIcon" />
                         <input
@@ -1389,45 +1731,55 @@ function LeaVerificationRequest() {
                           <option value="">All Categories</option>
                           <option value="Cosmetics">Cosmetics</option>
                           <option value="Food">Food</option>
-                          <option value="Medical Devices">Medical Devices</option>
+                          <option value="Devices">Medical Devices</option>
                           <option value="Drugs">Drugs</option>
                         </select>
                       </div>
                     </div>
-                   
+
+
+                    {/* ADDED — first-load skeleton; skipped on subsequent refreshes (no flickering) */}
+                    {fdaResponseLoading && !hasLoadedFdaResponseOnce && (
+                      <p style={{ padding: '12px', color: '#7a8796', fontSize: '13px' }}>Loading...</p>
+                    )}
+                    {/* ADDED — empty list state when the backend returns 0 items */}
+                    {!fdaResponseLoading && fdaResponseList.length === 0 && (
+                      <p style={{ padding: '12px', color: '#7a8796', fontSize: '13px' }}>No FDA responses at this time.</p>
+                    )}
 
                     {/* MERGED-ADD — empty state for when filters exclude everything */}
-                    {filteredResponseCases.length === 0 && (
+                    {!fdaResponseLoading && fdaResponseList.length > 0 && filteredResponseCases.length === 0 && (
                       <div className="LeaVerifEmptyList">
                         <Search size={32} />
                         <p className="LeaVerifEmptyText">No cases match your current filters.</p>
                       </div>
                     )}
 
+                    {/* CHANGED — cards now use real backend fields:
+                         key=request_id, highlight on selectedResponseId, onClick=setSelectedResponseId,
+                         badge from verification_result, date from responded_at via formatDateTime */}
                     {paginatedResponseCases.map((item) => (
                       <div
-                        key={item.id}
-                        className={`QueueCard ${selectedResponse.id === item.id ? 'ActiveQueueCard' : ''}`}
-                        id=''
-                        onClick={() => setSelectedResponse(item)}
+                        key={item.request_id}
+                        className={`QueueCard ${selectedResponseId === item.request_id ? 'ActiveQueueCard' : ''}`}
+                        onClick={() => setSelectedResponseId(item.request_id)}
                       >
-                        {/* MERGED-CHANGED — restructured to match the reference UI: CASE ID + status badge on top row, category + date in footer */}
                         <div className="QueueCardTopRow">
-                          <small style={{ margin: 0 }}>CASE ID: {item.caseNumber}</small>
-                          {/*  BACKEND: status badge reflects verification_request_status ('confirmed_registered' | 'confirmed_unregistered' | 'rejected') */}
-                          <span className={`QueueStatusBadge ${item.status === 'Registered' ? 'registered' :
-                            item.status === 'Rejected' ? 'rejected' : 'unregistered'
+                          <small style={{ margin: 0 }}>CASE ID: {item.case_reference}</small>
+                          <span className={`QueueStatusBadge ${item.verification_result === 'registered' ? 'registered' :
+                            item.verification_result === 'rejected' ? 'rejected' : 'unregistered'
                             }`}>
-                            {item.status}
+                            {item.verification_result === 'registered' ? 'Registered' :
+                              item.verification_result === 'rejected' ? 'Rejected' : 'Unregistered'}
                           </span>
                         </div>
-                        <h4>{item.product}</h4>
-                        <p>{item.manufacturer}</p>
+                        <h4>{item.product_name}</h4>
+                        <p>{item.manufacturer || '—'}</p>
                         <div className="QueueCardFooterRow">
-                          <span className="QueueCategoryTag">{item.category}</span>
+                          <span className="QueueCategoryTag">{item.product_category || '—'}</span>
                           <span className="QueueDateTag">
                             <Calendar size={12} />
-                            {item.returnedDate}
+                            {formatDateTime(item.responded_at)}
                           </span>
                         </div>
                       </div>
@@ -1440,201 +1792,213 @@ function LeaVerificationRequest() {
 
                   </div>
 
+                  {/* CHANGED — right panel rebuilt: was reading dummy selectedResponse fields directly (no null guard);
+                               now guards with selectedResponse && check, uses real detail fields,
+                               shows "Select a case" when nothing chosen and "Loading..." only on very first load */}
                   {/* RIGHT PANEL */}
                   <div className='VerificationDetails'>
-                    <div className='VerificationCard'>
-                      <div>
-                        <small>CASE ID: {selectedResponse.caseNumber}</small>
-                        <h2>{selectedResponse.product}</h2>
-                        <p>MANUFACTURER: {selectedResponse.manufacturer || '—'}</p>
+                    {selectedResponse ? (
+                      <div className='VerificationCard'>
+                        <div>
+                          {responseDetailLoading && !selectedResponse ? (
+                            <p style={{ color: '#7a8796', fontSize: '13px' }}>Loading details...</p>
+                          ) : selectedResponse ? (
+                            <>
+                              <small>CASE ID: {selectedResponse.case_reference}</small>
+                              <h2>{selectedResponse.product_title}</h2>
+                              <p>MANUFACTURER: {selectedResponse.manufacturer || '—'}</p>
 
-                        <div className="CaseInfoGrid">
-                          <div>
-                            <label>COMPLAINANT</label>
-                            {/* REMOVE THIS */}
-                            {/* BACKEND: complainant name */}
-                            <p>{selectedResponse.complainant}</p>
-                          </div>
+                              <div className="CaseInfoGrid">
+                                <div>
+                                  <label>COMPLAINANT</label>
+                                  <p>{selectedResponse.complainant_name || '—'}</p>
+                                </div>
 
-                          <div>
-                            <label>CATEGORY</label>
-                            {/* REMOVE THIS */}
-                            {/* BACKEND: category */}
-                            <p>{selectedResponse.category}</p>
-                          </div>
+                                <div>
+                                  <label>CATEGORY</label>
+                                  <p>{selectedResponse.product_category || '—'}</p>
+                                </div>
 
-                          <div>
-                            <label>LOGGED</label>
-                            {/* REMOVE THIS */}
-                            {/* BACKEND: created_at */}
-                            <p>{selectedResponse.loggedDate}</p>
-                          </div>
+                                <div>
+                                  <label>LOGGED</label>
+                                  <p>{formatDateTime(selectedResponse.logged_at)}</p>
+                                </div>
 
-                          <div>
-                            <label>SOURCE</label>
-                            {/* REMOVE THIS */}
-                            {/* BACKEND: source */}
-                            <p>{selectedResponse.source}</p>
-                          </div>
+                                <div>
+                                  <label>SOURCE</label>
+                                  <p>{GetSourceLabel(selectedResponse.source)}</p>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <p style={{ color: '#7a8796', fontSize: '13px' }}>Select a case to view details.</p>
+                          )}
                         </div>
-                      </div>
 
-                      <div className='ConfirmationReturned'>
-                        {selectedResponse.status === 'Rejected' ? (
-                          <>
-                            <div className="ResponseBox ResponseRejected">
-                              <div className='LeaVerifResponseStatusHeader LeaVerifRejectedHeader'>
-                                <XCircle style={{ color: '#EF4444' }} />
-                                <div className='StatementReturn'>
-                                  <h3>CONFIRMED REJECTED PRODUCT</h3>
-                                </div>
-                              </div>
+                        {selectedResponse && (
+                          <div className='ConfirmationReturned'>
+                            {selectedResponse.verification_result === 'rejected' ? (
+                              <>
+                                <div className="ResponseBox ResponseRejected">
+                                  <div className='LeaVerifResponseStatusHeader LeaVerifRejectedHeader'>
+                                    <XCircle style={{ color: '#EF4444' }} />
+                                    <div className='StatementReturn'>
+                                      <h3>CONFIRMED REJECTED PRODUCT</h3>
+                                    </div>
+                                  </div>
 
-                              <div className="LeaVerifRejectionFieldsGrid">
-                                <div className="LeaVerifResultField">
-                                  <label className="LeaVerifFieldLabel">Rejected By</label>
-                                  <p className="LeaVerifFieldValue">{selectedResponse.rejectedBy || selectedResponse.rejected_by_name || '—'}</p>
-                                </div>
+                                  <div className="LeaVerifRejectionFieldsGrid">
+                                    <div className="LeaVerifResultField">
+                                      <label className="LeaVerifFieldLabel">Rejected By</label>
+                                      <p className="LeaVerifFieldValue">{selectedResponse.verifier_name || '—'}</p>
+                                    </div>
 
-                                <div className="LeaVerifResultField">
-                                  <label className="LeaVerifFieldLabel">Date Returned / Responded</label>
-                                  <p className="LeaVerifFieldValue">{selectedResponse.returnedDate || selectedResponse.responded_at || '—'}</p>
-                                </div>
+                                    <div className="LeaVerifResultField">
+                                      <label className="LeaVerifFieldLabel">Date Returned / Responded</label>
+                                      <p className="LeaVerifFieldValue">{formatDateTime(selectedResponse.responded_at)}</p>
+                                    </div>
 
-                                <div className="LeaVerifResultField LeaVerifFullWidthField">
-                                  <label className="LeaVerifFieldLabel">Reason for Rejection</label>
-                                  <p className="LeaVerifFieldValue">{selectedResponse.rejectionReason || selectedResponse.rejection_reason || '—'}</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="LeaVerifAckNotice">
-                              <p>
-                                Please review the rejection reason above and click Acknowledge to move this case to closed/dismissed records.
-                              </p>
-                            </div>
-
-                            <div className='ResponseBtn' style={{ marginTop: '20px' }}>
-                              <button
-                                style={{ width: '300', height: '40px' }}
-                                onClick={() => handleActionButtonClick('Acknowledge', selectedResponse.caseNumber || selectedResponse.case_reference || '', selectedResponse.id || selectedResponse.request_id || null)}
-                              >
-                                Acknowledge
-                              </button>
-                            </div>
-                          </>
-                        ) : selectedResponse.status === 'Registered' ? (
-                          <>
-                            <div className="ResponseBox ResponseRegistered">
-                              <div className='LeaVerifResponseStatusHeader LeaVerifRegisteredHeader'>
-                                <CheckCircle style={{ color: '#10B981', backgroundColor: '#D1FAE5' }} />
-                                <div className='StatementReturn'>
-                                  <h3>CONFIRMED REGISTERED PRODUCT</h3>
-                                </div>
-                              </div>
-
-                              <div className="LeaVerifResultFieldsGrid">
-                                <div className="LeaVerifResultField">
-                                  <label className="LeaVerifFieldLabel">Verified By</label>
-                                  <p className="LeaVerifFieldValue">{selectedResponse.verifiedBy || selectedResponse.verified_by_name || 'Dr. J. Santos · FDA Officer'}</p>
+                                    <div className="LeaVerifResultField LeaVerifFullWidthField">
+                                      <label className="LeaVerifFieldLabel">Reason for Rejection</label>
+                                      <p className="LeaVerifFieldValue">{selectedResponse.rejection_reason || '—'}</p>
+                                    </div>
+                                  </div>
                                 </div>
 
-                                <div className="LeaVerifResultField">
-                                  <label className="LeaVerifFieldLabel">Date Returned / Responded</label>
-                                  <p className="LeaVerifFieldValue">{selectedResponse.returnedDate || selectedResponse.responded_at || '—'}</p>
+                                <div className="LeaVerifAckNotice">
+                                  <p>
+                                    Please review the rejection reason above and click Acknowledge to move this case to closed/dismissed records.
+                                  </p>
                                 </div>
 
-                                <div className="LeaVerifResultField">
-                                  <label className="LeaVerifFieldLabel">FDA CPR Registration Number</label>
-                                  <p className="LeaVerifFieldValue">{selectedResponse.cprNumber || selectedResponse.cpr_number || selectedResponse.fda_cpr_number || '—'}</p>
+                                <div className='ResponseBtn' style={{ marginTop: '20px' }}>
+                                  <button
+                                    style={{ width: '300', height: '40px' }}
+                                    onClick={() => handleActionButtonClick('Acknowledge', selectedResponse.case_reference, selectedResponse.request_id)}
+                                  >
+                                    Acknowledge
+                                  </button>
+                                </div>
+                              </>
+                            ) : selectedResponse.verification_result === 'registered' ? (
+                              <>
+                                <div className="ResponseBox ResponseRegistered">
+                                  <div className='LeaVerifResponseStatusHeader LeaVerifRegisteredHeader'>
+                                    <CheckCircle style={{ color: '#10B981', backgroundColor: '#D1FAE5' }} />
+                                    <div className='StatementReturn'>
+                                      <h3>CONFIRMED REGISTERED PRODUCT</h3>
+                                    </div>
+                                  </div>
+
+                                  <div className="LeaVerifResultFieldsGrid">
+                                    <div className="LeaVerifResultField">
+                                      <label className="LeaVerifFieldLabel">Verified By</label>
+                                      <p className="LeaVerifFieldValue">{selectedResponse.verifier_name || '—'}</p>
+                                    </div>
+
+                                    <div className="LeaVerifResultField">
+                                      <label className="LeaVerifFieldLabel">Date Returned / Responded</label>
+                                      <p className="LeaVerifFieldValue">{formatDateTime(selectedResponse.responded_at)}</p>
+                                    </div>
+
+                                    <div className="LeaVerifResultField">
+                                      <label className="LeaVerifFieldLabel">FDA CPR Registration Number</label>
+                                      <p className="LeaVerifFieldValue">{selectedResponse.cpr_number || '—'}</p>
+                                    </div>
+
+                                    <div className="LeaVerifResultField">
+                                      <label className="LeaVerifFieldLabel">CPR Validity / Expiry Date</label>
+                                      <p className="LeaVerifFieldValue">{selectedResponse.cpr_expiry || '—'}</p>
+                                    </div>
+
+                                    <div className="LeaVerifResultField LeaVerifFullWidthField">
+                                      <label className="LeaVerifFieldLabel">Official FDA Verification Remarks</label>
+                                      <p className="LeaVerifFieldValue">{selectedResponse.response_notes || '—'}</p>
+                                    </div>
+                                  </div>
                                 </div>
 
-                                <div className="LeaVerifResultField">
-                                  <label className="LeaVerifFieldLabel">CPR Validity / Expiry Date</label>
-                                  <p className="LeaVerifFieldValue">{selectedResponse.cprExpiry || selectedResponse.cpr_expiry || selectedResponse.fda_cpr_expiry || '—'}</p>
+                                <div className="LeaVerifAckNotice">
+                                  <p>
+                                    This case has been confirmed to be Registered. Status is now dismissed. Please click Acknowledge to move this case to closed/dismissed records.
+                                  </p>
                                 </div>
 
-                                <div className="LeaVerifResultField LeaVerifFullWidthField">
-                                  <label className="LeaVerifFieldLabel">Official FDA Verification Remarks</label>
-                                  <p className="LeaVerifFieldValue">{selectedResponse.remarks || selectedResponse.response_notes || selectedResponse.description || '—'}</p>
+                                <div className='ResponseBtn'>
+                                  <button onClick={() => handleActionButtonClick(
+                                    'Dismiss Case',
+                                    selectedResponse.case_reference,
+                                    selectedResponse.request_id
+                                  )}>
+                                    Acknowledge
+                                  </button>
                                 </div>
-                              </div>
-                            </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="ResponseBox ResponseUnregistered">
+                                  <div className='LeaVerifResponseStatusHeader LeaVerifUnregisteredHeader'>
+                                    <AlertTriangle style={{ color: '#EF4444', backgroundColor: '#FEE2E2' }} />
+                                    <div className='StatementReturn'>
+                                      <h3>CONFIRMED UNREGISTERED PRODUCT</h3>
+                                    </div>
+                                  </div>
 
-                            <div className="LeaVerifAckNotice">
-                              <p>
-                                This case has been confirmed to be Registered. Status is now dismissed. Please click Acknowledge to move this case to closed/dismissed records.
-                              </p>
-                            </div>
+                                  <div className="LeaVerifResultFieldsGrid">
+                                    <div className="LeaVerifResultField">
+                                      <label className="LeaVerifFieldLabel">Verified By</label>
+                                      <p className="LeaVerifFieldValue">{selectedResponse.verifier_name || '—'}</p>
+                                    </div>
 
-                            <div className='ResponseBtn'>
-                              <button onClick={() => handleActionButtonClick(
-                                'Dismiss Case',
-                                selectedResponse.caseNumber || selectedResponse.case_reference || '',
-                                selectedResponse.id || selectedResponse.request_id || null
-                              )}>
-                                Acknowledge
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="ResponseBox ResponseUnregistered">
-                              <div className='LeaVerifResponseStatusHeader LeaVerifUnregisteredHeader'>
-                                <AlertTriangle style={{ color: '#EF4444', backgroundColor: '#FEE2E2' }} />
-                                <div className='StatementReturn'>
-                                  <h3>CONFIRMED UNREGISTERED PRODUCT</h3>
-                                </div>
-                              </div>
+                                    <div className="LeaVerifResultField">
+                                      <label className="LeaVerifFieldLabel">Date Returned / Responded</label>
+                                      <p className="LeaVerifFieldValue">{formatDateTime(selectedResponse.responded_at)}</p>
+                                    </div>
 
-                              <div className="LeaVerifResultFieldsGrid">
-                                <div className="LeaVerifResultField">
-                                  <label className="LeaVerifFieldLabel">Verified By</label>
-                                  <p className="LeaVerifFieldValue">{selectedResponse.verifiedBy || selectedResponse.verified_by_name || 'Inspector J. Bautista · FDA Officer'}</p>
-                                </div>
+                                    <div className="LeaVerifResultField LeaVerifFullWidthField">
+                                      <label className="LeaVerifFieldLabel">Reason Product is Not Registered</label>
+                                      <p className="LeaVerifFieldValue">{selectedResponse.unregistered_reason || '—'}</p>
+                                    </div>
 
-                                <div className="LeaVerifResultField">
-                                  <label className="LeaVerifFieldLabel">Date Returned / Responded</label>
-                                  <p className="LeaVerifFieldValue">{selectedResponse.returnedDate || selectedResponse.responded_at || '—'}</p>
-                                </div>
-
-                                <div className="LeaVerifResultField LeaVerifFullWidthField">
-                                  <label className="LeaVerifFieldLabel">Reason Product is Not Registered</label>
-                                  <p className="LeaVerifFieldValue">{selectedResponse.unregisteredReason || selectedResponse.unregistered_reason || selectedResponse.description || '—'}</p>
+                                    <div className="LeaVerifResultField LeaVerifFullWidthField">
+                                      <label className="LeaVerifFieldLabel">Advisory &amp; Enforcement Recommendations for LEA</label>
+                                      <p className="LeaVerifFieldValue">{selectedResponse.response_notes || '—'}</p>
+                                    </div>
+                                  </div>
                                 </div>
 
-                                <div className="LeaVerifResultField LeaVerifFullWidthField">
-                                  <label className="LeaVerifFieldLabel">Advisory &amp; Enforcement Recommendations for LEA</label>
-                                  <p className="LeaVerifFieldValue">{selectedResponse.advisoryRemarks || selectedResponse.remarks || selectedResponse.response_notes || '—'}</p>
+                                <div className='ResponseUpdateBox'>
+                                  <h6>Field operation status update</h6>
+                                  {/* CHANGED (Part 0) — bound to fdaTakedownNotes, not the old shared fieldOperationNotes */}
+                                  <textarea
+                                    name=""
+                                    id=""
+                                    placeholder="Operation conducted at seller's address on 2026-05-18. Product siezed, takedown notice served."
+                                    value={fdaTakedownNotes}
+                                    onChange={(e) => setFdaTakedownNotes(e.target.value)}
+                                  ></textarea>
                                 </div>
-                              </div>
-                            </div>
 
-                            <div className='ResponseUpdateBox'>
-                              <h6>Field operation status update</h6>
-                              <textarea
-                                name=""
-                                id=""
-                                placeholder="Operation conducted at seller's address on 2026-05-18. Product siezed, takedown notice served."
-                                value={fieldOperationNotes}
-                                onChange={(e) => setFieldOperationNotes(e.target.value)}
-                              ></textarea>
-                            </div>
-
-                            <div className='ResponseBtn'>
-                              <button onClick={() => handleActionButtonClick(
-                                'Initiate Takedown',
-                                selectedResponse.caseNumber || selectedResponse.case_reference || '',
-                                selectedResponse.id || selectedResponse.request_id || null
-                              )}>
-                                Initiate Takedown
-                              </button>
-                            </div>
-                          </>
+                                <div className='ResponseBtn'>
+                                  <button onClick={() => handleActionButtonClick(
+                                    'Initiate Takedown',
+                                    selectedResponse.case_reference,
+                                    selectedResponse.request_id
+                                  )}>
+                                    Initiate Takedown
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         )}
                       </div>
-                    </div>
-
+                    ) : (
+                      <div className="LeaVerifNoDetail" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#7a8796', fontSize: '14px', fontWeight: '500', padding: '40px', textAlign: 'center', border: '1px dashed #cbd5e1', borderRadius: '12px', background: '#f8fafc' }}>
+                        <Inbox size={32} style={{ marginBottom: '8px', color: '#94a3b8' }} />
+                        Select a case from the queue to view details.
+                      </div>
+                    )}
                   </div>
                 </div>}
 
@@ -1672,39 +2036,50 @@ function LeaVerificationRequest() {
                           <option value="">All Categories</option>
                           <option value="Cosmetics">Cosmetics</option>
                           <option value="Food">Food</option>
-                          <option value="Medical Devices">Medical Devices</option>
+                          <option value="Devices">Medical Devices</option>
                           <option value="Drugs">Drugs</option>
                         </select>
                       </div>
                     </div>
-                    
+
+
+                    {/* ADDED — first-load skeleton; skipped on subsequent refreshes (no flickering) */}
+                    {initiatedLoading && !hasLoadedInitiatedOnce && (
+                      <p style={{ padding: '12px', color: '#7a8796', fontSize: '13px' }}>Loading...</p>
+                    )}
+                    {/* ADDED — empty list state when the backend returns 0 items */}
+                    {!initiatedLoading && initiatedList.length === 0 && (
+                      <p style={{ padding: '12px', color: '#7a8796', fontSize: '13px' }}>No cases with active takedown operations.</p>
+                    )}
 
                     {/* MERGED-ADD — empty state for when filters exclude everything */}
-                    {filteredInitiatedCases.length === 0 && (
+                    {!initiatedLoading && initiatedList.length > 0 && filteredInitiatedCases.length === 0 && (
                       <div className="LeaVerifEmptyList">
                         <Search size={32} />
                         <p className="LeaVerifEmptyText">No cases match your current filters.</p>
                       </div>
                     )}
 
+                    {/* CHANGED — cards now use real backend fields:
+                         key=complaint_id, highlight on selectedInitiatedId, onClick=setSelectedInitiatedId,
+                         badge is static 'Operation in Progress', date from field_operation_logged_at */}
                     {paginatedInitiatedCases.map((item) => (
                       <div
-                        key={item.id}
-                        className={`QueueCard ${selectedInitiatedCase.id === item.id ? 'ActiveQueueCard' : ''}`}
-                        onClick={() => setSelectedInitiatedCase(item)}
+                        key={item.complaint_id}
+                        className={`QueueCard ${selectedInitiatedId === item.complaint_id ? 'ActiveQueueCard' : ''}`}
+                        onClick={() => setSelectedInitiatedId(item.complaint_id)}
                       >
-                        {/* MERGED-CHANGED — restructured to match the reference UI: CASE ID + status badge on top row, category + date in footer */}
                         <div className="QueueCardTopRow">
-                          <small style={{ margin: 0 }}>CASE ID: {item.caseNumber}</small>
-                          <span className="OperationInProgressBadge">{item.status}</span>
+                          <small style={{ margin: 0 }}>CASE ID: {item.case_reference}</small>
+                          <span className="OperationInProgressBadge">Operation in Progress</span>
                         </div>
-                        <h4>{item.product}</h4>
-                        <p>{item.manufacturer}</p>
+                        <h4>{item.product_title}</h4>
+                        <p>{item.manufacturer || '—'}</p>
                         <div className="QueueCardFooterRow">
-                          <span className="QueueCategoryTag">{item.category}</span>
+                          <span className="QueueCategoryTag">{item.product_category || '—'}</span>
                           <span className="QueueDateTag">
                             <Calendar size={12} />
-                            {item.returnedDate}
+                            {formatDateTime(item.field_operation_logged_at)}
                           </span>
                         </div>
                       </div>
@@ -1716,73 +2091,79 @@ function LeaVerificationRequest() {
                     />
                   </div>
 
+                  {/* CHANGED — right panel rebuilt: was reading dummy selectedInitiatedCase fields directly (no null guard);
+                               now guards with null check, uses real detail fields, pre-fills fieldOperationNotes */}
                   {/* RIGHT PANEL */}
                   <div className='VerificationDetails'>
-                    <div className='VerificationCard'>
-                      <div>
-                        {/* REMOVE THIS */}
-                        {/* BACKEND: caseNumber */}
-                        <small>CASE ID: {selectedInitiatedCase.caseNumber}</small>
-                        {/* REMOVE THIS */}
-                        {/* BACKEND: product_name */}
-                        <h2>{selectedInitiatedCase.product}</h2>
-                        {/* REMOVE THIS */}
-                        {/* BACKEND: manufacturer_name */}
-                        <p>MANUFACTURER: {selectedInitiatedCase.manufacturer || '—'}</p>
+                    {selectedInitiatedCase ? (
+                      <div className='VerificationCard'>
+                        <div>
+                          {initiatedDetailLoading && !selectedInitiatedCase ? (
+                            <p style={{ color: '#7a8796', fontSize: '13px' }}>Loading details...</p>
+                          ) : selectedInitiatedCase ? (
+                            <>
+                              <small>CASE ID: {selectedInitiatedCase.case_reference}</small>
+                              <h2>{selectedInitiatedCase.product_title}</h2>
+                              <p>MANUFACTURER: {selectedInitiatedCase.manufacturer || '—'}</p>
 
-                        {/* BACKEND: complainant, category, source, and region are NOT stored
-                                                directly in verification_requests. They are fetched via complaint_id
-                                                joining to the complaints and walkin_complainants tables through the
-                                                verification_requests full view */}
-                        <div className="CaseInfoGrid">
-                          <div>
-                            <label>COMPLAINANT</label>
-                            {/* REMOVE THIS */}
-                            {/* BACKEND: complainant name */}
-                            <p>{selectedInitiatedCase.complainant}</p>
-                          </div>
+                              <div className="CaseInfoGrid">
+                                <div>
+                                  <label>COMPLAINANT</label>
+                                  <p>{selectedInitiatedCase.complainant_name || '—'}</p>
+                                </div>
 
-                          <div>
-                            <label>CATEGORY</label>
-                            {/*  REMOVE THIS */}
-                            {/* BACKEND: category */}
-                            <p>{selectedInitiatedCase.category}</p>
-                          </div>
+                                <div>
+                                  <label>CATEGORY</label>
+                                  <p>{selectedInitiatedCase.product_category || '—'}</p>
+                                </div>
 
-                          <div>
-                            <label>LOGGED</label>
-                            {/*  REMOVE THIS */}
-                            {/* BACKEND: created_at */}
-                            <p>{selectedInitiatedCase.loggedDate}</p>
-                          </div>
+                                <div>
+                                  <label>LOGGED</label>
+                                  <p>{formatDateTime(selectedInitiatedCase.logged_at)}</p>
+                                </div>
 
-                          <div>
-                            <label>SOURCE</label>
-                            {/*  REMOVE THIS */}
-                            {/* BACKEND: source */}
-                            <p>{selectedInitiatedCase.source}</p>
-                          </div>
+                                <div>
+                                  <label>SOURCE</label>
+                                  <p>{GetSourceLabel(selectedInitiatedCase.source)}</p>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <p style={{ color: '#7a8796', fontSize: '13px' }}>Select a case to view details.</p>
+                          )}
                         </div>
+
+                        {selectedInitiatedCase && (
+                          <div className='ConfirmationReturned'>
+                            <div className='ResponseUpdateBox' style={{ marginTop: '0px' }}>
+                              <h6>Field operation status update</h6>
+                              {/* CHANGED (Part 0) — bound to initiatedFieldNotes, not the old shared fieldOperationNotes */}
+                              {selectedInitiatedCase?.field_operation_notes && (
+                                <p style={{ fontSize: '12px', color: '#7a8796', marginTop: '-4px', marginBottom: '10px' }}>
+                                  This is the note logged when the takedown was initiated. You may update it with the latest progress before closing this case.
+                                </p>
+                              )}
+                              <textarea
+                                placeholder="Enter notes on field operation progress..."
+                                value={initiatedFieldNotes}
+                                onChange={(e) => setInitiatedFieldNotes(e.target.value)}
+                              ></textarea>
+                            </div>
+                            <div className='ResponseBtn' style={{ marginTop: '20px' }}>
+                              {/* CHANGED — now passes real case_reference + complaint_id instead of dummy .caseNumber / .id */}
+                              <button onClick={() => handleActionButtonClick('Close Case', selectedInitiatedCase.case_reference, selectedInitiatedCase.complaint_id)}>
+                                Close Case
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-
-                      <div className='ConfirmationReturned'>
-                        <div className='ResponseUpdateBox' style={{ marginTop: '0px' }}>
-                          <h6>Field operation status update</h6>
-                          {/* BACKEND: fieldOperationNotes maps to field_operation_notes column in verification_requests — PATCH to /api/verification-requests/:id */}
-                          <textarea
-                            placeholder="Enter notes on field operation progress..."
-                            value={fieldOperationNotes}
-                            onChange={(e) => setFieldOperationNotes(e.target.value)}
-                          ></textarea>
-                        </div>
-                        <div className='ResponseBtn' style={{ marginTop: '20px' }}>
-                          {/* BACKEND: Close Case -> PATCH /api/complaints/:id (complaint_status: completed) */}
-                          <button onClick={() => handleActionButtonClick('Close Case', selectedInitiatedCase.caseNumber, selectedInitiatedCase.id)}>
-                            Close Case
-                          </button>
-                        </div>
+                    ) : (
+                      <div className="LeaVerifNoDetail" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#7a8796', fontSize: '14px', fontWeight: '500', padding: '40px', textAlign: 'center', border: '1px dashed #cbd5e1', borderRadius: '12px', background: '#f8fafc' }}>
+                        <Inbox size={32} style={{ marginBottom: '8px', color: '#94a3b8' }} />
+                        Select a case from the queue to view details.
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>}
 
@@ -1835,12 +2216,23 @@ function LeaVerificationRequest() {
                           <option value="Cosmetics">Cosmetics</option>
                           <option value="Food">Food</option>
                           <option value="Drugs">Drugs</option>
-                          <option value="Medical Devices">Medical Devices</option>
+                          <option value="Devices">Medical Devices</option>
                         </select>
                       </div>
-                      {/* Change 1 — icon-only Clear Filters button (X icon, no text label) */}
+                      <div className="LeaFilterGroup">
+                        {/* BACKEND: pass filterReasonClosed as reason_closed query param */}
+                        <label>Reason Closed</label>
+                        <select value={filterReasonClosed} onChange={(e) => setFilterReasonClosed(e.target.value)}>
+                          <option value="">All Reasons</option>
+                          <option value="Registered">Registered</option>
+                          <option value="Rejected by FDA">Rejected by FDA</option>
+                          <option value="Completed">Completed</option>
+                        </select>
+                      </div>
+                      {/* CHANGED (Part 1) — hasDismissedFilters now includes filterReasonClosed;
+                           Clear Filters onClick now also resets filterReasonClosed */}
                       {(() => {
-                        const hasDismissedFilters = Boolean(dismissedSearch || filterCategory || filterDateFrom || filterDateTo);
+                        const hasDismissedFilters = Boolean(dismissedSearch || filterCategory || filterReasonClosed || filterDateFrom || filterDateTo);
                         return (
                           <button
                             className="BtnClearFiltersIcon"
@@ -1851,6 +2243,7 @@ function LeaVerificationRequest() {
                             onClick={() => {
                               setDismissedSearch('');
                               setFilterCategory('');
+                              setFilterReasonClosed('');
                               setFilterDateFrom('');
                               setFilterDateTo('');
                             }}
@@ -1865,9 +2258,9 @@ function LeaVerificationRequest() {
                       matching the already-working Saved Drafts pattern. It was previously a third child inside
                       .LeaFilterPanel's flex row, so it got squeezed onto the same line as the Category dropdown
                       instead of wrapping cleanly underneath. */}
-                  {/* BACKEND: GET /api/complaints?status=dismissed&from_date=${filterDateFrom}&to_date=${filterDateTo}&category=${filterCategory} */}
+                  {/* CHANGED (Part 1) — Total Cases now comes from closedTotal (backend total count) */}
                   <div className="DraftsTotalCount" style={{ margin: '4px 2px 16px 20px' }}>
-                    Total Cases: {filteredDismissed.length}
+                    Total Cases: {closedTotal}
                   </div>
 
                   {/* Full-width table */}
@@ -1887,74 +2280,66 @@ function LeaVerificationRequest() {
                         </tr>
                       </thead>
                       <tbody>
-                        {(() => {
-                          const CLOSED_PAGE_SIZE = 25;
-                          const totalClosedPages = Math.ceil(filteredDismissed.length / CLOSED_PAGE_SIZE) || 1;
-                          const safeClosedPage = Math.min(Math.max(1, closedPage), totalClosedPages);
-                          const closedStartIdx = (safeClosedPage - 1) * CLOSED_PAGE_SIZE;
-                          const closedEndIdx = Math.min(closedStartIdx + CLOSED_PAGE_SIZE, filteredDismissed.length);
-                          const paginatedClosedCases = filteredDismissed.slice(closedStartIdx, closedEndIdx);
-
-                          if (paginatedClosedCases.length === 0) {
-                            return (
-                              <tr>
-                                <td colSpan="9" style={{ textAlign: 'center', padding: '24px', color: '#7a8796' }}>
-                                  No closed cases match current filters.
-                                </td>
-                              </tr>
-                            );
-                          }
-
-                          return paginatedClosedCases.map((c) => (
-                            <tr key={c.id}>
-                              <td style={{ fontWeight: '700', color: '#13213C' }}>{c.caseId}</td>
-                              <td style={{ fontWeight: '600' }}>{c.product}</td>
-                              <td>{c.manufacturer}</td>
-                              <td>{c.category}</td>
-                              <td>{c.dateFiled}</td>
-                              <td>{c.dateClosed}</td>
-                              <td>{c.closedBy}</td>
+                        {/* CHANGED (Part 1) — replaced local-paginated dummy data with server-returned closedList */}
+                        {closedLoading && !hasLoadedClosedOnce ? (
+                          <tr>
+                            <td colSpan="9" style={{ textAlign: 'center', padding: '24px', color: '#7a8796' }}>
+                              Loading closed cases...
+                            </td>
+                          </tr>
+                        ) : closedList.length === 0 ? (
+                          <tr>
+                            <td colSpan="9" style={{ textAlign: 'center', padding: '24px', color: '#7a8796' }}>
+                              No closed cases match current filters.
+                            </td>
+                          </tr>
+                        ) : (
+                          closedList.map((c) => (
+                            <tr key={c.complaint_id}>
+                              <td style={{ fontWeight: '700', color: '#13213C' }}>{c.case_reference}</td>
+                              <td style={{ fontWeight: '600' }}>{c.product_title}</td>
+                              <td>{c.manufacturer || '—'}</td>
+                              <td>{c.product_category || '—'}</td>
+                              <td>{formatDateTime(c.date_filed)}</td>
+                              <td>{formatDateTime(c.date_closed)}</td>
+                              <td>{c.closed_by_name || '—'}</td>
                               <td>
-                                <span className={c.reasonClosed === 'Registered' ? 'ReasonRegistered' : 'ReasonRejected'}>
-                                  {c.reasonClosed}
+                                <span className={getReasonClosedClass(c.reason_closed)}>
+                                  {getReasonClosedLabel(c.reason_closed)}
                                 </span>
                               </td>
                               <td>
-                                <button
-                                  className="BtnView"
-                                  onClick={() => setViewCaseModalData(c)}
-                                >
+                                <button className="BtnView" onClick={() => setViewCaseModalData(c)}>
                                   <Eye size={16} />
                                 </button>
                               </td>
                             </tr>
-                          ));
-                        })()}
+                          ))
+                        )}
                       </tbody>
                     </table>
 
+                    {/* CHANGED (Part 1) — pagination now driven by closedTotal/closedPage from backend response */}
                     {(() => {
-                      const CLOSED_PAGE_SIZE = 25;
-                      const totalClosedPages = Math.ceil(filteredDismissed.length / CLOSED_PAGE_SIZE) || 1;
-                      const safeClosedPage = Math.min(Math.max(1, closedPage), totalClosedPages);
-                      const closedStartIdx = (safeClosedPage - 1) * CLOSED_PAGE_SIZE;
-                      const closedEndIdx = Math.min(closedStartIdx + CLOSED_PAGE_SIZE, filteredDismissed.length);
+                      const totalClosedPages = Math.ceil(closedTotal / CLOSED_PAGE_SIZE) || 1;
+                      const startIdx = closedTotal === 0 ? 0 : (closedPage - 1) * CLOSED_PAGE_SIZE + 1;
+                      const endIdx = Math.min(closedPage * CLOSED_PAGE_SIZE, closedTotal);
 
                       return (
                         <div className="Pagination">
-                          <p>Showing {filteredDismissed.length === 0 ? 0 : closedStartIdx + 1}–{closedEndIdx} of {filteredDismissed.length}</p>
+                          <p>Showing {startIdx}–{endIdx} of {closedTotal}</p>
                           <div className="PaginationBtn">
                             <button
                               className="BtnPage"
-                              disabled={safeClosedPage === 1}
-                              onClick={() => setClosedPage(safeClosedPage - 1)}
+                              disabled={closedPage === 1}
+                              onClick={() => setClosedPage(closedPage - 1)}
                             >
                               Previous
                             </button>
                             {Array.from({ length: totalClosedPages }, (_, i) => i + 1).map((p) => (
                               <button
                                 key={p}
-                                className={`BtnPage ${safeClosedPage === p ? 'active' : ''}`}
+                                className={`BtnPage ${closedPage === p ? 'active' : ''}`}
                                 onClick={() => setClosedPage(p)}
                               >
                                 {p}
@@ -1962,8 +2347,8 @@ function LeaVerificationRequest() {
                             ))}
                             <button
                               className="BtnPage"
-                              disabled={safeClosedPage === totalClosedPages}
-                              onClick={() => setClosedPage(safeClosedPage + 1)}
+                              disabled={closedPage === totalClosedPages}
+                              onClick={() => setClosedPage(closedPage + 1)}
                             >
                               Next
                             </button>
@@ -2000,58 +2385,66 @@ function LeaVerificationRequest() {
       )}
 
       {/* NOTE: Read-only modal displaying full case details for dismissed cases */}
+      {/* CHANGED (Part 2) — all fields updated to use real backend field names;
+                             reason_detail replaces the hardcoded ternary strings */}
       {viewCaseModalData && (
         <div className="ModalOverlay">
           <div className="ModalViewButton" style={{ width: '600px' }}>
             <h4 style={{ fontFamily: 'Poppins', fontSize: '20px', fontWeight: '700', color: '#13213C', marginBottom: '16px' }}>
-              Case Details — {viewCaseModalData.caseId}
+              Case Details — {viewCaseModalData.case_reference}
             </h4>
 
-            {/* BACKEND: GET /api/complaints/:id for full case details */}
             <div className="CaseInfoGrid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', borderTop: '1px solid #EDEDED', borderBottom: '1px solid #EDEDED', padding: '16px 0', margin: '16px 0' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#7a8796', marginBottom: '4px' }}>Product Name</label>
-                <p style={{ fontWeight: '600', margin: 0 }}>{viewCaseModalData.product}</p>
+                <p style={{ fontWeight: '600', margin: 0 }}>{viewCaseModalData.product_title}</p>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#7a8796', marginBottom: '4px' }}>Manufacturer</label>
-                <p style={{ fontWeight: '600', margin: 0 }}>{viewCaseModalData.manufacturer}</p>
+                <p style={{ fontWeight: '600', margin: 0 }}>{viewCaseModalData.manufacturer || '—'}</p>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#7a8796', marginBottom: '4px' }}>Category</label>
-                <p style={{ fontWeight: '600', margin: 0 }}>{viewCaseModalData.category}</p>
+                <p style={{ fontWeight: '600', margin: 0 }}>{viewCaseModalData.product_category || '—'}</p>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#7a8796', marginBottom: '4px' }}>Closed By</label>
-                <p style={{ fontWeight: '600', margin: 0 }}>{viewCaseModalData.closedBy}</p>
+                <p style={{ fontWeight: '600', margin: 0 }}>{viewCaseModalData.closed_by_name || '—'}</p>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#7a8796', marginBottom: '4px' }}>Date Filed</label>
-                <p style={{ fontWeight: '600', margin: 0 }}>{viewCaseModalData.dateFiled}</p>
+                <p style={{ fontWeight: '600', margin: 0 }}>{formatDateTime(viewCaseModalData.date_filed)}</p>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: '#7a8796', marginBottom: '4px' }}>Date Closed</label>
-                <p style={{ fontWeight: '600', margin: 0 }}>{viewCaseModalData.dateClosed}</p>
+                <p style={{ fontWeight: '600', margin: 0 }}>{formatDateTime(viewCaseModalData.date_closed)}</p>
               </div>
             </div>
 
             <div className="RejectionReasonBox" style={{
-              backgroundColor: viewCaseModalData.reasonClosed === 'Registered' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(249, 115, 22, 0.1)',
-              borderColor: viewCaseModalData.reasonClosed === 'Registered' ? '#10b981' : '#f97316',
+              backgroundColor:
+                viewCaseModalData.reason_closed === 'registered' ? 'rgba(16, 185, 129, 0.1)' :
+                  viewCaseModalData.reason_closed === 'completed' ? 'rgba(37, 99, 235, 0.1)' :
+                    'rgba(249, 115, 22, 0.1)',
+              borderColor:
+                viewCaseModalData.reason_closed === 'registered' ? '#10b981' :
+                  viewCaseModalData.reason_closed === 'completed' ? '#2563eb' :
+                    '#f97316',
               margin: '0 0 20px 0'
             }}>
               <label style={{
                 display: 'block',
                 fontSize: '11px',
                 textTransform: 'uppercase',
-                color: viewCaseModalData.reasonClosed === 'Registered' ? '#059669' : '#ea580c',
+                color:
+                  viewCaseModalData.reason_closed === 'registered' ? '#059669' :
+                    viewCaseModalData.reason_closed === 'completed' ? '#1d4ed8' :
+                      '#ea580c',
                 fontWeight: '600',
                 marginBottom: '6px'
               }}>Reason Closed</label>
               <p className="ReasonDetail" style={{ color: '#030303', fontWeight: '500', margin: 0 }}>
-                {viewCaseModalData.reasonClosed === 'Registered'
-                  ? 'Product confirmed registered with FDA registry'
-                  : 'Rejected by FDA verifier — case acknowledged and dismissed'}
+                {viewCaseModalData.reason_detail || '—'}
               </p>
             </div>
 
@@ -2084,7 +2477,13 @@ function LeaVerificationRequest() {
             </div>
 
             <div className="LeaVerifDocModalBody">
-              {(docPreviewModal.mime_type?.startsWith('image/') || docPreviewModal.mime_type === 'application/pdf') ? (
+              {(docPreviewModal.mime_type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(docPreviewModal.file_name)) ? (
+                <img
+                  src={docPreviewUrl}
+                  alt={docPreviewModal.file_name}
+                  className="LeaVerifDocImagePreview"
+                />
+              ) : (docPreviewModal.mime_type === 'application/pdf' || /\.pdf$/i.test(docPreviewModal.file_name)) ? (
                 docPreviewLoading ? (
                   <div className="LeaVerifDocPlaceholderPreview">
                     <p className="LeaVerifPreviewText">Loading preview&hellip;</p>
@@ -2095,18 +2494,31 @@ function LeaVerificationRequest() {
                     <p className="LeaVerifPreviewTitle">Preview unavailable</p>
                     <p className="LeaVerifPreviewText">Try downloading the file instead.</p>
                   </div>
-                ) : docPreviewModal.mime_type.startsWith('image/') ? (
-                  <img
-                    src={docPreviewUrl}
-                    alt={docPreviewModal.file_name}
-                    className="LeaVerifDocImagePreview"
-                  />
                 ) : (
                   <iframe
                     src={docPreviewUrl}
                     title={docPreviewModal.file_name}
                     className="LeaVerifDocPdfPreview"
                   />
+                )
+              ) : (docPreviewModal.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || /\.docx$/i.test(docPreviewModal.file_name)) ? (
+                docxLoading ? (
+                  <div className="LeaVerifDocPlaceholderPreview">
+                    <p className="LeaVerifPreviewText">Converting Word document for preview&hellip;</p>
+                  </div>
+                ) : docxError ? (
+                  <div className="LeaVerifDocPlaceholderPreview">
+                    <FileText size={48} className="LeaVerifDocPreviewIcon" />
+                    <p className="LeaVerifPreviewTitle">Could not render Word preview</p>
+                    <p className="LeaVerifPreviewText">Try downloading the document to view its full contents.</p>
+                  </div>
+                ) : (
+                  <div className="LeaVerifDocDocxPreview">
+                    <div
+                      className="LeaVerifDocxContent"
+                      dangerouslySetInnerHTML={{ __html: docxHtml }}
+                    />
+                  </div>
                 )
               ) : (
                 <div className="LeaVerifDocPlaceholderPreview">

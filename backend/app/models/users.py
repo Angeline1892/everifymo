@@ -38,6 +38,7 @@ class User(Base):
     is_locked = Column(Boolean, nullable=False, default=False, server_default=text("false"))
     failed_login_attempts = Column(Integer, nullable=False, default=0, server_default=text("0"))  
     failed_otp_attempts = Column(Integer, nullable=False, default=0, server_default=text("0"))
+    locked_until = Column(DateTime(timezone=True), nullable=True, default=None)
     force_password_change = Column(Boolean, nullable=False, default=True, server_default=text("true"))
     last_login = Column(DateTime(timezone=True), nullable=True)
 

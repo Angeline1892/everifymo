@@ -13,6 +13,7 @@ from app.core.config import settings
 from app.core.dependencies import get_current_user
 from app.models.users import User
 
+
 router = APIRouter(prefix="/auth/token", tags=["auth-token"])
 
 
@@ -36,6 +37,19 @@ def refresh_token(payload: dict, db: Session = Depends(get_db), request: Request
     if session.expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=401, detail="Refresh token expired")
 
+    # Ashanti code starts here
+    # A revoked/expired UserSession row isn't the only way access should stop —
+    # the account itself may have been suspended or locked since this session
+    # was issued. Without this check, a suspended/locked user's refresh token
+    # would keep minting fresh access tokens forever, independent of whatever
+    # dependencies.py checks on the access-token side.
+    user = db.query(User).filter(User.user_id == session.user_id).first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="Account has been suspended.")
+    if user.is_locked:
+        raise HTTPException(status_code=401, detail="Account is locked.")
+    # Ashanti code ends here
+
     # rotate refresh token
     new_refresh = generate_refresh_token()
     session.refresh_token_hash = hash_refresh_token(new_refresh)
@@ -43,13 +57,11 @@ def refresh_token(payload: dict, db: Session = Depends(get_db), request: Request
     session.expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     db.commit()
 
-    access_token = create_desktop_access_token({"sub": str(session.user_id)})
+    access_token = create_desktop_access_token({"sub": str(session.user_id), "role": user.role})
 
     return {"access_token": access_token, "token_type": "bearer", "refresh_token": new_refresh}
 
 
-from app.core.dependencies import get_current_user
-from app.models.users import User
 
 @router.post("/revoke")
 def revoke_token(

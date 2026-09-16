@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, text, Text, Date, DECIMAL, ForeignKey, TIMESTAMP, CheckConstraint
+from sqlalchemy import Column, String, text, Text, Date, DECIMAL, ForeignKey, TIMESTAMP, CheckConstraint, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
@@ -54,6 +54,15 @@ class Complaint(Base):
         UUID(as_uuid=True), 
         ForeignKey("walkin_complainants.complainant_id", ondelete="SET NULL"), 
         nullable=True
+    )
+
+    # field operation notes should be here since it is outside verification and is part of a commplaint 
+    field_operation_notes = Column(Text, nullable=True)
+    field_operation_logged_at = Column(DateTime(timezone=True), nullable=True)
+    field_operation_logged_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        nullable=True,
     )
 
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())

@@ -8,7 +8,7 @@ class RegisteredProductCreate(BaseModel):
     product_name: str
     brand_name: Optional[str] = None
     registration_number: str
-    product_category: str          # required, tugma sa nullable=False
+    product_category: Optional[str] = "Cosmetics"
     date_registered: Optional[date] = None
     expiry_date: Optional[date] = None
 
@@ -16,7 +16,7 @@ class RegisteredProductUpdate(BaseModel):
     product_name: str
     brand_name: Optional[str] = None
     registration_number: str
-    product_category: str
+    product_category: Optional[str] = "Cosmetics"
     date_registered: Optional[date] = None
     expiry_date: Optional[date] = None
 

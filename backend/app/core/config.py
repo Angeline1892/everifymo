@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     # add these fields to your existing Settings class
     OTP_LENGTH: int = 6
     OTP_EXPIRE_MINUTES: int = 5
-    OTP_MAX_ATTEMPTS: int = 5
+    OTP_MAX_ATTEMPTS: int = 3
     RESET_TOKEN_EXPIRE_MINUTES: int = 15
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 180
@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     OTP_EXTENSION_MIN_EXPIRE: int = 5
     MAIL_EXTENSION_FROM: str = "noreply@icmda.gov.ph"
 
+    # uploaded screenshot for extension
+    UPLOAD_DIR: str = "uploaded_complaints"
+    
     class Config:
         env_file = ".env"
 

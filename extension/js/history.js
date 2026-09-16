@@ -1,8 +1,11 @@
 // history.js
+import { whenSessionReady, isUserLoggedIn, getToken } from "../scripts/session.js";
+import { apiGetComplaints, apiGetStatus, getVerificationHistory } from "../utils/api.js";
+
 const COMPLAINT_STATUS_LABELS = { completed: 'COMPLETED', dismissed: 'DISMISSED' };
 const VERIFICATION_STATUS_LABELS = { registered: 'REGISTERED', suspicious: 'SUSPICIOUS', unregistered: 'UNREGISTERED' };
-const COMPLAINT_ICONS = { completed: 'check_green_icon.png', dismissed: 'x_icon.png' };
-const VERIFICATION_ICONS = { registered: 'check_green_icon.png', suspicious: 'sus_icon.png', unregistered: 'x_icon.png' };
+const COMPLAINT_ICONS = { completed: 'check_green_icon.png', dismissed: 'unregistered_icon.png' };
+const VERIFICATION_ICONS = { registered: 'check_green_icon.png', suspicious: 'suspicious_icon.png', unregistered: 'unregistered_icon.png' };
 
 let currentHistoryTab = 'complaints';
 
@@ -67,8 +70,17 @@ async function renderComplaintsHistoryList() {
   `).join('');
 }
 
-function renderVerificationHistoryList() {
-  const items = getVerificationHistory();
+async function renderVerificationHistoryList() {
+  const response = await getVerificationHistory(getToken());
+
+  const items = response.map(v => ({
+      id: v.history_id,
+      status: v.verification_result,
+      productName: v.product_title,
+      platform: v.platform,
+      time: timeFormat(v.checked_at)   
+  }));
+
   const counterEl = document.getElementById('resolved-counter');
   if (counterEl) counterEl.textContent = ''; // this verification tab never shows a resolved counter
 
@@ -94,7 +106,7 @@ async function renderHistoryList() {
 
   listEl.innerHTML = currentHistoryTab === 'complaints'
     ? await renderComplaintsHistoryList()
-    : renderVerificationHistoryList();
+    : await renderVerificationHistoryList();
 
   // this wire up "See Details" toggles for complaints (verification tab has no notes)
   document.querySelectorAll('[data-toggle-note]').forEach(link => {
@@ -131,7 +143,7 @@ async function renderHistoryPage() {
   }
 
   const complaints = await apiGetComplaints(getToken());
-  const verification = getVerificationHistory();
+  const verification = await getVerificationHistory(getToken());
   const hasNoDataAtAll = complaints.length === 0 && verification.length === 0;
 
   if (hasNoDataAtAll) {

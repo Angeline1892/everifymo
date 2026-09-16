@@ -25,7 +25,7 @@
     <div class="notice-banner">
       <div>
         <p class="notice-title" id="auth-notice-title">Signing in is optional</p>
-        <p class="notice-text" id="auth-notice-text">You can still verify products and submit complaints as a guest. Sign in or Sign up to view your verification history, complaints, and report status.</p>
+        <p class="notice-text" id="auth-notice-text">You can still verify products as a guest. Sign in or Sign up to file complaints, and to view your verification history, complaints, and report status.</p>
       </div>
     </div>
 
@@ -151,10 +151,24 @@
       </div>
 
       <!-- Change username if late verification and email already taken-->
-      <div id="otp-username-fix-field" hidden>
-        <input type="text" id="otp-new-username" placeholder="Choose a new username" />
-        <p id="otp-username-fix-error" class="error-text"></p>
-        <button id="otp-username-fix-button">Update Username</button>
+      <div class="username-fix-banner" id="otp-username-fix-field" hidden>
+        <div class="username-fix-header">
+          <p class="username-fix-title">Username unavailable</p>
+          <p class="username-fix-text">Someone else claimed this username while your verification was pending. Choose a new one to continue.</p>
+        </div>
+
+        <div class="field username-fix-input-field">
+          <div class="field-row">
+            <label class="field-label" for="otp-new-username">NEW USERNAME</label>
+          </div>
+          <div class="input-wrap">
+            <img src="../assets/images/username_icon.png" class="icon-placeholder-username" alt="Username Icon">
+            <input type="text" id="otp-new-username" class="auth-input username-input" placeholder="Choose a new username" />
+          </div>
+          <div class="field-error" id="otp-username-fix-error" aria-live="polite"></div>
+        </div>
+
+        <button type="button" class="btn-username-fix" id="otp-username-fix-button">Update Username</button>
       </div>
 
       <div class="field" id="otp-field" hidden>
@@ -220,8 +234,8 @@
     </button>
   </main>
 
-  <script src="../utils/api.js"></script>
-  <script src="../scripts/session.js"></script>
-  <script src="../js/auth.js"></script>
+  <script type="module" src="../utils/api.js"></script>
+  <script type="module" src="../scripts/session.js"></script>
+  <script type="module" src="../js/auth.js"></script>
 </body>
 </html>

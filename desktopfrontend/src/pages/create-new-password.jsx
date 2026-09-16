@@ -2,11 +2,36 @@
 import { useState } from 'react';
 //import { useNavigate } from 'react-router-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../utils/apiConfig';
+
+const PERSONNEL_ROLES = ['fda_personnel', 'lea_personnel'];
+
+function getApprovalMessage(role) {
+  switch (role) {
+    case 'national_admin':
+      return "Your account is now awaiting approval from a fellow National Admin before you can log in.";
+    case 'fda_admin':
+      return "Your account is now awaiting approval from a fellow FDA Admin or the National Admin before you can log in.";
+    case 'lea_admin':
+      return "Your account is now awaiting approval from a fellow LEA-CIDG Admin or the National Admin before you can log in.";
+    case 'fda_personnel':
+      return "Your account is now awaiting approval from your FDA Agency Admin before you can log in.";
+    case 'lea_personnel':
+      return "Your account is now awaiting approval from your LEA-CIDG Agency Admin before you can log in.";
+    default:
+      return "Your account is now awaiting approval before you can log in.";
+  }
+}
 
 function CreateNewPassword() {
   const navigate = useNavigate();
   const location = useLocation(); 
 
+
+  // add near the top, after location is defined:
+  const inviteToken = location.state?.token;
+  const role = location.state?.role;
+  const isPersonnel = PERSONNEL_ROLES.includes(role);
   const [form, setForm] = useState({
     newPassword: '',
     confirmPassword: '',
@@ -25,6 +50,12 @@ function CreateNewPassword() {
     special: /[^A-Za-z0-9]/.test(form.newPassword),
   };
   const allChecksPassed = Object.values(checks).every(Boolean);
+
+  function tabForRole(role) {
+  if (role === 'national_admin') return 'national-admin';
+  if (role === 'fda_admin' || role === 'lea_admin') return 'interagency-admin';
+  return 'personnel'; // fda_personnel, lea_personnel, or unknown -> personnel
+  }
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -59,14 +90,18 @@ function CreateNewPassword() {
     setSubmitting(true);
 
     try {
-    const token = location.state?.token; // make sure token is passed in via navigate() state
-
-    const response = await fetch('http://127.0.0.1:8000/auth/password/create-from-invite', {
+    // Posts to the generalized /registration/complete (password-only,
+    // profile fields already collected by the admin at invite time) —
+    // NOT the old /auth/password/create-from-invite, which is
+    // superadmin-only leftover logic (mislabels audit entries and sets
+    // is_active=False regardless of actual role).
+    const response = await fetch(`${API_BASE_URL}/registration/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        token: token,
-        new_password: form.newPassword,
+        invite_token: inviteToken,
+        password: form.newPassword,
+        confirm_password: form.confirmPassword,
       }),
     });
 
@@ -87,7 +122,27 @@ function CreateNewPassword() {
     }
 
   function handleGoToLogin() {
-    navigate('/superadmin-login');
+    navigate(`/universal-login?tab=${tabForRole(role)}`);
+  }
+
+
+  // add this block BEFORE the `if (saved)` block:
+  if (!inviteToken) {
+    return (
+      <>
+        <style>{styles}</style>
+        <div className="CNPPageContainer">
+          <div className="CNPCard">
+            <div className="CNPSuccessScreen">
+              <h2 className="CNPSuccessTitle">Link Not Recognized</h2>
+              <p className="CNPSuccessDesc">
+                We couldn't find your invitation details. Please use the link from your invitation email.
+              </p>
+            </div>
+          </div>
+        </div>
+      </>
+    );
   }
 
   if (saved) {
@@ -100,7 +155,14 @@ function CreateNewPassword() {
               <div className="CNPSuccessIcon">🔐</div>
               <h2 className="CNPSuccessTitle">Password Created!</h2>
               <p className="CNPSuccessDesc">
-                Your Superadmin password has been created successfully. Your account is now awaiting approval from a fellow Superadmin before you can log in. You'll receive an email once it's activated.
+                {/* Backend now branches by role: personnel go straight to
+                    active on registration completion (their info was
+                    already fully vetted by the Agency Admin at invite
+                    time), while admin/national_admin still require a
+                    fellow admin/national admin to activate them. */}
+                {isPersonnel
+                  ? "Your account is now active. You can log in right away."
+                  : getApprovalMessage(role)}
               </p>
               <button className="CNPSuccessBtn" onClick={handleGoToLogin}>
                 Back to Login
@@ -118,9 +180,9 @@ function CreateNewPassword() {
       <div className="CNPPageContainer">
         <div className="CNPCard">
           <div className="CNPCardHeader">
-            <h1 className="CNPCardTitle">Create Your Superadmin Password</h1>
+            <h1 className="CNPCardTitle">Create Your Password</h1>
             <p className="CNPCardSubtitle">
-              Welcome! Please set a secure password for your Superadmin personnel account before logging in.
+              Welcome! Please set a secure password for your account before logging in.
             </p>
           </div>
 
@@ -231,30 +293,31 @@ const styles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #fdfdfd;
+    background: #F1F5F9;
     padding: 32px 16px;
     box-sizing: border-box;
     font-family: 'Inter', sans-serif;
+    overflow-y: auto;
   }
 
   .CNPCard {
     width: 100%;
     max-width: 460px;
     background: #ffffff;
-    border-radius: 20px;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
     overflow: hidden;
     animation: CNPSlideUp 0.35s ease;
   }
 
   @keyframes CNPSlideUp {
-    from { opacity: 0; transform: translateY(24px); }
+    from { opacity: 0; transform: translateY(20px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
   .CNPCardHeader {
     background: linear-gradient(135deg, #1E293B 0%, #0f172a 100%);
-    padding: 32px 32px 28px;
+    padding: 28px 28px 24px;
     border-bottom: 4px solid #0D9488;
     text-align: center;
   }
@@ -263,8 +326,9 @@ const styles = `
     font-size: 20px;
     font-weight: 700;
     color: #ffffff;
-    margin: 0 0 8px;
+    margin: 0 0 6px;
     font-family: 'Poppins', sans-serif;
+    letter-spacing: -0.2px;
   }
 
   .CNPCardSubtitle {
@@ -275,10 +339,10 @@ const styles = `
   }
 
   .CNPForm {
-    padding: 28px 32px 36px;
+    padding: 28px 30px 32px;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 16px;
   }
 
   .CNPFormGroup {
@@ -290,7 +354,7 @@ const styles = `
   .CNPLabel {
     font-size: 13px;
     font-weight: 600;
-    color: #374151;
+    color: #334155;
   }
 
   .CNPRequired {
@@ -305,12 +369,13 @@ const styles = `
 
   .CNPInput {
     width: 100%;
+    height: 44px;
     padding: 11px 44px 11px 14px;
     border: 1.5px solid #e2e8f0;
-    border-radius: 9px;
+    border-radius: 8px;
     font-size: 14px;
     color: #111827;
-    background: #f9fafb;
+    background: #ffffff;
     outline: none;
     transition: all 0.2s ease;
     box-sizing: border-box;
@@ -320,7 +385,6 @@ const styles = `
   .CNPInput:focus {
     border-color: #0D9488;
     box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
-    background: #fff;
   }
 
   .cnp-input-error {
@@ -336,8 +400,6 @@ const styles = `
     cursor: pointer;
     font-size: 12px;
     font-weight: 600;
-    line-height: 1;
-    padding: 4px 6px;
     color: #64748b;
     transition: color 0.15s ease;
     text-transform: uppercase;
@@ -361,14 +423,14 @@ const styles = `
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
-    padding: 14px 16px;
+    padding: 12px 14px;
   }
 
   .CNPReqTitle {
     font-size: 12px;
     font-weight: 600;
     color: #475569;
-    margin: 0 0 10px;
+    margin: 0 0 8px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -383,35 +445,35 @@ const styles = `
   }
 
   .CNPReqItem {
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 500;
     transition: color 0.2s ease;
   }
 
-  .req-met { color: #166534; }
+  .req-met { color: #16a34a; }
   .req-unmet { color: #94a3b8; }
 
   .CNPSubmitBtn {
-    margin-top: 4px;
+    margin-top: 6px;
     width: 100%;
-    padding: 14px;
+    padding: 12px;
     background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
     color: #ffffff;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.22s ease;
-    box-shadow: 0 6px 20px rgba(13, 148, 136, 0.4);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3);
     font-family: 'Poppins', sans-serif;
     letter-spacing: 0.3px;
   }
 
   .CNPSubmitBtn:hover {
     background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(13, 148, 136, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(13, 148, 136, 0.4);
   }
 
   .CNPSubmitBtn:active {
@@ -423,12 +485,12 @@ const styles = `
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 56px 32px;
+    padding: 48px 32px;
     gap: 16px;
   }
 
   .CNPSuccessIcon {
-    font-size: 64px;
+    font-size: 56px;
     animation: CNPPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
@@ -450,12 +512,12 @@ const styles = `
     color: #64748b;
     line-height: 1.7;
     margin: 0;
-    max-width: 340px;
+    max-width: 360px;
   }
 
   .CNPSuccessBtn {
     margin-top: 8px;
-    padding: 12px 32px;
+    padding: 12px 28px;
     background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
     color: #fff;
     font-size: 14px;
@@ -463,30 +525,31 @@ const styles = `
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.22s ease;
-    box-shadow: 0 6px 18px rgba(13, 148, 136, 0.35);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3);
     font-family: 'Poppins', sans-serif;
   }
 
   .CNPSuccessBtn:hover {
     background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 22px rgba(13, 148, 136, 0.45);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(13, 148, 136, 0.4);
   }
 
   .CNPErrorMsgContainer {
-    background-color: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.5);
+    background-color: #fef2f2;
+    border: 1px solid #fca5a5;
     padding: 10px 14px;
     border-radius: 8px;
-    margin-top: 10px;
+    margin-top: 4px;
     text-align: center;
   }
 
   .CNPErrorMsg {
-    color: #ef4444 !important;
+    color: #dc2626 !important;
     margin: 0;
     font-size: 13px;
+    font-weight: 500;
     text-align: center;
     line-height: 1.5;
   }

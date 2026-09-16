@@ -9,7 +9,9 @@ class CreateComplaint(BaseModel):
     product_url: HttpUrl
     consumer_description: str
     platform: str
-    verification_result: str = "pending...(nlp not attached yet)"
+    verification_result: str 
+    attachment_data: Optional[str] = None
+    attachment_name: Optional[str] = None
 
 class ToPrintComplaint(BaseModel):
     model_config = ConfigDict(from_attribute=True)

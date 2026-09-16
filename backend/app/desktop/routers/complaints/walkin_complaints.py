@@ -1,6 +1,9 @@
+# backend/app/desktop/routers/complaints/walkin_complaints.py
 from uuid import UUID
 from datetime import date, datetime, timezone
-from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException, Request
+from app.core.audit import write_audit_log, get_user_region_code
+from app.core.constants import AuditAction
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -35,10 +38,11 @@ direct_complaint_router = APIRouter(prefix="/complaints/walkin", tags=["Walk-in 
 @draft_submit_router.post("/{draft_id}/submit", response_model=ComplaintResponse)
 def submit_draft(
     draft_id: UUID,
+    request: Request,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    new_complaint = submit_walkin_draft(db, draft_id, current_user)
+    new_complaint = submit_walkin_draft(db, draft_id, current_user, request)
     return new_complaint
 
 
@@ -51,6 +55,7 @@ def submit_draft(
     # POST /complaints/walkin/
 @direct_complaint_router.post("/", response_model=ComplaintResponse)
 def create_complaint_direct(
+    request: Request,
     full_name: str | None = Form(None),
     contact_number: str | None = Form(None),
     email: str | None = Form(None),
@@ -66,7 +71,7 @@ def create_complaint_direct(
     nature_of_complaint: str = Form(...),
 
     files: list[UploadFile] = File(default=[]),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db), 
     current_user=Depends(get_current_user),
 ):
     complainant_fields = {
@@ -88,7 +93,7 @@ def create_complaint_direct(
     }
 
     new_complaint = create_walkin_complaint_direct(
-        db, current_user, complainant_fields, complaint_fields, files
+        db, current_user, complainant_fields, complaint_fields, files, request
     )
     return new_complaint
 
@@ -181,6 +186,7 @@ def list_walkin_complaints(
 @direct_complaint_router.put("/{complaint_id}", response_model=ComplaintResponse)
 def update_complaint_direct(
     complaint_id: UUID,
+    request: Request,
     full_name: str | None = Form(None),
     contact_number: str | None = Form(None),
     email: str | None = Form(None),
@@ -219,7 +225,7 @@ def update_complaint_direct(
     }
 
     updated_complaint = update_walkin_complaint_direct(
-        db, current_user, complaint_id, complainant_fields, complaint_fields, files, remove_attachment_ids
+        db, current_user, complaint_id, complainant_fields, complaint_fields, files, remove_attachment_ids, request
     )
     return updated_complaint
 
@@ -234,6 +240,7 @@ def update_complaint_direct(
 @direct_complaint_router.delete("/{complaint_id}")
 def delete_walkin_complaint(
     complaint_id: UUID,
+    request: Request,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -256,7 +263,25 @@ def delete_walkin_complaint(
     complaint.deleted_at = datetime.now(timezone.utc)
     complaint.deleted_by = current_user.user_id
 
+    audit_region_code = get_user_region_code(db, current_user)
+    audit_user_id = current_user.user_id
+    audit_user_role = current_user.role
     db.commit()
+
+    write_audit_log(
+        db,
+        user=None,
+        user_id_override=audit_user_id,
+        user_role_override=audit_user_role,
+        action=AuditAction.DELETE_COMPLAINT_LOG,
+        target_table="complaints",
+        target_id=complaint.complaint_id,
+        target_reference=complaint.case_reference,
+        old_value={"status": complaint.status},
+        new_value={"status": "deleted"},
+        request=request,
+        region_code=audit_region_code,
+    )
 
     return {"message": "Complaint deleted successfully."}
 

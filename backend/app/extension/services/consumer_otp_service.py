@@ -56,6 +56,12 @@ def verify_otp(db: Session, consumer_id, submitted_code: str, purpose: str) -> N
     db.commit()
 
 def create_reset_token(db: Session, consumer_id) -> str:
+    db.query(ConsumerOTPToken).filter(
+        ConsumerOTPToken.consumer_id == consumer_id,
+        ConsumerOTPToken.purpose == "password_reset_token",
+        ConsumerOTPToken.is_used == False,
+    ).update({"is_used": True})
+    
     token = secrets.token_urlsafe(32)
     reset_row = ConsumerOTPToken(
         consumer_id=consumer_id,

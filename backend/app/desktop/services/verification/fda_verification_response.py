@@ -13,17 +13,24 @@ from app.models.verification_requests import VerificationRequest
 from app.models.complaints import Complaint
 from app.models.fda_verification_drafts import FdaVerificationDraft
 from app.core.complaint_status import transition_complaint_status
-from app.desktop.schemas.verification.verification import (
-    FdaVerificationSubmitRequest,
-    FdaVerificationStatusChoice,
-    FdaVerificationRejectRequest,
+from app.desktop.services.notifications.notification_service import (
+    notify_lea_fda_responded,  
+    notify_lea_fda_rejected,
 )
 
 from app.models.users import User
 from app.models.shared_files import SharedFile
 from app.core.user_display import format_officer_display_name
 from app.desktop.schemas.verification.verification import FdaVerificationRequestDetailResponse
+from app.desktop.schemas.verification.verification import (
+    FdaVerificationSubmitRequest,
+    FdaVerificationStatusChoice,
+    FdaVerificationRejectRequest,
+    FdaVerificationRequestDetailResponse,  # merge with the existing one below, don't duplicate
+)
 from app.desktop.schemas.complaints.complaints import SharedFileResponse
+
+
 
 
 # Shared by both submit and reject below — loads a VerificationRequest
@@ -115,6 +122,10 @@ def submit_fda_verification_response(
         FdaVerificationDraft.verification_request_id == request_id
     ).delete()
 
+
+    # ADDED — notify LEA of the outcome, before commit, same transaction
+    notify_lea_fda_responded(db, complaint)
+
     # One commit at the end — if anything above raised, nothing here
     # has been written yet, so verification_requests and complaints
     # never end up out of sync with each other.
@@ -184,6 +195,8 @@ def reject_fda_verification_response(
     db.query(FdaVerificationDraft).filter(
         FdaVerificationDraft.verification_request_id == request_id
     ).delete()
+
+    notify_lea_fda_rejected(db, complaint, verification_request)  # ADDED for notification to LEA personnel that the verification request has been rejected
 
     db.commit()
     db.refresh(verification_request)

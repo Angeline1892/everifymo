@@ -1,110 +1,128 @@
-// ============================================================
-// DEEP LINK STATUS PAGE
-// This page handles three invalid deep link states:
-// 1. Invitation link expired
-// 2. Invalid invitation link
-// 3. Registration already used/completed ***CHINANGE KO YUNG NAMING NG STATUS INTO "used" PARA HINDI MAGKA-CONFLICT SA "completed" STATUS NA GINAGAMIT SA BACKEND
-
-import { useState } from 'react'
-import { useLocation } from 'react-router-dom'
-import {ClockAlert, Link, CircleCheckBig} from 'lucide-react'
+//desktopfrontend/src/pages/emailtemplates/invitation-status.jsx
+import { useState, useEffect } from 'react'   
+import { useLocation, useNavigate } from 'react-router-dom'
+import { ClockAlert, Link, CircleCheckBig } from 'lucide-react'
+import { API_BASE_URL } from '../../utils/apiConfig'
 
 function DeepLinkStatus() {
     const location = useLocation()
+    const navigate = useNavigate()
 
-   {/*CHANGE LANG TO PARA MAKITA YUNG STATUS
-    const [linkStatus, setLinkStatus] = useState('expired')    
-    const [linkStatus, setLinkStatus] = useState('invalid')    
-    const [linkStatus, setLinkStatus] = useState('used')
-    */}
-    const { status: linkStatus, invite_token } = location.state || {}
+    const { status: linkStatus, invite_token, resend_already_requested } = location.state || {}
+    
+    useEffect(() => {
+        if (linkStatus === 'valid') {
+            navigate('/create-new-password', { state: location.state, replace: true })
+        }
+    }, [linkStatus])
 
-    const [requested, setRequested] = useState(false)
-    // content config for each status
+    const [requested, setRequested] = useState(!!resend_already_requested)
+    const [resendNotice, setResendNotice] = useState(
+        resend_already_requested ? 'A resend has already been requested for this invitation.' : ''
+    )
+    const [resendSending, setResendSending] = useState(false)
+
+    function handleRequestResend() {
+        setResendSending(true)
+        fetch(`${API_BASE_URL}/registration/request-resend`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ invite_token }),
+        })
+            .then(async (res) => {
+                const data = await res.json().catch(() => ({}))
+                setResendSending(false)
+
+                if (res.status === 409) {
+                    // Already requested (or otherwise already handled) — still show as "sent" so
+                    // the user isn't stuck clicking a button that will never succeed.
+                    setRequested(true)
+                    setResendNotice(data.detail || 'A resend has already been requested for this invitation.')
+                    return
+                }
+
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Request failed')
+                }
+
+                setRequested(true)
+                setResendNotice('Your request has been sent. Please wait for your administrator.')
+            })
+            .catch(() => {
+                setResendSending(false)
+                alert('Something went wrong. Please contact your administrator directly.')
+            })
+    }
+
     const statusContent = {
         expired: {
-        icon: <ClockAlert size={32} color="#D97706" />,
-        iconBg: '#FEF3C7',
-        title: 'Invitation Link Expired',
-        message: 'Your registration link has expired. Invitation links are only valid for a limited time. Please request a new invitation from your administrator.',
-        showButton: !requested,
-        buttonLabel: 'Request New Invitation',
-        buttonAction: () => {
-            fetch('http://localhost:8000/registration/request-resend', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ invite_token }),
-            })
-                .then((res) => {
-                    if (!res.ok) throw new Error('Request failed')
-                    return res.json()
-                })
-                .then(() => setRequested(true))
-                .catch(() => alert('Something went wrong. Please contact your administrator directly.'))
+            icon: <ClockAlert size={32} color="#0D9488" />,
+            iconBg: '#CCFBF1',
+            title: 'Invitation Link Expired',
+            message: 'Your registration link has expired. Invitation links are only valid for a limited time. Please request a new invitation from your administrator.',
+            showButton: !requested,
+            buttonLabel: resendSending ? 'Sending Request…' : 'Request New Invitation',
+            buttonAction: handleRequestResend,
+            accentColor: '#0D9488',
         },
-        accentColor: '#D97706',
-    },
         invalid: {
-            icon: <Link size={32} color="#B91C1C" />,
+            icon: <Link size={32} color="#DC2626" />,
             iconBg: '#FEE2E2',
             title: 'Invalid Invitation Link',
             message: 'This invitation link is not recognized or may have already been used. If you believe this is an error, please contact your administrator.',
             showButton: false,
-            accentColor: '#B91C1C',
+            accentColor: '#DC2626',
         },
         used: {
             icon: <CircleCheckBig size={32} color="#0D9488" />,
-            iconBg: '#D1FAE5',
+            iconBg: '#CCFBF1',
             title: 'Registration Already Complete',
             message: 'Your registration has already been completed. You do not need to register again. Please wait for your administrator to activate your account, or login if your account is already active.',
-            showButton: false,
+            showButton: true,
+            buttonLabel: 'Go to Login',
+            buttonAction: () => navigate('/universal-login'),
             accentColor: '#0D9488',
         },
     }
 
     const content = statusContent[linkStatus]
 
-    if (!content) return <p>Something went wrong.</p>   // safety fallback
+    if (linkStatus === 'valid') return null   // NEW: brief blank frame while the redirect above fires
+    if (!content) return <p>Something went wrong.</p>
 
     return (
         <>
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
 
-                :root {
-                    --font-headings: 'Poppins', sans-serif;
-                    --font-body: 'Inter', sans-serif;
-                }
-
-                body, input, textarea, select, button {
-                    font-family: var(--font-body);
-                }
-
-                h1, h2, h3, h4, h5, h6 {
-                    font-family: var(--font-headings);
-                    font-weight: 600;
-                }
-
                 .DeepLinkPage {
                     min-height: 100vh;
-                    background-color: #F9FAFB;
+                    background-color: #F1F5F9;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
-                    padding: 24px;
-                    font-family: var(--font-body);
+                    padding: 24px 16px;
+                    font-family: 'Inter', sans-serif;
+                    box-sizing: border-box;
                 }
 
                 .DeepLinkCard {
                     background: #ffffff;
                     border-radius: 16px;
-                    padding: 48px 40px;
+                    padding: 44px 36px;
                     max-width: 480px;
                     width: 100%;
-                    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+                    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
                     text-align: center;
                     border-top: 4px solid;
+                    box-sizing: border-box;
+                    animation: DeepLinkSlideUp 0.35s ease;
+                }
+
+                @keyframes DeepLinkSlideUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to   { opacity: 1; transform: translateY(0); }
                 }
 
                 .DeepLinkIconBox {
@@ -114,50 +132,62 @@ function DeepLinkStatus() {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 32px;
-                    margin: 0 auto 24px auto;
+                    margin: 0 auto 20px auto;
                 }
 
                 .DeepLinkTitle {
-                    font-family: var(--font-headings);
+                    font-family: 'Poppins', sans-serif;
                     font-size: 22px;
                     font-weight: 700;
                     color: #111827;
-                    margin-bottom: 12px;
+                    margin: 0 0 12px;
+                    letter-spacing: -0.3px;
                 }
 
                 .DeepLinkMessage {
-                    font-family: var(--font-body);
+                    font-family: 'Inter', sans-serif;
                     font-size: 14px;
-                    color: #6B7280;
+                    color: #4B5563;
                     line-height: 1.7;
-                    margin-bottom: 32px;
+                    margin: 0 0 24px;
                 }
 
                 .DeepLinkBtn {
                     width: 100%;
-                    padding: 13px 24px;
+                    padding: 12px 24px;
                     border: none;
-                    border-radius: 8px;
-                    font-family: var(--font-body);
+                    border-radius: 10px;
+                    font-family: 'Poppins', sans-serif;
                     font-size: 14px;
-                    font-weight: 600;
+                    font-weight: 700;
                     color: #ffffff;
                     cursor: pointer;
-                    transition: opacity 0.2s ease;
+                    transition: all 0.2s ease;
                     letter-spacing: 0.3px;
+                    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
                 }
 
                 .DeepLinkBtn:hover {
-                    opacity: 0.88;
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+                }
+
+                .DeepLinkBtn:active {
+                    transform: translateY(0);
+                }
+
+                .DeepLinkBtn:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                    transform: none;
                 }
 
                 .DeepLinkSystemName {
-                    margin-top: 40px;
+                    margin-top: 32px;
                     font-size: 11px;
                     color: #9CA3AF;
-                    letter-spacing: 1px;
-                    font-weight: 500;
+                    letter-spacing: 1.2px;
+                    font-weight: 600;
                     text-transform: uppercase;
                 }
 
@@ -173,15 +203,15 @@ function DeepLinkStatus() {
                     background: #F0FDF4;
                     border: 1.5px solid #99F6E4;
                     border-radius: 8px;
-                    padding: 14px 16px;
-                    margin-bottom: 24px;
+                    padding: 12px 16px;
+                    margin-bottom: 20px;
                     text-align: left;
                 }
 
                 .DeepLinkAlertBox p {
                     font-size: 13px;
                     color: #0D9488;
-                    font-weight: 500;
+                    font-weight: 600;
                     margin: 0;
                 }
             `}</style>
@@ -191,7 +221,6 @@ function DeepLinkStatus() {
                     className='DeepLinkCard'
                     style={{ borderTopColor: content.accentColor }}
                 >
-                    {/* icon */}
                     <div
                         className='DeepLinkIconBox'
                         style={{ backgroundColor: content.iconBg }}
@@ -199,38 +228,35 @@ function DeepLinkStatus() {
                         {content.icon}
                     </div>
 
-                    {/* title */}
                     <h2 className='DeepLinkTitle'>{content.title}</h2>
 
-                    {/* special alert box for completed status only */}
                     {linkStatus === 'used' && (
                         <div className='DeepLinkAlertBox'>
                             <p>✓ Your registration details have been received.</p>
                         </div>
                     )}
 
-                    {/* message */}
                     <p className='DeepLinkMessage'>{content.message}</p>
 
                     <div className='DeepLinkDivider' />
 
-                    {/* button — only shows for 'expired' status */}
                     {content.showButton && (
                         <button
                             className='DeepLinkBtn'
                             style={{ backgroundColor: content.accentColor }}
                             onClick={content.buttonAction}
+                            disabled={resendSending}
                         >
                             {content.buttonLabel}
                         </button>
                     )}
 
-                    {/* shown after a successful resend request */}
                     {linkStatus === 'expired' && requested && (
-                        <p className='DeepLinkMessage'>Your request has been sent. Please wait for your administrator.</p>
+                        <p className='DeepLinkMessage' style={{ color: '#0D9488', fontWeight: 600, marginTop: 16, marginBottom: 0 }}>
+                            ✓ {resendNotice}
+                        </p>
                     )}
 
-                    {/* system name at bottom */}
                     <p className='DeepLinkSystemName'>
                         ICMDA · Interagency Complaint Management
                     </p>

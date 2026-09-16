@@ -1,8 +1,26 @@
 
+import {
+  apiVerificationHistory,
+  apiSubmitComplaint,
+  apiUpdateUsername,
+  apiDeleteAccount,
+  apiSignUp,
+  apiLogin,
+  apiGoogleLogin,
+  apiChangeUsername,
+  apiVerifyOtp,
+  apiResendOtp,
+  apiVerifyResetOtp,
+  apiPasswordReset,
+  apiConfirmPassReset,
+  UnauthorizedError
+} from "../utils/api.js";
+
+
 let _session = null; // null = guest, otherwise { username, email }
 
 // Every page must call this once before rendering anything that depends on login state
-function whenSessionReady(callback) {
+export function whenSessionReady(callback) {
   chrome.storage.local.get(['access_token', 'username', 'email'], (data) => {
     _session = data.access_token 
       ? { username: data.username, email: data.email, access_token: data.access_token }
@@ -11,19 +29,19 @@ function whenSessionReady(callback) {
   });
 }
 
-function isUserLoggedIn() {
+export function isUserLoggedIn() {
   return _session !== null;
 }
 
-function getCurrentUser() {
+export function getCurrentUser() {
   return _session || { username: '', email: '' };
 }
 
-function getToken(){
+export function getToken(){
   return _session ? _session.access_token : null;
 }
 
-async function updateUsername(newUsername, callback) {
+export async function updateUsername(newUsername, callback) {
   if (!_session) {
     throw new Error("No active user");
   }
@@ -40,7 +58,7 @@ async function updateUsername(newUsername, callback) {
   );
 }
 
-async function deleteAccount(password, callback) {
+export async function deleteAccount(password, callback) {
   if (!_session) {
     callback(false);
     return;
@@ -71,13 +89,13 @@ async function deleteAccount(password, callback) {
 // loginUser, updateUsername, deleteAccount all stay exactly as they are —
 // they were already correctly calling getRegisteredUsers, it just didn't exist yet
 
-function registerUser(user, callback) {
+export function registerUser(user, callback) {
   apiSignUp({ email: user.email, username: user.username, password: user.password })
       .then(() => callback(true))
       .catch(e => callback(false, e.message));
 }
 
-function loginUser(email, password, callback) {
+export function loginUser(email, password, callback) {
   apiLogin(email, password)
       .then(data => {
           _session = { username: data.username, email, access_token: data.access_token };
@@ -85,63 +103,71 @@ function loginUser(email, password, callback) {
               { access_token: data.access_token, token_type: data.token_type, username: data.username, email },
               () => callback(true)
           );
-      }).catch(e => callback(false, e.message));
+      }).catch(e => callback(false, e));
 }
 
-function googleLogin(token, callback) {
+export function googleLogin(token, callback) {
   apiGoogleLogin(token).then(data => {
       _session = { username: data.username, email: data.email, access_token: data.access_token };
       chrome.storage.local.set(
         { access_token: data.access_token, token_type: data.token_type, username: data.username, email: data.email },
         () => callback(true)
       );
-  }).catch(e => callback(false, e.message, e.email));
+  }).catch(e => callback(false, e.message, e.email, e));
 }
 
-function changePendingUsername(email, newUsername, callback) {
+export function changePendingUsername(email, newUsername, callback) {
   apiChangeUsername(email, newUsername).then(() => callback(true))
       .catch(e => callback(false, e.message));
 }
 
-function verifyOtp(email, inputCode, callback) {
+export function verifyOtp(email, inputCode, callback) {
   apiVerifyOtp(email, inputCode).then(() => callback(true))
-      .catch(e => callback(false, e.message))
+      .catch(e => callback(false, e))
 }
 
-function resendOtpSession(email, callback) {
+export function resendOtpSession(email, callback) {
   apiResendOtp(email).then(() => callback(true))
-      .catch(e => callback(false, e.message));
+      .catch(e => callback(false, e));
 }
 
-function verifyResetOtp(email, otpCode, callback) {
+export function verifyResetOtp(email, otpCode, callback) {
   apiVerifyResetOtp(email, otpCode).then(data => callback(true, data.reset_token))
-      .catch(e => callback(false, null, e.message));
+      .catch(e => callback(false, null, e));
 }
 
-function requestPasswordReset(email, callback) {
+export function requestPasswordReset(email, callback) {
   apiPasswordReset(email).then(() => callback(true))
-      .catch(e => callback(false, e.message));
+      .catch(e => callback(false, e));
 }
 
-function confirmPasswordReset(email, resetToken, newPassword, callback) {
+export function confirmPasswordReset(email, resetToken, newPassword, callback) {
   apiConfirmPassReset(email, resetToken, newPassword).then(() => callback(true))
-      .catch(e => callback(false, e.message))
+      .catch(e => callback(false, e))
 }
 
-function logoutUser(callback) {
+export function logoutUser(callback) {
   _session = null;
   chrome.storage.local.remove(['access_token', 'token_type', 'username', 'email'], callback);
 }
 
-function submitComplaint(complaints, callback) {
-  const token = _session ? _session.access_token : null;
+export function submitComplaint(complaints, callback) {
+  if (!isUserLoggedIn()) {
+    callback(false, "You must be signed in to submit a report.");
+    return;
+  }
+
+  const token = _session.access_token;
 
   apiSubmitComplaint({ 
     product_title: complaints.productName, 
     product_url: complaints.productUrl, 
     store_name: complaints.storeName, 
     consumer_description: complaints.description, 
-    platform: complaints.platform 
+    platform: complaints.platform,
+    verification_result: complaints.verificationResult,
+    attachment_data: complaints.attachmentData,    
+    attachment_name: complaints.attachmentName  
   }, token)
       .then(() => callback(true))
       .catch(e => {
@@ -152,4 +178,22 @@ function submitComplaint(complaints, callback) {
         }
         callback(false, e.message)
       });
+}
+
+export function submitVerification(product, callback) {
+  const token = _session ? _session.access_token : null;
+
+  apiVerificationHistory({
+    product_title: product.productTitle,
+    platform: product.productPlatform,
+    verification_result: product.productStatus,
+  }, token).then(() => callback(true))
+           .catch(e => {
+              if (e instanceof UnauthorizedError) {
+                logoutUser(() => {
+                  window.location.reload();
+                });
+              }
+              callback(false, e.message)
+            });
 }

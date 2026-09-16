@@ -1,13 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CircleCheckBig, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { CircleCheckBig, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { API_BASE_URL } from '../utils/apiConfig';
+
+function extractErrorMessage(errorData, fallback) {
+    const detail = errorData?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+        return detail.map(d => d?.msg || JSON.stringify(d)).join(' ');
+    }
+    if (detail && typeof detail === 'object') {
+        return detail.msg || detail.message || JSON.stringify(detail);
+    }
+    return fallback;
+}
 
 function ForgotPassword() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const VALID_PORTALS = ['personnel', 'national-admin', 'interagency-admin'];
     const from = searchParams.get('from');
-    const isSuperAdmin = from === 'superadmin';
-    const themeClass = isSuperAdmin ? 'superadmin' : 'interagency';
+    const portal = VALID_PORTALS.includes(from) ? from : 'personnel'; //
 
     const [step, setStep] = useState('email'); 
     const [email, setEmail] = useState('');
@@ -41,11 +54,7 @@ function ForgotPassword() {
     }, [step, timer]);
 
     const handleBackToLogin = () => {
-        if (from === 'superadmin') {
-            navigate('/');
-        } else {
-            navigate('/login');
-        }
+        navigate(`/universal-login?tab=${portal}`);
     };
 
     const handleEmailChange = (e) => {
@@ -69,18 +78,18 @@ function ForgotPassword() {
     setForgotError('');
 
       try {
-          const response = await fetch('http://127.0.0.1:8000/auth/password/forgot', {
+          const response = await fetch(`${API_BASE_URL}/auth/password/forgot`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                   email,
-                  portal: isSuperAdmin ? 'superadmin' : 'personnel',
+                  portal,
               }),
           });
 
           if (!response.ok) {
               const errorData = await response.json();
-              throw new Error(errorData.detail || 'Failed to send code.');
+              throw new Error(extractErrorMessage(errorData, 'Failed to send code.'));
           }
 
           setStep('code');
@@ -97,18 +106,18 @@ function ForgotPassword() {
     const handleResendOtp = async () => {
         setForgotError('');
         try {
-            const response = await fetch('http://127.0.0.1:8000/auth/password/forgot', {
+            const response = await fetch(`${API_BASE_URL}/auth/password/forgot`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     email,
-                    portal: isSuperAdmin ? 'superadmin' : 'personnel',
+                    portal,
                 }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.detail || 'Failed to resend code.');
+                throw new Error(extractErrorMessage(errorData, 'Failed to resend code.'));
             }
 
             setTimer(300);
@@ -123,76 +132,98 @@ function ForgotPassword() {
 
     const handleVerifyCode = async (e) => {
       e.preventDefault();
-        const otpCode = otp.join('');
-        if (otpCode.length < 6) {
-            setForgotError('Please enter the full 6-digit verification code.');
-            return;
-        }
-        setForgotError('');
+      const otpCode = otp.join('');
+      if (otpCode.length < 6) {
+          setForgotError('Please enter the full 6-digit verification code.');
+          return;
+      }
+      setForgotError('');
 
-        try {
-            const response = await fetch('http://127.0.0.1:8000/auth/password/verify-otp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email,
-                    otp: otpCode,
-                    portal: isSuperAdmin ? 'superadmin' : 'personnel',   // <-- NEW
-                }),
-            });
+      try {
+          const response = await fetch(`${API_BASE_URL}/auth/password/verify-otp`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  email,
+                  otp: otpCode,
+                  portal,
+              }),
+          });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || 'Invalid verification code.');
-            }
+          if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(extractErrorMessage(errorData, 'Invalid verification code.'));
+          }
 
-            setStep('reset');
-        } catch (err) {
-            setForgotError(err.message);
-        }
-    };
+          setStep('reset');
+      } catch (err) {
+          setForgotError(err.message);
+
+          // Always clear the OTP boxes and refocus box 1 on any invalid code
+          setOtp(new Array(6).fill(''));
+          setTimeout(() => {
+              otpRefs.current[0]?.focus();
+          }, 0);
+
+          // OTP exhausted its per-code attempts (backend's 3-try cap) —
+          // surface Resend immediately instead of waiting for the timer.
+          if (/request a new otp/i.test(err.message)) {
+              setTimer(0);
+          }
+      }
+  };
 
     const handleResetPassword = async (e) => {
-        e.preventDefault();
-        if (!newPassword) {
-            setForgotError('New password is required.');
-            return;
-        } else if (!allChecksPassed) {
-            setForgotError('Password does not meet all requirements.');
-            return;
-        }
-        if (!confirmPassword) {
-            setForgotError('Please confirm your new password.');
-            return;
-        } else if (newPassword !== confirmPassword) {
-            setForgotError('Passwords do not match.');
-            return;
-        }
-        setForgotError('');
+      e.preventDefault();
+      if (!newPassword) {
+          setForgotError('New password is required.');
+          return;
+      } else if (!allChecksPassed) {
+          setForgotError('Password does not meet all requirements.');
+          return;
+      }
+      if (!confirmPassword) {
+          setForgotError('Please confirm your new password.');
+          return;
+      } else if (newPassword !== confirmPassword) {
+          setForgotError('Passwords do not match.');
+          return;
+      }
+      setForgotError('');
 
-        try {
-            const response = await fetch('http://127.0.0.1:8000/auth/password/reset', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email,
-                    otp: otp.join(''),
-                    new_password: newPassword,
-                    portal: isSuperAdmin ? 'superadmin' : 'personnel',   // <-- NEW
-                }),
-            });
+      try {
+          const response = await fetch(`${API_BASE_URL}/auth/password/reset`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  email,
+                  otp: otp.join(''),
+                  new_password: newPassword,
+                  portal,
+              }),
+          });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || 'Failed to reset password.');
-            }
+          if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(extractErrorMessage(errorData, 'Failed to reset password.'));
+          }
 
-            setStep('success');
-        } catch (err) {
-            setForgotError(err.message);
-            setStep('code');
-        }
-    };
+          setStep('success');
+      } catch (err) {
+          setForgotError(err.message);
+          setStep('code');
+
+          // Same as verify: clear + refocus, and force Resend if attempts are exhausted
+          setOtp(new Array(6).fill(''));
+          setTimeout(() => {
+              otpRefs.current[0]?.focus();
+          }, 0);
+
+          if (/request a new otp/i.test(err.message)) {
+              setTimer(0);
+          }
+      }
+  };
 
     function handleOtpChange(element, index) {
         let val = element.value;
@@ -251,104 +282,110 @@ function ForgotPassword() {
         <>
             <style>
                 {`
-                /* --- COMMON / RESET --- */
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
+
                 .ForgotPasswordContainer {
                   display: flex;
                   justify-content: center;
                   align-items: center;
                   width: 100vw;
-                  height: 100vh;
-                  padding: 20px;
+                  min-height: 100vh;
+                  background: #1E293B;
+                  padding: 24px 16px;
                   box-sizing: border-box;
-                  overflow: auto;
-                  transition: background 0.3s ease;
+                  overflow-y: auto;
+                  font-family: 'Inter', sans-serif;
                 }
 
-                /* --- INTERAGENCY THEME (Matches login-user.jsx) --- */
-                .ForgotPasswordContainer.interagency {
-                  background-color: #041d20; 
-                  color: #fdfdfd;
-                  font-family: 'Poppins', sans-serif;
-                }
-
-                .ForgotPasswordWrapper.interagency {
+                .ForgotPasswordWrapper {
                   width: 100%;
                   max-width: 460px;
-                  background: #f8f8f8;
-                  padding: 40px;
-                  border-radius: 30px;
-                  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
-                  color: #333;
-                  animation: fadeIn 0.4s ease-out forwards;
+                  background: #ffffff;
+                  padding: 38px 34px;
+                  border-radius: 16px;
+                  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+                  box-sizing: border-box;
+                  animation: ForgotFadeIn 0.35s ease-out forwards;
                 }
 
-                .ForgotPasswordHeader.interagency {
+                @keyframes ForgotFadeIn {
+                  from { opacity: 0; transform: translateY(16px); }
+                  to   { opacity: 1; transform: translateY(0); }
+                }
+
+                .ForgotPasswordHeader {
                   text-align: center;
-                  margin-bottom: 20px;
+                  margin-bottom: 24px;
                 }
 
-                .ForgotPasswordHeader.interagency h3 {
-                  font-size: 28px;
+                .ForgotPasswordHeader h3 {
+                  font-family: 'Poppins', sans-serif;
+                  font-size: 22px;
                   font-weight: 700;
-                  color: #333;
-                  margin-bottom: 8px;
+                  color: #0f172a;
+                  margin: 0 0 8px;
+                  letter-spacing: -0.3px;
                 }
 
-                .ForgotPasswordHeader.interagency p {
+                .ForgotPasswordHeader p {
+                  font-family: 'Inter', sans-serif;
                   font-size: 13px;
-                  color: #666;
+                  color: #64748b;
                   line-height: 1.5;
-                  margin: 8px 0 0 0;
+                  margin: 0;
                 }
 
-                .ForgotForm.interagency {
+                .ForgotForm {
                   display: flex;
                   flex-direction: column;
-                  gap: 20px;
+                  gap: 16px;
                 }
 
-                .ForgotForm.interagency label {
+                .ForgotForm label {
                   display: block;
-                  font-size: 14px;
-                  color: #333;
-                  margin-bottom: 5px;
-                  font-weight: 500;
+                  font-size: 13px;
+                  font-weight: 600;
+                  color: #334155;
+                  margin-bottom: 6px;
                 }
 
-                .ForgotForm.interagency label span {
-                  color: #f7931a;
+                .ForgotForm label span {
+                  color: #ef4444;
                 }
 
-                .LoginInputWrapper.interagency, .PasswordInputWrapper.interagency {
+                .LoginInputWrapper, .PasswordInputWrapper {
                   position: relative;
                   display: flex;
                   align-items: center;
                   width: 100%;
                 }
 
-                .LoginInputWrapper.interagency input, .PasswordInputWrapper.interagency input {
+                .LoginInputWrapper input, .PasswordInputWrapper input {
                   width: 100%;
+                  height: 44px;
                   padding: 11px 12px 11px 40px !important;
-                  border: 1px solid #ccc;
-                  border-radius: 5px;
+                  border: 1.5px solid #e2e8f0;
+                  border-radius: 8px;
                   font-size: 14px;
                   background: #ffffff;
-                  color: #1a1a2e;
+                  color: #111827;
                   outline: none;
-                  transition: border-color 0.2s ease;
+                  transition: all 0.2s ease;
                   box-sizing: border-box;
-                  margin-top: 0px;
+                  font-family: 'Inter', sans-serif;
                 }
 
-                .LoginInputWrapper.interagency input:focus, .PasswordInputWrapper.interagency input:focus {
-                  border-color: #f7931a;
+                .LoginInputWrapper input:focus, .PasswordInputWrapper input:focus {
+                  border-color: #0D9488;
+                  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
                 }
 
-                .PasswordInputWrapper.interagency input {
-                  padding-right: 45px !important;
+                .LoginInputWrapper input.login-input-error, .PasswordInputWrapper input.login-input-error {
+                  border-color: #ef4444;
+                  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
                 }
 
-                .LoginInputIcon.interagency {
+                .LoginInputIcon {
                   position: absolute;
                   left: 14px;
                   color: #94a3b8;
@@ -358,49 +395,49 @@ function ForgotPassword() {
                   justify-content: center;
                 }
 
-                .TogglePasswordBtn.interagency {
-                  position: absolute;
-                  right: 14px;
-                  top: 50%;
-                  transform: translateY(-50%);
-                  background: transparent;
-                  border: none;
-                  color: #94a3b8;
-                  cursor: pointer;
-                  padding: 0;
+                .universal-login-field-error {
+                  font-size: 11.5px;
+                  color: #ef4444 !important;
+                  margin-top: 5px !important;
                   display: flex;
                   align-items: center;
-                  justify-content: center;
-                  transition: color 0.15s ease;
+                  gap: 4px;
+                  line-height: 1.2;
+                  font-weight: 500;
                 }
 
-                .TogglePasswordBtn.interagency:hover {
-                  color: #f7931a;
-                }
-
-                .SubmitBtn.interagency {
+                .SubmitBtn {
                   width: 100%;
-                  margin-top: 10px;
-                  padding: 10px;
-                  background: #26262a;
-                  color: #fff;
-                  font-size: 16px;
-                  font-weight: 600;
+                  margin-top: 6px;
+                  padding: 12px;
+                  background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
+                  color: #ffffff;
+                  font-family: 'Poppins', sans-serif;
+                  font-size: 14px;
+                  font-weight: 700;
                   border: none;
-                  border-radius: 5px;
+                  border-radius: 10px;
                   cursor: pointer;
                   transition: all 0.2s ease;
+                  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3);
+                  letter-spacing: 0.3px;
                 }
 
-                .SubmitBtn.interagency:hover {
-                  background: #050b07;
-                  transform: scale(1.03);
+                .SubmitBtn:hover {
+                  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+                  transform: translateY(-1px);
+                  box-shadow: 0 6px 18px rgba(13, 148, 136, 0.4);
                 }
 
-                .BackBtn.interagency {
+                .SubmitBtn:active {
+                  transform: translateY(0);
+                }
+
+                .BackBtn {
                   background: none;
                   border: none;
                   color: #64748b;
+                  font-family: 'Inter', sans-serif;
                   font-size: 13px;
                   font-weight: 500;
                   cursor: pointer;
@@ -408,57 +445,63 @@ function ForgotPassword() {
                   align-items: center;
                   justify-content: center;
                   gap: 6px;
-                  margin-top: 10px;
+                  margin-top: 4px;
                   transition: color 0.2s ease;
+                  text-decoration: none;
+                }
+
+                .BackBtn:hover {
+                  color: #0f172a;
                   text-decoration: underline;
                 }
 
-                .BackBtn.interagency:hover {
-                  color: #1a1a2e;
+                /* OTP Digit inputs */
+                .OtpContainer {
+                  display: flex;
+                  flex-direction: column;
                 }
 
-                /* OTP Digit inputs - Interagency */
-                .OtpGridContainer.interagency {
+                .OtpGridContainer {
                   display: flex;
                   gap: 8px;
                   justify-content: space-between;
-                  margin-bottom: 10px;
+                  margin-bottom: 16px;
                 }
 
-                .OtpDigitInput.interagency {
-                  width: 46px;
-                  height: 50px;
+                .OtpDigitInput {
+                  width: 44px;
+                  height: 48px;
                   text-align: center;
                   font-size: 20px;
                   font-weight: 600;
                   border-radius: 8px;
-                  border: 1.5px solid #011329 !important;
+                  border: 1.5px solid #e2e8f0;
                   background-color: #ffffff;
-                  color: #1a1a2e;
+                  color: #0f172a;
                   transition: all 0.2s ease;
                   box-sizing: border-box;
-                }
-
-                .OtpDigitInput.interagency:focus {
-                  border-color: #f7931a !important;
-                  box-shadow: 0 0 0 3px rgba(247, 147, 26, 0.25);
                   outline: none;
                 }
 
-                .OtpTimerContainer.interagency {
+                .OtpDigitInput:focus {
+                  border-color: #0D9488 !important;
+                  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+                }
+
+                .OtpTimerContainer {
                   display: flex;
                   flex-direction: column;
                   align-items: center;
-                  gap: 8px;
-                  margin-bottom: 20px;
+                  gap: 6px;
+                  margin-bottom: 12px;
                   font-size: 13px;
-                  color: #666;
+                  color: #64748b;
                 }
 
-                .ResendButton.interagency {
+                .ResendButton {
                   background: none;
                   border: none;
-                  color: #f7931a;
+                  color: #0D9488;
                   font-size: 13px;
                   font-weight: 600;
                   cursor: pointer;
@@ -467,315 +510,34 @@ function ForgotPassword() {
                   transition: color 0.2s ease;
                 }
 
-                .ErrorContainer.interagency {
-                  background-color: #eb83835b;
-                  border: 1px solid red;
-                  padding: 12px 16px;
+                .ResendButton:hover {
+                  color: #0f766e;
+                }
+
+                .ErrorContainer {
+                  background-color: #fef2f2;
+                  border: 1px solid #fca5a5;
+                  padding: 10px 14px;
                   border-radius: 8px;
-                  margin-top: 10px;
-                  margin-bottom: 10px;
+                  margin-bottom: 12px;
                   display: flex;
                   align-items: center;
                   justify-content: center;
                 }
 
-                .ErrorMsg.interagency {
-                  color: #cc0000 !important;
-                  font-size: 12px;
-                  font-weight: 400;
+                .ErrorMsg {
+                  color: #dc2626 !important;
+                  font-size: 13px;
+                  font-weight: 500;
                   text-align: center;
                   margin: 0 !important;
                 }
 
-                /* --- SUPERADMIN THEME (Matches superadmin-login.jsx / superadmin-css.css) --- */
-                .ForgotPasswordContainer.superadmin {
-                  background: #1E293B;
-                  color: #ffffff;
-                  font-family: 'Inter', sans-serif;
-                }
-
-                .ForgotPasswordWrapper.superadmin {
-                  width: 100%;
-                  max-width: 500px;
-                  background: linear-gradient(135deg, #13213c 0%, #1E293B 100%);
-                  border-radius: 20px;
-                  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
-                  border: 1px solid rgba(255, 255, 255, 0.12);
-                  overflow: hidden;
-                  animation: fadeIn 0.4s ease-out forwards;
-                }
-
-                .ForgotPasswordHeader.superadmin {
-                  background: linear-gradient(135deg, #1E293B 0%, #111827 100%);
-                  padding: 32px 48px 28px;
-                  border-bottom: 1px solid #0D9488;
-                  text-align: center;
-                }
-
-                .ForgotPasswordHeader.superadmin h3 {
-                  font-family: 'Poppins', sans-serif;
-                  font-size: 20px;
-                  font-weight: 700;
-                  color: #ffffff;
-                  letter-spacing: 0.3px;
-                  margin: 0;
-                }
-
-                .ForgotPasswordHeader.superadmin p {
-                  font-family: 'Poppins', sans-serif;
-                  font-size: 15px;
-                  color: #a6a6a6;
-                  margin: 8px 0 0 0;
-                }
-
-                .ForgotForm.superadmin {
-                  display: flex;
-                  flex-direction: column;
-                  gap: 18px;
-                  padding: 28px 48px 36px;
-                }
-
-                .ForgotForm.superadmin label {
-                  font-family: 'Inter', sans-serif;
-                  font-size: 14px;
-                  color: #e2e2e2;
-                }
-
-                .ForgotForm.superadmin label span {
-                  color: red;
-                }
-
-                .LoginInputWrapper.superadmin, .PasswordInputWrapper.superadmin {
-                  position: relative;
-                  display: flex;
-                  align-items: center;
-                  width: 100%;
-                }
-
-                .LoginInputWrapper.superadmin input, .PasswordInputWrapper.superadmin input {
-                  width: 100%;
-                  padding: 12px 16px 12px 40px !important;
-                  border-radius: 10px;
-                  border: 1.5px solid rgba(255, 255, 255, 0.15);
-                  background: rgba(255, 255, 255, 0.06);
-                  color: #f1f5f9;
-                  font-size: 14px;
-                  transition: all 0.25s ease;
-                  box-sizing: border-box;
-                  outline: none;
-                  margin-top: 4px;
-                }
-
-                .LoginInputWrapper.superadmin input::placeholder, .PasswordInputWrapper.superadmin input::placeholder {
-                  color: rgba(255, 255, 255, 0.3);
-                }
-
-                .LoginInputWrapper.superadmin input:focus, .PasswordInputWrapper.superadmin input:focus {
-                  border-color: #0D9488;
-                  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25);
-                  background: rgba(13, 148, 136, 0.1);
-                }
-
-                .PasswordInputWrapper.superadmin input {
-                  padding-right: 64px !important;
-                }
-
-                .LoginInputIcon.superadmin {
-                  position: absolute;
-                  left: 14px;
-                  color: #94a3b8;
-                  pointer-events: none;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                }
-
-                .TogglePasswordBtn.superadmin {
-                  position: absolute;
-                  right: 12px;
-                  background: transparent;
-                  border: none;
-                  color: #0D9488;
-                  font-size: 12px;
-                  font-weight: 600;
-                  cursor: pointer;
-                  padding: 4px 6px;
-                  border-radius: 4px;
-                  transition: color 0.15s ease;
-                  letter-spacing: 0.3px;
-                  text-transform: uppercase;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                }
-
-                .TogglePasswordBtn.superadmin:hover {
-                  color: #5eead4;
-                }
-
-                .SubmitBtn.superadmin {
-                  width: 100%;
-                  margin-top: 20px;
-                  padding: 13px;
-                  background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
-                  color: #fff;
-                  font-size: 15px;
-                  font-weight: 700;
-                  border: none;
-                  border-radius: 10px;
-                  cursor: pointer;
-                  transition: all 0.2s ease;
-                  box-shadow: 0 4px 15px rgba(13, 148, 136, 0.35);
-                  letter-spacing: 0.3px;
-                }
-
-                .SubmitBtn.superadmin:hover {
-                  background: linear-gradient(135deg, #2dd4a8 0%, #115e59 100%);
-                  transform: translateY(-2px);
-                  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.5);
-                }
-
-                .BackBtn.superadmin {
-                  background: transparent;
-                  border: none;
-                  color: #94a3b8;
-                  font-size: 13px;
-                  cursor: pointer;
-                  display: block;
-                  margin: 10px auto 0;
-                  padding: 4px 0;
-                  transition: color 0.15s ease;
-                  text-decoration: underline;
-                  text-underline-offset: 3px;
-                }
-
-                .BackBtn.superadmin:hover {
-                  color: #f1f5f9;
-                }
-
-                /* OTP Digit inputs - Superadmin */
-                .OtpGridContainer.superadmin {
-                  display: flex;
-                  justify-content: center;
-                  gap: 10px;
-                  margin-bottom: 20px;
-                }
-
-                .OtpDigitInput.superadmin {
-                  width: 48px !important;
-                  height: 56px;
-                  padding: 0 !important;
-                  text-align: center;
-                  font-size: 22px;
-                  font-weight: 700;
-                  color: #f1f5f9;
-                  background: rgba(255, 255, 255, 0.07);
-                  border: 2px solid rgba(255, 255, 255, 0.15) !important;
-                  border-radius: 10px;
-                  caret-color: #0D9488;
-                  transition: all 0.2s ease;
-                  box-sizing: border-box;
-                }
-
-                .OtpDigitInput.superadmin:focus {
-                  border-color: #0D9488 !important;
-                  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25) !important;
-                  background: rgba(13, 148, 136, 0.06);
-                  outline: none;
-                }
-
-                .OtpTimerContainer.superadmin {
-                  color: #94a3b8;
-                  text-align: center;
-                  margin-bottom: 16px;
-                  font-size: 13px;
-                }
-
-                .ResendButton.superadmin {
-                  background: transparent;
-                  border: none;
-                  color: #0D9488;
-                  font-size: 13px;
-                  font-weight: 600;
-                  cursor: pointer;
-                  text-decoration: underline;
-                  text-underline-offset: 3px;
-                  padding: 0;
-                  transition: color 0.15s ease;
-                }
-
-                .ErrorContainer.superadmin {
-                  padding: 12px 16px;
-                  background: rgba(239, 68, 68, 0.15);
-                  border: 1px solid rgba(239, 68, 68, 0.5);
-                  border-radius: 8px;
-                  margin-top: 10px;
-                  margin-bottom: 10px;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  box-sizing: border-box;
-                }
-
-                .ErrorMsg.superadmin {
-                  font-family: 'Inter', sans-serif;
-                  font-size: 12px;
-                  font-weight: 500;
-                  color: #f87171;
-                  margin: 0;
-                  text-align: center;
-                }
-
-                /* --- Success page specific overrides --- */
-                .SuccessContainer {
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  gap: 15px;
-                  padding: 28px 32px 36px;
-                }
-
-                .SuccessIcon {
-                  width: 64px;
-                  height: 64px;
-                  color: #10B981;
-                  margin-bottom: 10px;
-                  animation: popIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-                  transition: color .2s ease, transform .2s ease;
-                }
-
-                .SuccessIcon:hover {
-                  transform: scale(1.08);
-                }
-
-                @keyframes popIn {
-                  from { transform: scale(0); opacity: 0; }
-                  to { transform: scale(1); opacity: 1; }
-                }
-
-                @keyframes fadeIn {
-                  from {
-                    opacity: 0;
-                    transform: translateY(10px);
-                  }
-                  to {
-                    opacity: 1;
-                    transform: translateY(0);
-                  }
-                }
-
-                /* ── CP Form alignment matching change-password.jsx ── */
+                /* Password Reset Form Styles */
                 .CPForm {
                   display: flex;
                   flex-direction: column;
-                  gap: 18px;
-                  box-sizing: border-box;
-                }
-                .ForgotPasswordWrapper.superadmin .CPForm {
-                  padding: 28px 48px 36px;
-                }
-                .ForgotPasswordWrapper.interagency .CPForm {
-                  padding: 20px 0 0;
+                  gap: 16px;
                 }
 
                 .CPFormGroup {
@@ -787,13 +549,7 @@ function ForgotPassword() {
                 .CPLabel {
                   font-size: 13px;
                   font-weight: 600;
-                  box-sizing: border-box;
-                }
-                .ForgotPasswordWrapper.superadmin .CPLabel {
-                  color: #e2e2e2;
-                }
-                .ForgotPasswordWrapper.interagency .CPLabel {
-                  color: #374151;
+                  color: #334155;
                 }
 
                 .CPRequired {
@@ -808,42 +564,27 @@ function ForgotPassword() {
 
                 .CPInput {
                   width: 100%;
-                  padding: 11px 54px 11px 14px;
-                  border-radius: 9px;
+                  height: 44px;
+                  padding: 11px 44px 11px 14px;
+                  border: 1.5px solid #e2e8f0;
+                  border-radius: 8px;
                   font-size: 14px;
+                  color: #111827;
+                  background: #ffffff;
                   outline: none;
                   transition: all 0.2s ease;
                   box-sizing: border-box;
                   font-family: 'Inter', sans-serif;
                 }
-                .ForgotPasswordWrapper.superadmin .CPInput {
-                  background: rgba(255, 255, 255, 0.06);
-                  color: #f1f5f9;
-                  border: 1.5px solid rgba(255, 255, 255, 0.15);
-                }
-                .ForgotPasswordWrapper.superadmin .CPInput:focus {
+
+                .CPInput:focus {
                   border-color: #0D9488;
-                  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25);
-                  background: rgba(13, 148, 136, 0.1);
-                }
-                .ForgotPasswordWrapper.interagency .CPInput {
-                  background: #ffffff;
-                  color: #1a1a2e;
-                  border: 1.5px solid #ccc;
-                }
-                .ForgotPasswordWrapper.interagency .CPInput:focus {
-                  border-color: #f7931a;
-                  box-shadow: 0 0 0 3px rgba(247, 147, 26, 0.15);
+                  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
                 }
 
                 .cp-input-error {
                   border-color: #ef4444 !important;
                   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
-                }
-
-                .login-input-error {
-                  border-color: #ef4444 !important;
-                  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
                 }
 
                 .CPToggleBtn {
@@ -854,23 +595,14 @@ function ForgotPassword() {
                   cursor: pointer;
                   font-size: 12px;
                   font-weight: 600;
-                  line-height: 1;
-                  padding: 4px 6px;
+                  color: #64748b;
                   transition: color 0.15s ease;
                   text-transform: uppercase;
                   letter-spacing: 0.3px;
                 }
-                .ForgotPasswordWrapper.superadmin .CPToggleBtn {
+
+                .CPToggleBtn:hover {
                   color: #0D9488;
-                }
-                .ForgotPasswordWrapper.superadmin .CPToggleBtn:hover {
-                  color: #5eead4;
-                }
-                .ForgotPasswordWrapper.interagency .CPToggleBtn {
-                  color: #64748b;
-                }
-                .ForgotPasswordWrapper.interagency .CPToggleBtn:hover {
-                  color: #f7931a;
                 }
 
                 .CPMatchIndicator {
@@ -881,33 +613,21 @@ function ForgotPassword() {
                 .match-ok { color: #16a34a; }
                 .match-fail { color: #ef4444; }
 
-                /* Password Requirements list */
                 .CPRequirements {
-                  border-radius: 10px;
-                  padding: 14px 16px;
-                  box-sizing: border-box;
-                }
-                .ForgotPasswordWrapper.superadmin .CPRequirements {
-                  background: rgba(255, 255, 255, 0.03);
-                  border: 1px solid rgba(255, 255, 255, 0.12);
-                }
-                .ForgotPasswordWrapper.interagency .CPRequirements {
                   background: #f8fafc;
                   border: 1px solid #e2e8f0;
+                  border-radius: 10px;
+                  padding: 12px 14px;
+                  box-sizing: border-box;
                 }
 
                 .CPReqTitle {
                   font-size: 12px;
                   font-weight: 600;
-                  margin: 0 0 10px;
+                  color: #475569;
+                  margin: 0 0 8px;
                   text-transform: uppercase;
                   letter-spacing: 0.5px;
-                }
-                .ForgotPasswordWrapper.superadmin .CPReqTitle {
-                  color: #94a3b8;
-                }
-                .ForgotPasswordWrapper.interagency .CPReqTitle {
-                  color: #475569;
                 }
 
                 .CPReqList {
@@ -920,97 +640,93 @@ function ForgotPassword() {
                 }
 
                 .CPReqItem {
-                  font-size: 13px;
+                  font-size: 12.5px;
                   font-weight: 500;
                   transition: color 0.2s ease;
                 }
-                .ForgotPasswordWrapper.superadmin .CPReqItem.req-met {
-                  color: #4ade80;
+                .CPReqItem.req-met {
+                  color: #16a34a;
                 }
-                .ForgotPasswordWrapper.superadmin .CPReqItem.req-unmet {
-                  color: #64748b;
-                }
-                .ForgotPasswordWrapper.interagency .CPReqItem.req-met {
-                  color: #166534;
-                }
-                .ForgotPasswordWrapper.interagency .CPReqItem.req-unmet {
-                  color: #94a3b8;
+                .CPReqItem.req-unmet {
+                  color: #9ca3af;
                 }
 
                 .CPErrorMsgContainer {
-                  background-color: rgba(239, 68, 68, 0.15);
-                  border: 1px solid rgba(239, 68, 68, 0.5);
+                  background-color: #fef2f2;
+                  border: 1px solid #fca5a5;
                   padding: 10px 14px;
                   border-radius: 8px;
-                  margin-top: 5px;
-                  text-align: center;
+                  margin-top: 2px;
                 }
 
                 .CPErrorMsg {
-                  color: #ef4444 !important;
+                  color: #dc2626 !important;
                   margin: 0;
                   font-size: 13px;
+                  font-weight: 500;
                   text-align: center;
-                  line-height: 1.5;
                 }
 
                 .CPSubmitBtn {
                   width: 100%;
-                  padding: 14px;
+                  margin-top: 6px;
+                  padding: 12px;
+                  background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
                   color: #ffffff;
-                  font-size: 15px;
+                  font-family: 'Poppins', sans-serif;
+                  font-size: 14px;
                   font-weight: 700;
                   border: none;
                   border-radius: 10px;
                   cursor: pointer;
-                  transition: all 0.22s ease;
-                  font-family: 'Poppins', sans-serif;
+                  transition: all 0.2s ease;
+                  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3);
                   letter-spacing: 0.3px;
                 }
-                .CPSubmitBtn.superadmin {
-                  background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
-                  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.4);
-                }
-                .CPSubmitBtn.superadmin:hover {
+
+                .CPSubmitBtn:hover {
                   background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
-                  transform: translateY(-2px);
-                  box-shadow: 0 8px 24px rgba(13, 148, 136, 0.5);
+                  transform: translateY(-1px);
+                  box-shadow: 0 6px 18px rgba(13, 148, 136, 0.4);
                 }
-                .CPSubmitBtn.interagency {
-                  background: #26262a;
-                  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                }
-                .CPSubmitBtn.interagency:hover {
-                  background: #050b07;
-                  transform: translateY(-2px);
-                  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
-                }
+
                 .CPSubmitBtn:active {
                   transform: translateY(0);
                 }
+
+                .SuccessIcon {
+                  color: #0D9488;
+                  width: 56px;
+                  height: 56px;
+                  margin: 0 auto 12px;
+                }
                 `}
             </style>
-            <div className={`ForgotPasswordContainer ${themeClass}`}>
-                <div className={`ForgotPasswordWrapper ${themeClass}`}>
-                    <div className={`ForgotPasswordHeader ${themeClass}`}>
+            <div className="ForgotPasswordContainer">
+                <div className="ForgotPasswordWrapper">
+                    <div className="ForgotPasswordHeader">
                         <h3>
                             {step === 'success' ? 'Password Reset Complete!' : 'Forgot Password'}
                         </h3>
                         <p>
                             {step === 'email' && "Please enter your account email address. We will send you a verification code."}
-                            {step === 'code' && `We sent a code to ${email}. Please enter it below.`}
+                            {step === 'code' && (
+                                <>
+                                    We sent a code to <span style={{ color: '#0D9488', fontWeight: 600 }}>{maskEmail(email)}</span>. Please enter it below.
+                                </>
+                            )}
                             {step === 'reset' && "Verification successful! Create your new account password below."}
                             {step === 'success' && "Your password has been successfully updated. You can now securely log back in."}
                         </p>
                     </div>
 
-                    {/*FOR INPUT EMAIL */}
+                    {/* FOR INPUT EMAIL */}
                     {step === 'email' && (
-                        <form onSubmit={handleSendCode} className={`ForgotForm ${themeClass}`}>
+                        <form onSubmit={handleSendCode} className="ForgotForm">
                             <div>
-                                <label>Email {isSuperAdmin && <span>*</span>}</label>
-                                <div className={`LoginInputWrapper ${themeClass}`}>
-                                    <Mail className={`LoginInputIcon ${themeClass}`} size={16} />
+                                <label>Email <span>*</span></label>
+                                <div className="LoginInputWrapper">
+                                    <Mail className="LoginInputIcon" size={16} />
                                     <input 
                                         type="email" 
                                         placeholder="youremail@gmail.com" 
@@ -1020,33 +736,29 @@ function ForgotPassword() {
                                         required
                                     />
                                 </div>
+                                {forgotError && (
+                                    <span className="universal-login-field-error">
+                                        <AlertCircle size={11} /> {forgotError}
+                                    </span>
+                                )}
                             </div>
-                            {forgotError && (
-                                <div className={`ErrorContainer ${themeClass}`} style={{ marginTop: '5px', marginBottom: '5px' }}>
-                                    <p className={`ErrorMsg ${themeClass}`}>{forgotError}</p>
-                                </div>
-                            )}
-                            <button type="submit" className={`SubmitBtn ${themeClass}`}>Send Code</button>
-                            <button type="button" className={`BackBtn ${themeClass}`} onClick={handleBackToLogin}>Back to Login</button>
+                            <button type="submit" className="SubmitBtn">Send Code</button>
+                            <button type="button" className="BackBtn" onClick={handleBackToLogin}>Back to Login</button>
                         </form>
                     )}
 
                     {/* FOR INPUT VERIFICATION CODE (6-digit grid layout) */}
                     {step === 'code' && (
-                        <form onSubmit={handleVerifyCode} className={`ForgotForm ${themeClass}`}>
+                        <form onSubmit={handleVerifyCode} className="ForgotForm">
                             <div className="OtpContainer">
-                                <div className="OtpInstructions" style={{ color: isSuperAdmin ? '#cbd5e1' : '#555' }}>
-                                    Enter the code sent to {isSuperAdmin ? '' : 'your email'} <span style={{ color: isSuperAdmin ? '#0D9488' : '#1a1a2e', fontWeight: 600 }}>{maskEmail(email)}</span>.
-                                </div>
-
-                                <div className={`OtpGridContainer ${themeClass}`}>
+                                <div className="OtpGridContainer">
                                     {otp.map((digit, idx) => (
                                         <input
                                             key={idx}
                                             type="text"
                                             inputMode="numeric"
                                             pattern="[0-9]*"
-                                            className={`OtpDigitInput ${themeClass}`}
+                                            className="OtpDigitInput"
                                             value={digit}
                                             ref={(el) => (otpRefs.current[idx] = el)}
                                             onChange={(e) => handleOtpChange(e.target, idx)}
@@ -1057,13 +769,13 @@ function ForgotPassword() {
                                     ))}
                                 </div>
 
-                                <div className={`OtpTimerContainer ${themeClass}`}>
+                                <div className="OtpTimerContainer">
                                     {timer > 0 ? (
                                         <p>Resend code in <strong>{formatTimer(timer)}</strong></p>
                                     ) : (
                                         <p>
                                             Didn't receive the code?{' '}
-                                            <button type="button" className={`ResendButton ${themeClass}`} onClick={handleResendOtp}>
+                                            <button type="button" className="ResendButton" onClick={handleResendOtp}>
                                                 Resend OTP
                                             </button>
                                         </p>
@@ -1072,13 +784,13 @@ function ForgotPassword() {
                             </div>
 
                             {forgotError && (
-                                <div className={`ErrorContainer ${themeClass}`} style={{ marginTop: '5px', marginBottom: '5px' }}>
-                                    <p className={`ErrorMsg ${themeClass}`}>{forgotError}</p>
+                                <div className="ErrorContainer">
+                                    <p className="ErrorMsg">{forgotError}</p>
                                 </div>
                             )}
 
-                            <button type="submit" className={`SubmitBtn ${themeClass}`}>Verify Code</button>
-                            <button type="button" className={`BackBtn ${themeClass}`} onClick={() => setStep('email')}>
+                            <button type="submit" className="SubmitBtn">Verify Code</button>
+                            <button type="button" className="BackBtn" onClick={() => setStep('email')}>
                                 Back to Email
                             </button>
                         </form>
@@ -1105,7 +817,7 @@ function ForgotPassword() {
                                     />
                                     <button
                                         type="button"
-                                        className={`CPToggleBtn ${themeClass}`}
+                                        className="CPToggleBtn"
                                         onClick={() => setShowNew((v) => !v)}
                                         aria-label={showNew ? 'Hide password' : 'Show password'}
                                     >
@@ -1132,7 +844,7 @@ function ForgotPassword() {
                                     />
                                     <button
                                         type="button"
-                                        className={`CPToggleBtn ${themeClass}`}
+                                        className="CPToggleBtn"
                                         onClick={() => setShowConfirm((v) => !v)}
                                         aria-label={showConfirm ? 'Hide password' : 'Show password'}
                                     >
@@ -1177,7 +889,7 @@ function ForgotPassword() {
                                 </div>
                             )}
 
-                            <button type="submit" className={`CPSubmitBtn ${themeClass}`}>
+                            <button type="submit" className="CPSubmitBtn">
                                 Update Password
                             </button>
                         </form>
@@ -1185,15 +897,15 @@ function ForgotPassword() {
 
                     {/* FOR SUCCESS PASSWORD RESET */}
                     {step === 'success' && (
-                        <div className="SuccessContainer" style={{ textAlign: 'center', marginTop: '20px' }}>
+                        <div className="SuccessContainer" style={{ textAlign: 'center', marginTop: '12px' }}>
                             <CircleCheckBig className="SuccessIcon" />
                             <button 
                                 type="button" 
-                                className={`BackBtn ${themeClass}`}
-                                style={{ marginTop: '20px', display: 'block', width: '100%', textDecoration: 'underline' }}
+                                className="SubmitBtn"
+                                style={{ marginTop: '16px' }}
                                 onClick={handleBackToLogin}
                             >
-                                ← Go to Login Screen
+                                Back to Login
                             </button>
                         </div>
                     )}

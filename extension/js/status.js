@@ -1,4 +1,7 @@
 // status.js
+import { whenSessionReady, isUserLoggedIn, getToken } from "../scripts/session.js";
+import { apiGetStatus } from "../utils/api.js";
+
 const STAGE_ORDER = ['open', 'under_review', 'takedown_requested'];
 const STAGE_LABELS = { open: 'OPEN', under_review: 'UNDER REVIEW', takedown_requested: 'TAKEDOWN REQUESTED' };
 const STEP_LABELS = ['Open', 'Under Review', 'Takedown Requested'];

@@ -40,13 +40,13 @@ class VerificationRequest(Base):
 
     priority = Column(String(20), nullable=False, server_default=text("'standard'"))
 
-    field_operation_notes = Column(Text, nullable=True)
-    field_operation_logged_at = Column(DateTime(timezone=True), nullable=True)
-    field_operation_logged_by = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.user_id", ondelete="SET NULL"),
-        nullable=True,
-    )
+    # added for the rejected and registered verification status
+    lea_acknowledged_at = Column(DateTime(timezone=True), nullable=True)
+    lea_acknowledged_by = Column(
+    UUID(as_uuid=True),
+    ForeignKey("users.user_id", ondelete="SET NULL"),
+    nullable=True,
+    ) 
 
     reminder_sent_at = Column(DateTime(timezone=True), nullable=True)
     reminder_sent_by = Column(
@@ -77,6 +77,9 @@ class VerificationRequest(Base):
 
     requested_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     responded_at = Column(DateTime(timezone=True), nullable=True)
+    sla_reminder_1_sent_at = Column(DateTime(timezone=True), nullable=True)
+    sla_reminder_2_sent_at = Column(DateTime(timezone=True), nullable=True)
+    sla_breach_notified_at = Column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
         CheckConstraint(

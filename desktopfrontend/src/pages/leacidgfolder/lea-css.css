@@ -2,19 +2,23 @@
 .LeaDashboardMain {
   display: flex;
   height: 100vh;
+  overflow: hidden;
 }
 
 .LeaMainfeed {
   flex: 1;
-  padding: 24px 28px;
+  padding: 32px;
   background: #f5f5f5;
   overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 .LeaContentContainer {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
   height: 100vh;
   overflow: hidden;
 }
@@ -26,7 +30,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 30px !important;
+  margin-bottom: 24px;
 }
 
 .LeaHeader div p:first-child {
@@ -99,8 +103,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
-  margin: 0 30px 20px 30px;
-  max-width: 1150px;
+  margin-bottom: 20px;
 }
 
 .LeaVerifStatCard {
@@ -205,14 +208,14 @@
   background: #FDFDFD;
   border-radius: 12px;
   border: 1px solid #d8d8d8;
-  overflow: hidden;
-    width: 100%;
-    max-width: 1150px;
-    justify-self: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .ComplaintsTable {
   width: 100%;
+  min-width: 800px;
   border-collapse: collapse;
 }
 
@@ -303,11 +306,7 @@
   border: 1px solid #f5a0a0;
 }
 
-/* ======================================================
-   WALK-IN COMPLAINTS — SCOPED STYLES (WC prefix)
-   These class names are unique to lea-walkin-complaints
-   and will not conflict with other pages.
-   ====================================================== */
+/* WALK-IN COMPLAINTS  */
 
 /* Status badge base — walk-in complaints only */
 .WcStatusBadge {
@@ -699,15 +698,20 @@
 .ModalViewButton{
   background: #FDFDFD;
   border-radius: 12px;
-  padding: 32px;
+  padding: 32px 32px 0 32px;
   width: 700px;
+  max-width: 92vw;
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 .ModalViewButton h4{
   font-size: 20px;
   font-weight: 900;
+  word-break: break-word;
 }
 .ModalSummary{
   display: grid;
@@ -718,6 +722,12 @@
 
 .ModalSummary > div {
   min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.ModalSummary p {
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 .StatementBox{
   width: 100%;
@@ -725,12 +735,18 @@
   border: 1px solid #d8d8d8;
   border-radius: 8px;
   padding: 10px;
-  margin: 10px 2px 10px 2px;
+  margin: 10px 0;
+  box-sizing: border-box;
   box-shadow: #EDEDED 1px 1px 1px 1px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .StatementBox p{
   color: #8d8f91;
   font-size: 12px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 .ModalSummary strong, .Statementcomp{
   color: #8d8f91;
@@ -738,6 +754,17 @@
   font-weight: 600;
   text-transform: uppercase;
   line-height: 2;
+}
+
+.ModalViewButton .ModalActions {
+  position: sticky;
+  bottom: 0;
+  background: #FDFDFD;
+  padding: 16px 0 24px 0;
+  margin-top: 16px;
+  border-top: 1px solid #EDEDED;
+  z-index: 10;
+  border-radius: 0 0 12px 12px;
 }
 
 /* LEA NEW INTAKE PAGE*/
@@ -1096,7 +1123,7 @@
 }
 
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
 
     .FormSection > div {
         grid-template-columns: 1fr;
@@ -1124,54 +1151,72 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 1150px;
-  margin: 0 30px;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 
 
 .VerificationTabs {
-   display: flex;
+    display: flex;
     gap: 8px;
     margin-bottom: 20px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
-.VerificationTabsButton{
-    display: flex; 
-    background: #EDEDED; 
-    border: 1px solid #d8d8d8; 
-    box-shadow: #d8d8d8 0.5px 0.5px 0.5px 0.5px;
-    border-radius: 20px; 
-    overflow: hidden; 
+
+.VerificationTabs::-webkit-scrollbar {
+    display: none;
 }
-.VerificationTabs button {
-    border: none;
-    background: #EDEDED;
-    color: #51606f;
-    padding: 10px 16px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 13px;
-    line-height: 1.5;
-    font-weight: 600;
-}
-.ButtonTab{
-    padding: 10px 20px; 
-    background: transparent; 
-    border-radius: 20px;
-    color: #51606f; 
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.9rem; 
-    cursor: pointer; 
-    transition: all 0.3s ease; 
+
+.VerificationTabsButton {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+    border-radius: 9999px;
+    padding: 5px;
+    gap: 4px;
+    flex-wrap: nowrap;
     white-space: nowrap;
 }
+
+.ButtonTab {
+    padding: 8px 18px;
+    background: transparent;
+    border: none;
+    border-radius: 9999px;
+    color: #51606f;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.4;
+    user-select: none;
+}
+
+.ButtonTab:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.8);
+    color: #13213C;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
 .ButtonTab.active {
-    border-radius: 20px;
+    border-radius: 9999px;
     background: #13213C !important;
     color: #FDFDFD !important;
-}
-.VerificationTabs button:hover {
-    background: #d8d8d8;
+    box-shadow: 0 4px 12px rgba(19, 33, 60, 0.22);
 }
 .VerificationTabContent{
   width: 100%;
@@ -1181,26 +1226,32 @@
 
 .VerificationContent {
     display: grid;
-    grid-template-columns: 320px 1fr;
+    grid-template-columns: clamp(240px, 30vw, 380px) minmax(0, 1fr);
     gap: 16px;
+    align-items: start;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /*LEFT PANEL*/
 
 .ReadytoSendQueue, .AwaitingLEAQueue, .LEAResponseQueue{
     background: #FDFDFD;
-    border: 1px solid #d8d8d8;
+    border: 1.5px solid #EDEDED;
     border-radius: 12px;
     overflow: hidden;
-    min-height: 650px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
 }
 
 .ReadytoSendHeader, .AwaitingHeader, .LEAResponseHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px;
-    border-bottom: 1px solid #EDEDED;
+    padding: 14px 16px;
+    border-bottom: 1.5px solid #EDEDED;
 }
 
 .ReadytoSendHeader p, .AwaitingHeader p, .LEAResponseHeader p {
@@ -1220,39 +1271,156 @@
 }
 
 .QueueCard {
+  display: block;
   width: 100%;
-  padding: 9px 14px;
+  text-align: left;
+  background: transparent;
+  border: none;
   border-bottom: 1px solid #EDEDED;
+  padding: 14px 16px;
   cursor: pointer;
-  transition: .2s;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  transition: background 0.15s ease;
+  box-sizing: border-box;
+}
+
+.QueueCard:hover {
+  background: #f8fafc;
+}
+
+.ActiveQueueCard {
+  background: rgba(19, 33, 60, 0.06) !important;
+  border-left: 3px solid #13213C !important;
+  box-shadow: none;
 }
 
 .QueueCardTopRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.QueueCard small,
+.QueueCardTopRow small,
+.QueueLabels small {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(31, 41, 55, 0.55);
+  font-family: inherit;
+  margin: 0;
+}
+
+.QueueLabels {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.QueueTagInline {
+  display: inline-block;
+  width: fit-content;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  background: rgba(252, 163, 17, 0.12);
+  color: #13213C;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.QueueStatusBadge {
+  display: inline-block;
+  width: fit-content;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.QueueStatusBadge.unregistered {
+  background-color: rgba(224, 21, 21, 0.12);
+  border: 1px solid rgba(224, 21, 21, 0.4);
+  color: #B91C1C;
+}
+
+.QueueStatusBadge.registered {
+  background-color: rgba(27, 67, 50, 0.12);
+  border: 1px solid rgba(27, 67, 50, 0.3);
+  color: #1B4332;
+}
+
+.QueueStatusBadge.rejected {
+  background-color: rgba(217, 119, 6, 0.12);
+  border: 1px solid rgba(217, 119, 6, 0.4);
+  color: #D97706;
+}
+
+.OperationInProgressBadge {
+  display: inline-block;
+  width: fit-content;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  background: rgba(252, 163, 17, 0.12);
+  color: #13213C;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.QueueCard h4 {
+  margin: 0 0 2px 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #030303;
+  line-height: 1.3;
+}
+
+.QueueCard p {
+  margin: 0 0 6px 0;
+  font-size: 11.5px;
+  color: rgba(31, 41, 55, 0.6);
+  line-height: 1.3;
+}
+
+.QueueTag {
+  margin: 2px 0 0 0;
+}
+
+.QueueTag span {
+  display: inline-block;
+  width: fit-content;
+  background: rgba(252, 163, 17, 0.12);
+  color: #13213C;
+  padding: 2px 7px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .QueueCardFooterRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 5px;
-  padding-top: 5px;
+  margin-top: 2px;
+  padding-top: 6px;
   border-top: 1px solid #EDEDED;
 }
 
 .QueueCategoryTag {
   font-size: 10.5px;
-  font-weight: 700;
+  font-weight: 600;
+  color: #13213C;
+  background: rgba(19, 33, 60, 0.08);
   padding: 2px 7px;
-  border-radius: 8px;
-  background: rgba(27, 67, 50, 0.12);
-  color: #1A1A2E;
+  border-radius: 5px;
   flex-shrink: 0;
 }
 
@@ -1261,90 +1429,9 @@
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: #1F2937;
-  opacity: 0.6;
+  color: rgba(31, 41, 55, 0.6);
   white-space: nowrap;
   flex-shrink: 0;
-}
-
-.QueueTagInline {
-  background: rgba(252, 163, 17, 0.12);
-  color: #13213C;
-  padding: 3px 8px;
-  border-radius: 5px;
-  font-size: 11px;
-  font-weight: 600;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.QueueStatusBadge {
-  padding: 3px 8px;
-  border-radius: 5px;
-  font-size: 11px;
-  font-weight: 600;
-  flex-shrink: 0;
-  white-space: nowrap;
-  display: inline-block;
-}
-.QueueStatusBadge.unregistered {
-  background-color: rgba(224, 21, 21, 0.1);
-  border: 1px solid #ff0000a8;
-  color: #030303;
-}
-.QueueStatusBadge.registered {
-  background-color: rgba(5, 150, 105, 0.1);
-  border: 1px solid #059669;
-  color: #030303;
-}
-.QueueStatusBadge.rejected {
-  background-color: rgba(249, 115, 22, 0.1);
-  border: 1px solid #f97316;
-  color: #ea580c;
-}
-
-.OperationInProgressBadge {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.QueueCard:hover {
-    background: #f5f5f5;
-}
-
-.ActiveQueueCard {
-    background: rgba(252, 163, 17, 0.08);
-}
-
-.QueueCard h4 {
-    margin: 0;
-    font-size: 13.5px;
-    color: #13213C;
-    line-height: 1.3;
-}
-
-.QueueCard p {
-    margin: 1px 0;
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.QueueCard small {
-    color: #8895a7;
-    font-size: 10.5px;
-}
-
-.QueueTag {
-    margin: 4px 0 2px 0;
-}
-
-.QueueTag span {
-    background: rgba(252, 163, 17, 0.12);
-    color: #13213C;
-    padding: 2px 7px;
-    border-radius: 5px;
-    font-size: 10.5px;
-    font-weight: 600;
 }
 
 /* Left-panel queue pagination — matches existing .Pagination / .BtnPage style */
@@ -1355,6 +1442,10 @@
     padding: 10px 14px;
     border-top: 1px solid #EDEDED;
     background: #FAFAFA;
+    box-sizing: border-box;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
 .LeaVerifQueuePagination .LeaVerifQueuePageInfo {
@@ -1367,6 +1458,7 @@
     display: flex;
     gap: 4px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .LeaVerifQueuePageBtn {
@@ -1428,10 +1520,10 @@
 /*  RIGHT PANEL*/
 
 .VerificationDetails {
-  
     display: flex;
     flex-direction: column;
     gap: 16px;
+    min-width: 0;
 }
 
 .VerificationCard {
@@ -1515,7 +1607,90 @@
     font-size: 14px;
     font-weight: 600;
 }
+/* New Verification Request section — Awaiting FDA tab.
+   Matches the "Confirmed Rejected Product" style: tinted outer container
+   with a header row (icon + title), individual white field boxes inside. */
+.VerificationRequestInfo {
+    margin: 16px 0 24px 0;
+    padding: 18px 20px;
+    background: rgba(19, 33, 60, 0.04);
+    border: 1.5px solid rgba(19, 33, 60, 0.25);
+    border-radius: 12px;
+}
 
+.VerificationRequestHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.VerificationRequestIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(19, 33, 60, 0.12);
+    color: #13213C;
+    flex-shrink: 0;
+}
+
+.VerificationRequestInfo h3 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #13213C;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.VerificationRequestGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.VerificationRequestGrid > div {
+    background: #FDFDFD;
+    border: 1px solid #EDEDED;
+    border-radius: 8px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    min-width: 0;
+}
+
+.VerificationRequestGrid label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #13213C;
+    margin-bottom: 6px;
+}
+
+.VerificationRequestGrid p {
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #030303;
+}
+
+.VerificationRequestGrid .VerificationNotes {
+    grid-column: 1 / -1;
+}
+
+.VerificationRequestGrid .VerificationNotes p {
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .VerificationRequestGrid {
+        grid-template-columns: 1fr;
+    }
+}
 
 .VerificationRow {
     display: grid;
@@ -1868,11 +2043,56 @@
     background:#fff7ed;
     border:2px solid #f97316;
 }
-@media (max-width: 1024px) {
 
-    .VerificationContent {
-        grid-template-columns: 1fr;
-    }
+/* Compact left queue at small desktop widths (800px–1000px):
+   - narrows left panel so right details panel gains more space
+   - hides secondary elements (status/source badge, date) that are not
+     practical at narrow widths; data stays in the DOM unchanged */
+@media (max-width: 1000px) {
+  .QueueStatusBadge,
+  .QueueTagInline,
+  .OperationInProgressBadge {
+    display: none;
+  }
+  .QueueDateTag {
+    display: none;
+  }
+  .QueueCard {
+    padding: 10px 12px;
+  }
+  .LeaVerifQueueFilterHeader {
+    padding: 10px 12px;
+  }
+
+  /* Action buttons: keep icon, hide text label to save horizontal space */
+  .DeleteBtn span,
+  .DraftButton span,
+  .SendReqBtn span,
+  .LogButton span,
+  .SendReminderBtn span,
+  .RecallRequestBtn span {
+    display: none;
+  }
+  .DeleteBtn,
+  .DraftButton,
+  .LogButton {
+    padding: 0 10px;
+    min-width: 42px;
+  }
+  .SendReqBtn {
+    padding: 0 10px;
+    min-width: 42px;
+    font-size: 10px;
+  }
+  .SendReminderBtn,
+  .RecallRequestBtn {
+    width: auto;
+    min-width: 42px;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 1024px) {
 
     .CaseInfoGrid {
         grid-template-columns: repeat(2, 1fr);
@@ -1927,7 +2147,7 @@
     .LeaVerifFilterControlsLeft,
     .LeaVerifFilterControlsRight {
         width: 100%;
-        
+
         justify-content: flex-start;
         margin-left: 0;
     }
@@ -2086,7 +2306,7 @@
     color: #13213C;
     margin-top: 4px;
     margin-bottom: 16px;
-    margin-left: 59px;
+    margin-left: 0;
     margin-right: 20px;
 }
 
@@ -2138,7 +2358,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: #FDFDFD;
+  background: transparent;
   border-bottom: 1.5px solid #EDEDED;
   padding: 14px;
 }
@@ -2174,8 +2394,8 @@
 }
 
 .LeaCategoriesSearchInput {
-  width: 100%;        
-  box-sizing: border-box; 
+  width: 100%;
+  box-sizing: border-box;
   height: 40px;
   border: 1px solid #EDEDED;
   border-radius: 8px;
@@ -2210,7 +2430,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  height: 40px !important;
+  justify-content: flex-end;
 }
 
 .LeaFilterGroup label {
@@ -2223,18 +2443,21 @@
 
 .LeaFilterGroup select {
   height: 40px;
+  min-height: 40px;
   box-sizing: border-box;
   border: 1px solid #EDEDED;
   border-radius: 8px;
   padding: 0 12px;
   font-size: 13px;
+  line-height: normal;
+  font-family: var(--font-body);
+  color: #1F2937;
   background: #FDFDFD;
   outline: none;
   cursor: pointer;
-  /* Change 2 — responsive: was min-width:160px fixed; now flex+clamp */
-  flex: 1;
   min-width: clamp(100px, 20%, 150px);
   max-width: 150px;
+  width: 100%;
   transition: 0.2s;
 }
 
@@ -2245,19 +2468,21 @@
 
 .LeaVerifDateInput {
   height: 40px;
+  min-height: 40px;
   box-sizing: border-box;
   border: 1px solid #EDEDED;
   border-radius: 8px;
   padding: 0 12px;
   font-size: 13px;
+  line-height: normal;
   background: #FDFDFD;
   outline: none;
   cursor: pointer;
   transition: 0.2s;
   /* Change 2 — responsive: was min-width:140px fixed; now flex+clamp */
-  flex: 1;
   min-width: clamp(100px, 15%, 140px);
   max-width: 140px;
+  width: 100%;
   color: #1F2937;
   font-family: var(--font-body);
 }
@@ -2293,6 +2518,7 @@
   border: 1.5px solid #EDEDED;
   border-radius: 10px;
   padding: 14px 16px;
+  box-sizing: border-box;
 }
 
 .LeaVerifSectionHeader {
@@ -2327,6 +2553,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .LeaVerifDocIcon {
@@ -2517,7 +2745,7 @@
 /* tab separator between process tabs and tracking tabs */
 .TabSeparator {
   width: 1px;
-  background-color: #d8d8d8;
+  background-color: rgba(19, 33, 60, 0.12);
   margin: 6px 4px;
   align-self: stretch;
 }
@@ -2785,6 +3013,7 @@
 /* dismissed cases table — full width data grid for closed complaints */
 .DismissedTable {
   width: 100%;
+  min-width: 800px;
   border-collapse: collapse;
 }
 
@@ -2835,6 +3064,18 @@
   font-weight: 600;
   display: inline-block;
   white-space: nowrap;
+}
+.ReasonCompleted {
+   border: 1px solid #1d4ed8;
+  color: #1d4ed8;
+  background-color: rgba(37, 99, 235, 0.1);
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  white-space: nowrap;
+
 }
 
 /* WALK-IN COMPLAINTS IMPROVEMENTS */
@@ -2889,11 +3130,13 @@
 .LeaDashboardMain {
   display: flex;
   min-height: 100vh;
+  overflow: hidden;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .LeaContentContainer {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2985,7 +3228,7 @@
 }
 
 /* Charts Grid Row */
-.LeaChartsLeftCol,  
+.LeaChartsLeftCol,
 .LeaChartsRightCol {
   display: flex;
   flex-direction: column;
@@ -3302,6 +3545,7 @@
 
 .RecentComplaintsTable {
   width: 100%;
+  min-width: 580px;
   border-collapse: collapse;
 }
 
@@ -3914,3 +4158,203 @@
   color: #1e293b;
   font-weight: 500;
 }
+
+/* ADDED — Word document (.docx) preview container rendered via Mammoth */
+.LeaVerifDocDocxPreview {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  display: block;
+}
+
+.LeaVerifDocxContent {
+  width: 100%;
+  max-width: 100%;
+  background: #FFFFFF;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 24px 32px;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1F2937;
+}
+
+.LeaVerifDocxContent h1,
+.LeaVerifDocxContent h2,
+.LeaVerifDocxContent h3,
+.LeaVerifDocxContent h4 {
+  color: #13213C;
+  font-weight: 700;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+}
+
+.LeaVerifDocxContent p {
+  margin-bottom: 1em;
+}
+
+.LeaVerifDocxContent table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.LeaVerifDocxContent th,
+.LeaVerifDocxContent td {
+  border: 1px solid #D1D5DB;
+  padding: 8px 12px;
+  font-size: 12.5px;
+}
+
+/* ── Responsive Search & Filter Containers: 2-Row Layout (Row 1: Search, Row 2: All Filters on 1 Centered Line) ── */
+@media (max-width: 1024px) {
+  .DraftsFilterSection,
+  .LeaFilterPanel {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .DraftsFilterControls,
+  .LeaFilterPanel {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .DraftsFilterLeft,
+  .LeaVerifFilterControlsLeft {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .DraftsSearchInput,
+  .LeaSearchWrapper,
+  .LeaSearchInput {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .DraftsFilterRight,
+  .LeaVerifFilterControlsRight {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: center;
+    flex-wrap: nowrap !important;
+    margin-left: auto;
+    margin-right: auto;
+    width: auto;
+    max-width: 100%;
+    gap: 8px;
+  }
+
+  .DraftsFilterDropdown,
+  .DraftsDateFilter {
+    width: auto;
+    min-width: 0;
+    max-width: 125px;
+    flex: 0 1 auto;
+    flex-shrink: 1;
+    padding: 0 8px;
+    font-size: 12px;
+    height: 36px;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+
+  .LeaFilterGroup {
+    flex: 0 1 auto;
+    min-width: 0;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .LeaFilterGroup label {
+    font-size: 10.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+  }
+
+  .LeaFilterGroup select,
+  .LeaVerifDateInput {
+    width: auto;
+    min-width: 0;
+    max-width: 125px;
+    flex: 0 1 auto;
+    flex-shrink: 1;
+    padding: 0 8px;
+    font-size: 12px;
+    height: 36px;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+
+  .BtnClearFilters,
+  .BtnClearFiltersIcon {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    margin-bottom: 3px;
+  }
+}
+
+@media (max-width: 900px) {
+  .DraftsFilterRight,
+  .LeaVerifFilterControlsRight {
+    gap: 6px;
+  }
+
+  .DraftsFilterDropdown,
+  .DraftsDateFilter,
+  .LeaFilterGroup select,
+  .LeaVerifDateInput {
+    max-width: 110px;
+    padding: 0 6px;
+    font-size: 11.5px;
+    height: 34px;
+  }
+
+  .LeaFilterGroup label {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 560px) {
+  .DraftsFilterRight,
+  .LeaVerifFilterControlsRight {
+    flex-wrap: nowrap !important;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .DraftsFilterDropdown,
+  .DraftsDateFilter,
+  .LeaFilterGroup,
+  .LeaFilterGroup select,
+  .LeaVerifDateInput {
+    width: auto;
+    min-width: 0;
+    max-width: 95px;
+    flex: 0 1 auto;
+    flex-shrink: 1;
+    padding: 0 4px;
+    font-size: 11px;
+    height: 32px;
+  }
+}
+
+

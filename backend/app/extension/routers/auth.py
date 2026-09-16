@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -12,6 +12,8 @@ from app.extension.schemas.auth import Token
 from app.extension.services.consumer_acc_service import login_with_google
 from app.extension.schemas.consumer_acc import GoogleLoginRequest
 
+from app.core.extension_limiter import limiter
+
 router = APIRouter(
     prefix="/auth",
     tags=["auth"]
@@ -20,7 +22,9 @@ router = APIRouter(
 db_dependency = Annotated[Session, Depends(get_db)]
 
 @router .post("/token", response_model=Token)
+@limiter.limit("5/minute")
 async def login_for_access_token(
+        request: Request,
         form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
         db: db_dependency,
     ):

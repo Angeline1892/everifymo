@@ -3,17 +3,19 @@ import { useState } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom'
 import ImgSuccess from '../images/success_img.png'
 import ImgTime from '../images/time_img.png'
-import { 
-  User, 
-  Mail, 
-  Building2, 
-  MapPin, 
-  Phone, 
-  Briefcase, 
+import { API_BASE_URL } from '../utils/apiConfig'
+import {
+  User,
+  Mail,
+  Building2,
+  MapPin,
+  Phone,
+  Briefcase,
   Fingerprint,
   Shield,
   AlertCircle
 } from 'lucide-react';
+
 
 // Maps raw role values from the database to human-friendly labels
 const ROLE_LABELS = {
@@ -22,11 +24,15 @@ const ROLE_LABELS = {
   superadmin: 'SuperAdmin',
 }
 
+
 // REGISTRATION PAGE FOR ADDED PERSONNEL
 function UserRegistration() {
   const navigate = useNavigate();
   const location = useLocation()
   const officerData = location.state || {}   // fallback in case someone visits this page directly
+  // add this to the top-level of the component, right after officerData is defined:
+  const hasValidInviteData = Boolean(officerData.invite_token && officerData.email);
+
 
   const [form, setForm] = useState({
     firstName: '',
@@ -38,8 +44,11 @@ function UserRegistration() {
     position: '',
   });
 
+
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // NEW
+
 
   const REQUIRED_FIELDS = [
     'firstName',
@@ -49,6 +58,7 @@ function UserRegistration() {
     'department',
     'position',
   ];
+
 
   function validate() {
     const newErrors = {};
@@ -66,15 +76,19 @@ function UserRegistration() {
       }
     });
 
+
     if (form.contactNumber && form.contactNumber.length !== 11) {
     newErrors.contactNumber = 'Contact number must be exactly 11 digits.';
   }
 
+
     return newErrors;
   }
 
+
   function handleChange(e) { // added to handle contact number input to only allow digits and limit to 11 characters
   const { name, value } = e.target;
+
 
   if (name === 'contactNumber') {
     const digitsOnly = value.replace(/\D/g, '').slice(0, 11);
@@ -85,22 +99,32 @@ function UserRegistration() {
     return;
   }
 
+
   setForm((prev) => ({ ...prev, [name]: value }));
   if (errors[name]) {
     setErrors((prev) => ({ ...prev, [name]: '' }));
   }
 }
 
+
   function handleSubmit(e) {
     e.preventDefault();
+   
+    if (isSubmitting) return; // NEW — ignore extra clicks/double-fires while a request is in flight
+
+
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
 
+
+    setIsSubmitting(true); // NEW
+
+
     // Submit the form data to the backend
-  fetch('http://localhost:8000/registration/complete', {
+  fetch(`${API_BASE_URL}/registration/complete`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -114,19 +138,59 @@ function UserRegistration() {
       position: form.position,
     }),
   })
-    .then((res) => {
-    if (!res.ok) {
-      throw new Error('Submission failed')
-    }
-    return res.json()
-  })
-  .then(() => setSubmitted(true))
-  .catch((error) => {
-    console.error(error)
-    // For now, at minimum, avoid silently pretending success
-    alert('Something went wrong submitting your registration. Please try again.')
-  })
+    .then(async (res) => {
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(body.detail || 'Submission failed');
+        err.status = res.status;
+        err.detail = body.detail;
+        throw err;
+      }
+      return body;
+    })
+    .then(() => setSubmitted(true))
+    .catch((error) => {
+      console.error(error);
+
+      if (error.status === 409 && error.detail) {
+        // Duplicate employee_id or contact_number — route to the right field
+        if (error.detail.toLowerCase().includes('employee id')) {
+          setErrors((prev) => ({ ...prev, employeeId: error.detail }));
+        } else if (error.detail.toLowerCase().includes('contact number')) {
+          setErrors((prev) => ({ ...prev, contactNumber: error.detail }));
+        } else {
+          alert(error.detail);
+        }
+      } else if (error.detail) {
+        // 400/404 from the backend (expired/invalid token, etc.)
+        alert(error.detail);
+      } else {
+        alert('Something went wrong submitting your registration. Please try again.');
+      }
+    })
+    .finally(() => setIsSubmitting(false));
+  }
+
+
+// add this block BEFORE the `if (submitted)` block:
+if (!hasValidInviteData) {
+  return (
+    <>
+      <style>{styles}</style>
+      <div className="RegPageContainer">
+        <div className="RegCard">
+          <div className="RegSuccessScreen">
+            <h2 className="RegSuccessTitle">Link Not Recognized</h2>
+            <p className="RegSuccessDesc">
+              We couldn't find your registration details. Please use the invitation link from your email, or contact your administrator.
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
+  );
 }
+
 
   /*Success Screen*/
   if (submitted) {
@@ -145,13 +209,26 @@ function UserRegistration() {
               <div className="RegSuccessTag">
                 <span className='RegTimeIcon'><img src={ImgTime} alt="Hour glass icon" /></span> Pending Administrator Approval
               </div>
-              
+
+
+              {/* in the success screen, add the Back to Login button after RegSuccessTag: */}
+
+
+              <button
+                className="RegSubmitBtn"
+                style={{ marginTop: 20, maxWidth: 220 }}
+                onClick={() => navigate('/universal-login')}
+              >
+                Back to Login
+              </button>
+             
             </div>
           </div>
         </div>
       </>
     );
   }
+
 
   /* Registration Form for user side */
   return (
@@ -167,6 +244,7 @@ function UserRegistration() {
               Please fill in your details to complete your personnel registration.
             </p>
           </div>
+
 
           <form className="RegForm" onSubmit={handleSubmit} noValidate>
             {/* Name Row */}
@@ -189,6 +267,7 @@ function UserRegistration() {
                 {errors.firstName && <span className="RegError"><AlertCircle size={12} /> {errors.firstName}</span>}
               </div>
 
+
               <div className="RegFormGroup">
                 <label className="RegLabel">Middle Name</label>
                 <div className="RegInputWrapper">
@@ -203,6 +282,7 @@ function UserRegistration() {
                   />
                 </div>
               </div>
+
 
               <div className="RegFormGroup">
                 <label className="RegLabel">
@@ -222,6 +302,7 @@ function UserRegistration() {
                 {errors.lastName && <span className="RegError"><AlertCircle size={12} /> {errors.lastName}</span>}
               </div>
             </div>
+
 
             {/* Employee ID & Contact */}
             <div className="RegFieldRow">
@@ -243,6 +324,7 @@ function UserRegistration() {
                 {errors.employeeId && <span className="RegError"><AlertCircle size={12} /> {errors.employeeId}</span>}
               </div>
 
+
               <div className="RegFormGroup">
                 <label className="RegLabel">
                   Contact Number <span className="RegRequired">*</span>
@@ -263,6 +345,7 @@ function UserRegistration() {
               </div>
             </div>
 
+
             {/* Account Info (read-only) kase pre-filled na based sa superadmin entry */}
             <div className="RegFormGroup">
               <label className="RegLabel">
@@ -280,6 +363,7 @@ function UserRegistration() {
                 />
               </div>
             </div>
+
 
             <div className="RegFieldRow">
               <div className="RegFormGroup">
@@ -299,6 +383,7 @@ function UserRegistration() {
                 </div>
               </div>
 
+
               <div className="RegFormGroup">
                 <label className="RegLabel">
                   Region{' '}
@@ -316,6 +401,7 @@ function UserRegistration() {
                 </div>
               </div>
             </div>
+
 
             {/* Department & Position */}
             <div className="RegFieldRow">
@@ -337,6 +423,7 @@ function UserRegistration() {
                 {errors.department && <span className="RegError"><AlertCircle size={12} /> {errors.department}</span>}
               </div>
 
+
               <div className="RegFormGroup">
                 <label className="RegLabel">
                   Position <span className="RegRequired">*</span>
@@ -356,8 +443,9 @@ function UserRegistration() {
               </div>
             </div>
 
-            <button type="submit" className="RegSubmitBtn">
-              Submit Registration
+
+            <button type="submit" className="RegSubmitBtn" disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Submit Registration'}
             </button>
           </form>
         </div>
@@ -368,8 +456,12 @@ function UserRegistration() {
 
 
 
+
+
+
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
+
 
   .RegPageContainer {
     min-height: 100vh;
@@ -377,33 +469,37 @@ const styles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #fdfdfd;
+    background: #F1F5F9;
     padding: 32px 16px;
     box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
   }
+
 
   .RegCard {
     width: 100%;
     max-width: 700px;
     background: #ffffff;
-    border-radius: 20px;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
     overflow: hidden;
     animation: RegSlideUp 0.35s ease;
   }
 
+
   @keyframes RegSlideUp {
-    from { opacity: 0; transform: translateY(24px); }
+    from { opacity: 0; transform: translateY(20px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /*Card Header*/
+  /* Card Header */
   .RegCardHeader {
     background: linear-gradient(135deg, #1E293B 0%, #0f172a 100%);
-    padding: 32px 36px;
+    padding: 28px 36px 24px;
     border-bottom: 4px solid #0D9488;
     text-align: center;
   }
+
 
   .RegSystemBadge {
     display: inline-block;
@@ -414,39 +510,45 @@ const styles = `
     font-weight: 700;
     letter-spacing: 3px;
     text-transform: uppercase;
-    padding: 4px 14px;
+    padding: 3px 12px;
     border-radius: 20px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
+    font-family: 'Poppins', sans-serif;
   }
+
 
   .RegCardTitle {
     font-size: 22px;
     font-weight: 700;
     color: #ffffff;
-    margin: 0 0 8px;
+    margin: 0 0 6px;
     font-family: 'Poppins', sans-serif;
+    letter-spacing: -0.3px;
   }
 
+
   .RegCardSubtitle {
-    font-size: 13.5px;
+    font-size: 13px;
     color: #94a3b8;
     margin: 0;
     line-height: 1.5;
   }
 
-  /*Form*/
+  /* Form */
   .RegForm {
-    padding: 32px 36px 36px;
+    padding: 28px 36px 32px;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 16px;
   }
+
 
   .RegFieldRow {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
+    gap: 14px;
   }
+
 
   .RegFormGroup {
     display: flex;
@@ -454,16 +556,19 @@ const styles = `
     gap: 6px;
   }
 
+
   .RegLabel {
     font-size: 13px;
     font-weight: 600;
-    color: #374151;
+    color: #334155;
     display: flex;
     align-items: center;
     gap: 6px;
   }
 
+
   .RegRequired { color: #ef4444; }
+
 
   .RegReadonlyTag {
     font-size: 10.5px;
@@ -477,12 +582,14 @@ const styles = `
     letter-spacing: 0.5px;
   }
 
+
   .RegInputWrapper {
     position: relative;
     display: flex;
     align-items: center;
     width: 100%;
   }
+
 
   .RegInputIcon {
     position: absolute;
@@ -494,103 +601,104 @@ const styles = `
     justify-content: center;
   }
 
+
   .RegInput {
     width: 100%;
+    height: 44px;
     padding: 11px 12px 11px 38px;
     border: 1.5px solid #e2e8f0;
-    border-radius: 9px;
+    border-radius: 8px;
     font-size: 14px;
     color: #111827;
-    background: #f9fafb;
+    background: #ffffff;
     outline: none;
     transition: all 0.2s ease;
     box-sizing: border-box;
     font-family: 'Inter', sans-serif;
   }
 
+
   .RegInput:focus {
     border-color: #0D9488;
     box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
-    background: #fff;
   }
+
 
   .reg-input-error {
     border-color: #ef4444 !important;
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
   }
 
+
   .reg-input-readonly {
-    background: #f1f5f9 !important;
+    background: #f8fafc !important;
     color: #64748b !important;
-    cursor: not-allowed;
     border-color: #e2e8f0 !important;
+    cursor: default;
   }
 
-  .RegSelect {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    padding-right: 36px;
-    cursor: pointer;
-  }
 
   .RegError {
-    font-size: 12px;
+    font-size: 11.5px;
     color: #ef4444;
-    margin-top: 4px;
+    margin-top: 2px;
     display: flex;
     align-items: center;
     gap: 4px;
+    font-weight: 500;
   }
 
-  /* Submit Button*/
+  /* Submit Button */
   .RegSubmitBtn {
-    margin-top: 8px;
+    margin-top: 6px;
     width: 100%;
-    padding: 14px;
+    padding: 12px;
     background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
     color: #ffffff;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.22s ease;
-    box-shadow: 0 6px 20px rgba(13, 148, 136, 0.4);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3);
     font-family: 'Poppins', sans-serif;
     letter-spacing: 0.3px;
   }
 
+
   .RegSubmitBtn:hover {
     background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(13, 148, 136, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(13, 148, 136, 0.4);
   }
+
 
   .RegSubmitBtn:active {
     transform: translateY(0);
   }
 
-  /* Success Screen*/
+  /* Success Screen */
   .RegSuccessScreen {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 56px 36px;
+    padding: 48px 36px;
     gap: 16px;
   }
 
-  .RegSuccessIconLarge img{
-    width: 100px !important;
+  .RegSuccessIconLarge img {
+    width: 80px !important;
     animation: RegPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
+
 
   @keyframes RegPop {
     from { transform: scale(0); opacity: 0; }
     to   { transform: scale(1); opacity: 1; }
   }
+
 
   .RegSuccessTitle {
     font-size: 22px;
@@ -600,6 +708,7 @@ const styles = `
     font-family: 'Poppins', sans-serif;
   }
 
+
   .RegSuccessDesc {
     font-size: 14px;
     color: #64748b;
@@ -608,25 +717,26 @@ const styles = `
     max-width: 420px;
   }
 
+
   .RegSuccessTag {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 22px;
+    padding: 8px 18px;
     background: #fef3c7;
     border: 1px solid #fde68a;
     border-radius: 20px;
     font-size: 13px;
     font-weight: 600;
     color: #92400e;
-    margin-top: 8px;
-  }
-    .RegTimeIcon img{
-    width: 18px;
-    height: auto;
-    margin-top: 5px;
+    margin-top: 4px;
   }
 
+  .RegTimeIcon img {
+    width: 16px;
+    height: auto;
+    display: block;
+  }
 `;
 
 export default UserRegistration;

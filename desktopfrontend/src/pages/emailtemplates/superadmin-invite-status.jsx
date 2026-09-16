@@ -1,39 +1,56 @@
-import { useState, useEffect } from 'react';
+// desktopfrontend/src/pages/emailtemplates/superadmin-invite-status.jsx
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ClockAlert, Link, CircleCheckBig, ArrowRight } from 'lucide-react';
+import { API_BASE_URL } from '../../utils/apiConfig';
 
 function SuperadminInviteStatus() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Receives status from navigation state, query params, or defaults for preview/testing
   const queryParams = new URLSearchParams(location.search);
-  const initialStatus = location.state?.status || queryParams.get('status') || 'valid';
+  const initialStatus = location.state?.status || queryParams.get('status') || 'invalid';
   const inviteToken = location.state?.token || queryParams.get('token') || '';
+  const resendAlreadyRequested = location.state?.resend_already_requested || false;
 
-  const [linkStatus, setLinkStatus] = useState(initialStatus);
-  const [requested, setRequested] = useState(false);
+  const [linkStatus] = useState(initialStatus);
+  const [requested, setRequested] = useState(resendAlreadyRequested);
+  const [resendNotice, setResendNotice] = useState(
+    resendAlreadyRequested ? 'A resend has already been requested for this invitation.' : ''
+  );
+  const [resendSending, setResendSending] = useState(false);
 
-  useEffect(() => {
-    // If state is valid, automatically redirect to create-new-password after short notice/delay or immediately
-    if (linkStatus === 'valid') {
-      const timer = setTimeout(() => {
-        navigate('/create-new-password', { state: { token: inviteToken } });
-      }, 1500);
-      return () => clearTimeout(timer);
+  const handleRequestNewInvite = async () => {
+    setResendSending(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/registration/request-resend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invite_token: inviteToken }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      setResendSending(false);
+
+      if (response.status === 409) {
+        setRequested(true);
+        setResendNotice(data.detail || 'A resend has already been requested for this invitation.');
+        return;
+      }
+
+      if (!response.ok) {
+        console.error('Failed to request new invite:', data.detail);
+        alert('Something went wrong. Please contact your lead system administrator directly.');
+        return;
+      }
+
+      setRequested(true);
+      setResendNotice('Your request has been sent. Please wait for your administrator.');
+    } catch (err) {
+      setResendSending(false);
+      console.error('Error requesting new invite:', err);
+      alert('Something went wrong. Please contact your lead system administrator directly.');
     }
-  }, [linkStatus, navigate, inviteToken]);
-
-  const handleRequestNewInvite = () => {
-    // 🔌 BACKEND: Call API to request a new superadmin invitation resend
-    // fetch('http://127.0.0.1:8000/superadmin/invite/request-new', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ token: inviteToken }),
-    // })
-
-    // ⚠️ REMOVE THIS: Simulated frontend response
-    setRequested(true);
   };
 
   const statusContent = {
@@ -41,49 +58,39 @@ function SuperadminInviteStatus() {
       icon: <CircleCheckBig size={32} color="#0D9488" />,
       iconBg: '#CCFBF1',
       title: 'Valid Invitation Link',
-      message: 'Your invitation link is valid. Redirecting you to set up your password...',
+      message: 'Your invitation link is valid. You can proceed to set up your Superadmin password.',
       showButton: true,
       buttonLabel: 'Proceed to Create Password',
       buttonAction: () => navigate('/create-new-password', { state: { token: inviteToken } }),
       accentColor: '#0D9488',
     },
     expired: {
-      icon: <ClockAlert size={32} color="#D97706" />,
-      iconBg: '#FEF3C7',
+      icon: <ClockAlert size={32} color="#0D9488" />,
+      iconBg: '#CCFBF1',
       title: 'Invitation Expired',
       message: 'Your Superadmin invitation link has expired. Invitation links are only valid for 2 days. Please request a new invitation from your administrator.',
       showButton: !requested,
-      buttonLabel: 'Request New Invitation',
+      buttonLabel: resendSending ? 'Sending Request…' : 'Request New Invitation',
       buttonAction: handleRequestNewInvite,
-      accentColor: '#D97706',
+      accentColor: '#0D9488',
     },
     used: {
       icon: <CircleCheckBig size={32} color="#0D9488" />,
-      iconBg: '#D1FAE5',
+      iconBg: '#CCFBF1',
       title: 'Invitation Already Accepted',
       message: 'This invitation has already been accepted and used to set up a Superadmin account. You can proceed to log in to the Superadmin portal.',
       showButton: true,
       buttonLabel: 'Go to Superadmin Login',
-      buttonAction: () => navigate('/superadmin-login'),
-      accentColor: '#0D9488',
-    },
-    accepted: {
-      icon: <CircleCheckBig size={32} color="#0D9488" />,
-      iconBg: '#D1FAE5',
-      title: 'Invitation Already Accepted',
-      message: 'This invitation has already been accepted and used to set up a Superadmin account. You can proceed to log in to the Superadmin portal.',
-      showButton: true,
-      buttonLabel: 'Go to Superadmin Login',
-      buttonAction: () => navigate('/superadmin-login'),
+      buttonAction: () => navigate('/universal-login?tab=superadmin'),
       accentColor: '#0D9488',
     },
     invalid: {
-      icon: <Link size={32} color="#B91C1C" />,
+      icon: <Link size={32} color="#DC2626" />,
       iconBg: '#FEE2E2',
       title: 'Invalid Invitation Link',
       message: 'This Superadmin invitation link is invalid or unrecognized. If you believe this is an error, please contact your lead system administrator.',
       showButton: false,
-      accentColor: '#B91C1C',
+      accentColor: '#DC2626',
     },
   };
 
@@ -96,32 +103,32 @@ function SuperadminInviteStatus() {
 
         .SuperadminInvitePage {
           min-height: 100vh;
-          background-color: #fdfdfd;
+          background-color: #F1F5F9;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 24px;
+          padding: 24px 16px;
           font-family: 'Inter', sans-serif;
           box-sizing: border-box;
         }
 
         .SuperadminInviteCard {
           background: #ffffff;
-          border-radius: 20px;
-          padding: 48px 40px;
+          border-radius: 16px;
+          padding: 44px 36px;
           max-width: 480px;
           width: 100%;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
           text-align: center;
-          border-top: 5px solid;
-          animation: InviteSlideUp 0.3s ease;
+          border-top: 4px solid;
+          animation: InviteSlideUp 0.35s ease;
           box-sizing: border-box;
         }
 
         @keyframes InviteSlideUp {
           from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+          to   { opacity: 1; transform: translateY(0); }
         }
 
         .SuperadminInviteIconBox {
@@ -131,7 +138,7 @@ function SuperadminInviteStatus() {
           display: flex;
           align-items: center;
           justify-content: center;
-          margin: 0 auto 24px auto;
+          margin: 0 auto 20px auto;
         }
 
         .SuperadminInviteTitle {
@@ -139,20 +146,21 @@ function SuperadminInviteStatus() {
           font-size: 22px;
           font-weight: 700;
           color: #111827;
-          margin-bottom: 12px;
+          margin: 0 0 12px;
+          letter-spacing: -0.3px;
         }
 
         .SuperadminInviteMessage {
           font-family: 'Inter', sans-serif;
           font-size: 14px;
-          color: #6B7280;
+          color: #4B5563;
           line-height: 1.7;
-          margin-bottom: 28px;
+          margin: 0 0 24px;
         }
 
         .SuperadminInviteBtn {
           width: 100%;
-          padding: 13px 24px;
+          padding: 12px 24px;
           border: none;
           border-radius: 10px;
           font-family: 'Poppins', sans-serif;
@@ -166,19 +174,26 @@ function SuperadminInviteStatus() {
           align-items: center;
           justify-content: center;
           gap: 8px;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
         }
 
         .SuperadminInviteBtn:hover {
-          opacity: 0.92;
           transform: translateY(-1px);
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
         }
 
         .SuperadminInviteBtn:active {
           transform: translateY(0);
         }
 
+        .SuperadminInviteBtn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+
         .SuperadminInviteSystemName {
-          margin-top: 36px;
+          margin-top: 32px;
           font-size: 11px;
           color: #9CA3AF;
           letter-spacing: 1.2px;
@@ -193,30 +208,6 @@ function SuperadminInviteStatus() {
           margin: 20px auto;
           border-radius: 2px;
         }
-
-        .SuperadminInviteDevControls {
-          margin-top: 24px;
-          padding: 10px;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 8px;
-          display: flex;
-          gap: 8px;
-          justify-content: center;
-          flex-wrap: wrap;
-        }
-
-        .SuperadminInviteDevBtn {
-          background: #334155;
-          color: #e2e8f0;
-          border: none;
-          padding: 4px 10px;
-          border-radius: 4px;
-          font-size: 11px;
-          cursor: pointer;
-        }
-        .SuperadminInviteDevBtn:hover {
-          background: #475569;
-        }
       `}</style>
 
       <div className="SuperadminInvitePage">
@@ -224,7 +215,6 @@ function SuperadminInviteStatus() {
           className="SuperadminInviteCard"
           style={{ borderTopColor: content.accentColor }}
         >
-          {/* Icon */}
           <div
             className="SuperadminInviteIconBox"
             style={{ backgroundColor: content.iconBg }}
@@ -232,45 +222,32 @@ function SuperadminInviteStatus() {
             {content.icon}
           </div>
 
-          {/* Title */}
           <h2 className="SuperadminInviteTitle">{content.title}</h2>
 
-          {/* Message */}
           <p className="SuperadminInviteMessage">{content.message}</p>
 
           <div className="SuperadminInviteDivider" />
 
-          {/* Action Button */}
           {content.showButton && (
             <button
               className="SuperadminInviteBtn"
               style={{ backgroundColor: content.accentColor }}
               onClick={content.buttonAction}
+              disabled={resendSending}
             >
               {content.buttonLabel} <ArrowRight size={16} />
             </button>
           )}
 
-          {/* Resend requested notice */}
           {linkStatus === 'expired' && requested && (
-            <p className="SuperadminInviteMessage" style={{ color: '#0D9488', fontWeight: 600 }}>
-              ✓ Request sent successfully! Please notify your administrator.
+            <p className="SuperadminInviteMessage" style={{ color: '#0D9488', fontWeight: 600, marginTop: 16, marginBottom: 0 }}>
+              ✓ {resendNotice}
             </p>
           )}
 
-          {/* System Footer */}
           <p className="SuperadminInviteSystemName">
             ICMDA · Superadmin Management
           </p>
-        </div>
-
-        {/* ⚠️ REMOVE THIS: Interactive status switcher for testing */}
-        <div className="SuperadminInviteDevControls">
-          <span style={{ color: '#94a3b8', fontSize: '11px', alignSelf: 'center' }}>Test Status:</span>
-          <button className="SuperadminInviteDevBtn" onClick={() => setLinkStatus('valid')}>Valid</button>
-          <button className="SuperadminInviteDevBtn" onClick={() => setLinkStatus('expired')}>Expired</button>
-          <button className="SuperadminInviteDevBtn" onClick={() => setLinkStatus('used')}>Already Accepted</button>
-          <button className="SuperadminInviteDevBtn" onClick={() => setLinkStatus('invalid')}>Invalid</button>
         </div>
       </div>
     </>

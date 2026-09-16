@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { API_BASE_URL } from '../../utils/apiConfig'
 import {
   LayoutDashboard, //dashboard icon
   ClipboardList, //complaints menu icon
@@ -15,14 +16,29 @@ import {
   Menu, // hamburger icon (NEW - responsive sidebar)
 } from "lucide-react";
 
+
 // Images
 import CIDGLogo from '../../images/pnp-cidg.jpg'
 import FDALogo from '../../images/FDA.png'
 
-const SuperAdminMenuItems = [
-    { icon: UsersRound, label: 'User Management', path: '/superadminfolder/superadmin-user-management' },
-    { icon: UserCog, label: 'Admin Management', path: '/superadminfolder/superadmin-admin-management' },
-    { icon: ScrollText, label: 'Audit Logs', path: '/superadminfolder/superadmin-audit-log' },
+const NationalAdminMenuItems = [
+      { icon: UserCog, label: 'Interagency Admin Management', path: '/nationaladminfolder/national-admin-interagency-admin-management' },
+    { icon: UsersRound, label: 'National Admin Management', path: '/nationaladminfolder/national-admin-new-admin-management' },
+]
+
+// Backwards compatibility alias
+const SuperAdminMenuItems = NationalAdminMenuItems
+
+const FDAAdminMenuItems = [
+    { icon: UsersRound, label: 'User Management', path: '/fdaadminfolder/fda-admin-user-management' },
+    { icon: UserCog, label: 'Admin Management', path: '/fdaadminfolder/fda-admin-admin-management' },
+    { icon: ScrollText, label: 'Audit Logs', path: '/fdaadminfolder/fda-admin-audit-logs' },
+]
+
+const LeaAdminMenuItems = [
+    { icon: UsersRound, label: 'User Management', path: '/leaadminfolder/lea-admin-user-management' },
+    { icon: UserCog, label: 'Admin Management', path: '/leaadminfolder/lea-admin-admin-management' },
+    { icon: ScrollText, label: 'Audit Logs', path: '/leaadminfolder/lea-admin-audit-logs' },
 ]
 
 const FDAMenuItems = [
@@ -43,8 +59,9 @@ const LeaMenuItems = [
 ]
 
 const sidebarStyles = `
-/* SuperAdmin Sidebar Styles*/
+/* National Admin / SuperAdmin Sidebar Styles */
 
+.NationalAdminSidebarMain,
 .SuperAdminSidebarMain {
   width: 280px;
   height: 100vh;
@@ -55,6 +72,7 @@ const sidebarStyles = `
   box-sizing: border-box;
 }
 
+.NationalAdminSidebarTop,
 .SuperAdminSidebarTop {
   width: 280px;
   min-height: 70px;
@@ -71,6 +89,7 @@ const sidebarStyles = `
   box-sizing: border-box;
 }
 
+.NationalAdminSidebarMenu,
 .SuperAdminSidebarMenu {
   display: flex;
   flex-direction: column;
@@ -80,6 +99,7 @@ const sidebarStyles = `
   flex: 1;
 }
 
+.NationalAdminSidebarMenu .MenuBtn,
 .SuperAdminSidebarMenu .MenuBtn {
   width: 100%;
   padding: 12px 16px;
@@ -96,10 +116,12 @@ const sidebarStyles = `
   gap: 10px;
 }
 
+.NationalAdminSidebarMenu .MenuBtn:hover,
 .SuperAdminSidebarMenu .MenuBtn:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
+.NationalAdminSidebarMenu .MenuBtn.active,
 .SuperAdminSidebarMenu .MenuBtn.active {
   background: rgba(255, 255, 255, 0.2);
   font-weight: 600;
@@ -257,6 +279,158 @@ const sidebarStyles = `
   display: block;
 }
 
+/* ========================================== */
+/* FDA Admin Sidebar Styles                   */
+/* ========================================== */
+.FdaAdminSidebarMain {
+  width: 280px;
+  height: 100vh;
+  background: #1B4332;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.FdaAdminSidebarTop {
+  width: 280px;
+  min-height: 70px;
+  height: fit-content;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  color: #fdfdfd;
+  font-size: small;
+  border-bottom: 1px solid rgba(253, 253, 253, 0.2);
+  box-sizing: border-box;
+}
+
+.FdaAdminSidebarTop img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.FdaAdminSidebarMenu {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 8px;
+  gap: 4px;
+  align-items: center;
+  flex: 1;
+}
+
+.FdaAdminMenuBtn {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.FdaAdminMenuBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.FdaAdminMenuBtn.active {
+  background: rgba(255, 255, 255, 0.2);
+  font-weight: 600;
+}
+
+.FdaAdminMenuIcons svg {
+  width: 21px;
+  height: 21px;
+  display: block;
+}
+
+/* ========================================== */
+/* LEA Admin Sidebar Styles                   */
+/* ========================================== */
+.LeaAdminSidebarMain {
+  width: 250px;
+  height: 100vh;
+  background: #1a1a2e;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.LeaAdminSidebarTop {
+  width: 250px;
+  min-height: 70px;
+  height: fit-content;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  color: #fdfdfd;
+  font-size: small;
+  border-bottom: 1px solid rgba(253, 253, 253, 0.2);
+  box-sizing: border-box;
+}
+
+.LeaAdminSidebarTop img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.LeaAdminSidebarMenu {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 8px;
+  gap: 4px;
+  align-items: center;
+  flex: 1;
+}
+
+.LeaAdminMenuBtn {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.LeaAdminMenuBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.LeaAdminMenuBtn.active {
+  background: rgba(255, 255, 255, 0.2);
+  font-weight: 600;
+}
+
+.LeaAdminMenuIcons svg {
+  width: 21px;
+  height: 21px;
+  display: block;
+}
+
 /* ========================================================== */
 /* RESPONSIVE SIDEBAR STYLES (shared across all workspaces)   */
 /* ========================================================== */
@@ -307,18 +481,24 @@ const sidebarStyles = `
 }
 
 /* All sidebars smooth transition for width/collapse */
+.NationalAdminSidebarMain,
 .SuperAdminSidebarMain,
+.FdaAdminSidebarMain,
 .FdaSidebarMain,
+.LeaAdminSidebarMain,
 .LeaSidebarMain {
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
 }
 
 /* TABLET: 768px - 1199px -> icon-only collapse */
 @media (max-width: 1199px) and (min-width: 768px) {
+  .NationalAdminSidebarMain,
   .SuperAdminSidebarMain,
+  .FdaAdminSidebarMain,
   .FdaSidebarMain,
+  .LeaAdminSidebarMain,
   .LeaSidebarMain {
-    width: 76px;
+    width: 60px;
     overflow: visible;
   }
 
@@ -332,22 +512,28 @@ const sidebarStyles = `
   }
 
   /* Navigation menu in the MIDDLE */
+  .NationalAdminSidebarMenu,
   .SuperAdminSidebarMenu,
+  .FdaAdminSidebarMenu,
   .FdaSidebarMenu,
+  .LeaAdminSidebarMenu,
   .LeaSidebarMenu {
     order: 2;
     flex: 1;
-    padding: 12px 8px;
+    padding: 12px 6px;
     margin-bottom: 64px;
     transition: margin-bottom 0.3s ease;
-    overflow-y: auto;
-    overflow-x: hidden;
+    /* overflow: visible so ::after tooltips can appear outside the 60px rail */
+    overflow: visible;
   }
 
+  .NationalAdminSidebarTop,
   .SuperAdminSidebarTop,
+  .FdaAdminSidebarTop,
   .FdaSidebarTop,
+  .LeaAdminSidebarTop,
   .LeaSidebarTop {
-    width: 76px;
+    width: 60px;
     min-height: 0;
     height: 0;
     padding: 0;
@@ -357,8 +543,11 @@ const sidebarStyles = `
     align-items: center;
   }
 
+  .NationalAdminSidebarTop p,
   .SuperAdminSidebarTop p,
+  .FdaAdminSidebarTop p,
   .FdaSidebarTop p,
+  .LeaAdminSidebarTop p,
   .LeaSidebarTop p,
   .SidebarWorkspaceTitle {
     display: none;
@@ -382,7 +571,9 @@ const sidebarStyles = `
   }
 
   .SidebarLogoWrapper img,
+  .FdaAdminSidebarTop img,
   .FdaSidebarTop img,
+  .LeaAdminSidebarTop img,
   .LeaSidebarTop img {
     width: 36px;
     height: 36px;
@@ -390,14 +581,20 @@ const sidebarStyles = `
     transition: width 0.3s ease, height 0.3s ease;
   }
 
+  .NationalAdminSidebarMenu .MenuLabels,
   .SuperAdminSidebarMenu .MenuLabels,
+  .FdaAdminSidebarMenu .FdaAdminMenuLabels,
   .FdaSidebarMenu .FdaMenuLabels,
+  .LeaAdminSidebarMenu .LeaAdminMenuLabels,
   .LeaSidebarMain .MenuLabels {
     display: none;
   }
 
+  .NationalAdminSidebarMenu .MenuBtn,
   .SuperAdminSidebarMenu .MenuBtn,
+  .FdaAdminSidebarMenu .FdaAdminMenuBtn,
   .FdaSidebarMenu .FdaMenuBtn,
+  .LeaAdminSidebarMenu .LeaAdminMenuBtn,
   .LeaSidebarMain .MenuBtn {
     justify-content: center;
     padding: 12px 0;
@@ -405,18 +602,23 @@ const sidebarStyles = `
   }
 
   /* keyboard + hover accessible tooltip */
+  .NationalAdminSidebarMenu .MenuBtn[data-tooltip]:hover::after,
+  .NationalAdminSidebarMenu .MenuBtn[data-tooltip]:focus-visible::after,
   .SuperAdminSidebarMenu .MenuBtn[data-tooltip]:hover::after,
   .SuperAdminSidebarMenu .MenuBtn[data-tooltip]:focus-visible::after,
+  .FdaAdminSidebarMenu .FdaAdminMenuBtn[data-tooltip]:hover::after,
+  .FdaAdminSidebarMenu .FdaAdminMenuBtn[data-tooltip]:focus-visible::after,
   .FdaSidebarMenu .FdaMenuBtn[data-tooltip]:hover::after,
   .FdaSidebarMenu .FdaMenuBtn[data-tooltip]:focus-visible::after,
+  .LeaAdminSidebarMenu .LeaAdminMenuBtn[data-tooltip]:hover::after,
+  .LeaAdminSidebarMenu .LeaAdminMenuBtn[data-tooltip]:focus-visible::after,
   .LeaSidebarMain .MenuBtn[data-tooltip]:hover::after,
   .LeaSidebarMain .MenuBtn[data-tooltip]:focus-visible::after {
     content: attr(data-tooltip);
     position: absolute;
-    left: 100%;
+    left: calc(100% + 10px);
     top: 50%;
     transform: translateY(-50%);
-    margin-left: 10px;
     background: #111827;
     color: #ffffff;
     padding: 6px 10px;
@@ -425,13 +627,16 @@ const sidebarStyles = `
     font-weight: 500;
     white-space: nowrap;
     pointer-events: none;
-    z-index: 50;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    z-index: 999;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
   }
 
   /* Temporary expand via hamburger (overlay, doesn't shift layout) */
+  .NationalAdminSidebarMain.MenuOpen,
   .SuperAdminSidebarMain.MenuOpen,
+  .FdaAdminSidebarMain.MenuOpen,
   .FdaSidebarMain.MenuOpen,
+  .LeaAdminSidebarMain.MenuOpen,
   .LeaSidebarMain.MenuOpen {
     width: 280px;
     position: absolute;
@@ -442,8 +647,11 @@ const sidebarStyles = `
     box-shadow: 4px 0 16px rgba(0,0,0,0.25);
   }
 
+  .NationalAdminSidebarMain.MenuOpen .NationalAdminSidebarTop,
   .SuperAdminSidebarMain.MenuOpen .SuperAdminSidebarTop,
+  .FdaAdminSidebarMain.MenuOpen .FdaAdminSidebarTop,
   .FdaSidebarMain.MenuOpen .FdaSidebarTop,
+  .LeaAdminSidebarMain.MenuOpen .LeaAdminSidebarTop,
   .LeaSidebarMain.MenuOpen .LeaSidebarTop {
     width: 280px;
     min-height: 70px;
@@ -458,8 +666,11 @@ const sidebarStyles = `
     position: relative;
   }
 
+  .NationalAdminSidebarMain.MenuOpen .SidebarHamburgerBtn,
   .SuperAdminSidebarMain.MenuOpen .SidebarHamburgerBtn,
+  .FdaAdminSidebarMain.MenuOpen .SidebarHamburgerBtn,
   .FdaSidebarMain.MenuOpen .SidebarHamburgerBtn,
+  .LeaAdminSidebarMain.MenuOpen .SidebarHamburgerBtn,
   .LeaSidebarMain.MenuOpen .SidebarHamburgerBtn {
     position: absolute;
     top: 16px;
@@ -472,8 +683,11 @@ const sidebarStyles = `
     z-index: 20;
   }
 
+  .NationalAdminSidebarMain.MenuOpen .SidebarLogoWrapper,
   .SuperAdminSidebarMain.MenuOpen .SidebarLogoWrapper,
+  .FdaAdminSidebarMain.MenuOpen .SidebarLogoWrapper,
   .FdaSidebarMain.MenuOpen .SidebarLogoWrapper,
+  .LeaAdminSidebarMain.MenuOpen .SidebarLogoWrapper,
   .LeaSidebarMain.MenuOpen .SidebarLogoWrapper {
     position: static;
     top: auto;
@@ -484,18 +698,27 @@ const sidebarStyles = `
     flex-shrink: 0;
   }
 
+  .NationalAdminSidebarMain.MenuOpen .SidebarLogoWrapper img,
   .SuperAdminSidebarMain.MenuOpen .SidebarLogoWrapper img,
+  .FdaAdminSidebarMain.MenuOpen .SidebarLogoWrapper img,
   .FdaSidebarMain.MenuOpen .SidebarLogoWrapper img,
+  .LeaAdminSidebarMain.MenuOpen .SidebarLogoWrapper img,
   .LeaSidebarMain.MenuOpen .SidebarLogoWrapper img {
     width: 44px;
     height: 44px;
   }
 
+  .NationalAdminSidebarMain.MenuOpen .NationalAdminSidebarTop p,
   .SuperAdminSidebarMain.MenuOpen .SuperAdminSidebarTop p,
+  .FdaAdminSidebarMain.MenuOpen .FdaAdminSidebarTop p,
   .FdaSidebarMain.MenuOpen .FdaSidebarTop p,
+  .LeaAdminSidebarMain.MenuOpen .LeaAdminSidebarTop p,
   .LeaSidebarMain.MenuOpen .LeaSidebarTop p,
+  .NationalAdminSidebarMain.MenuOpen .SidebarWorkspaceTitle,
   .SuperAdminSidebarMain.MenuOpen .SidebarWorkspaceTitle,
+  .FdaAdminSidebarMain.MenuOpen .SidebarWorkspaceTitle,
   .FdaSidebarMain.MenuOpen .SidebarWorkspaceTitle,
+  .LeaAdminSidebarMain.MenuOpen .SidebarWorkspaceTitle,
   .LeaSidebarMain.MenuOpen .SidebarWorkspaceTitle {
     display: block;
     opacity: 1;
@@ -505,27 +728,39 @@ const sidebarStyles = `
     margin-left: 0;
   }
 
+  .NationalAdminSidebarMain.MenuOpen .NationalAdminSidebarMenu,
   .SuperAdminSidebarMain.MenuOpen .SuperAdminSidebarMenu,
+  .FdaAdminSidebarMain.MenuOpen .FdaAdminSidebarMenu,
   .FdaSidebarMain.MenuOpen .FdaSidebarMenu,
+  .LeaAdminSidebarMain.MenuOpen .LeaAdminSidebarMenu,
   .LeaSidebarMain.MenuOpen .LeaSidebarMenu {
     margin-bottom: 0;
   }
 
+  .NationalAdminSidebarMain.MenuOpen .MenuLabels,
   .SuperAdminSidebarMain.MenuOpen .MenuLabels,
+  .FdaAdminSidebarMain.MenuOpen .FdaAdminMenuLabels,
   .FdaSidebarMain.MenuOpen .FdaMenuLabels,
+  .LeaAdminSidebarMain.MenuOpen .LeaAdminMenuLabels,
   .LeaSidebarMain.MenuOpen .MenuLabels {
     display: inline;
   }
 
+  .NationalAdminSidebarMain.MenuOpen .MenuBtn,
   .SuperAdminSidebarMain.MenuOpen .MenuBtn,
+  .FdaAdminSidebarMain.MenuOpen .FdaAdminMenuBtn,
   .FdaSidebarMain.MenuOpen .FdaMenuBtn,
+  .LeaAdminSidebarMain.MenuOpen .LeaAdminMenuBtn,
   .LeaSidebarMain.MenuOpen .MenuBtn {
     justify-content: flex-start;
     padding: 12px 16px;
   }
 
+  .NationalAdminSidebarMain.MenuOpen .MenuBtn[data-tooltip]:hover::after,
   .SuperAdminSidebarMain.MenuOpen .MenuBtn[data-tooltip]:hover::after,
+  .FdaAdminSidebarMain.MenuOpen .FdaAdminMenuBtn[data-tooltip]:hover::after,
   .FdaSidebarMain.MenuOpen .FdaMenuBtn[data-tooltip]:hover::after,
+  .LeaAdminSidebarMain.MenuOpen .LeaAdminMenuBtn[data-tooltip]:hover::after,
   .LeaSidebarMain.MenuOpen .MenuBtn[data-tooltip]:hover::after {
     content: none;
   }
@@ -553,8 +788,11 @@ const sidebarStyles = `
     display: none;
   }
 
+  .NationalAdminSidebarMain,
   .SuperAdminSidebarMain,
+  .FdaAdminSidebarMain,
   .FdaSidebarMain,
+  .LeaAdminSidebarMain,
   .LeaSidebarMain {
     position: fixed;
     top: 0;
@@ -565,20 +803,29 @@ const sidebarStyles = `
     z-index: 110;
   }
 
+  .NationalAdminSidebarMain.MenuOpen,
   .SuperAdminSidebarMain.MenuOpen,
+  .FdaAdminSidebarMain.MenuOpen,
   .FdaSidebarMain.MenuOpen,
+  .LeaAdminSidebarMain.MenuOpen,
   .LeaSidebarMain.MenuOpen {
     transform: translateX(0); 
   }
 
+  .NationalAdminSidebarTop,
   .SuperAdminSidebarTop,
+  .FdaAdminSidebarTop,
   .FdaSidebarTop,
+  .LeaAdminSidebarTop,
   .LeaSidebarTop {
     width: 280px;
   }
 
+  .NationalAdminSidebarMain.MenuOpen .NationalAdminSidebarTop,
   .SuperAdminSidebarMain.MenuOpen .SuperAdminSidebarTop,
+  .FdaAdminSidebarMain.MenuOpen .FdaAdminSidebarTop,
   .FdaSidebarMain.MenuOpen .FdaSidebarTop,
+  .LeaAdminSidebarMain.MenuOpen .LeaAdminSidebarTop,
   .LeaSidebarMain.MenuOpen .LeaSidebarTop {
     width: 280px;
     min-height: 70px;
@@ -597,8 +844,11 @@ const sidebarStyles = `
     display: none;
   }
 
+  .NationalAdminSidebarMain.MenuOpen .SidebarHamburgerBtn,
   .SuperAdminSidebarMain.MenuOpen .SidebarHamburgerBtn,
+  .FdaAdminSidebarMain.MenuOpen .SidebarHamburgerBtn,
   .FdaSidebarMain.MenuOpen .SidebarHamburgerBtn,
+  .LeaAdminSidebarMain.MenuOpen .SidebarHamburgerBtn,
   .LeaSidebarMain.MenuOpen .SidebarHamburgerBtn {
     display: flex;
     position: absolute;
@@ -612,8 +862,11 @@ const sidebarStyles = `
     z-index: 20;
   }
 
+  .NationalAdminSidebarMain.MenuOpen .SidebarLogoWrapper,
   .SuperAdminSidebarMain.MenuOpen .SidebarLogoWrapper,
+  .FdaAdminSidebarMain.MenuOpen .SidebarLogoWrapper,
   .FdaSidebarMain.MenuOpen .SidebarLogoWrapper,
+  .LeaAdminSidebarMain.MenuOpen .SidebarLogoWrapper,
   .LeaSidebarMain.MenuOpen .SidebarLogoWrapper {
     position: static;
     flex-shrink: 0;
@@ -624,8 +877,11 @@ const sidebarStyles = `
     justify-content: center;
   }
 
+  .NationalAdminSidebarMain.MenuOpen .SidebarLogoWrapper img,
   .SuperAdminSidebarMain.MenuOpen .SidebarLogoWrapper img,
+  .FdaAdminSidebarMain.MenuOpen .SidebarLogoWrapper img,
   .FdaSidebarMain.MenuOpen .SidebarLogoWrapper img,
+  .LeaAdminSidebarMain.MenuOpen .SidebarLogoWrapper img,
   .LeaSidebarMain.MenuOpen .SidebarLogoWrapper img {
     width: 40px;
     height: 40px;
@@ -633,8 +889,11 @@ const sidebarStyles = `
     object-fit: cover;
   }
 
+  .NationalAdminSidebarMain.MenuOpen .SidebarWorkspaceTitle,
   .SuperAdminSidebarMain.MenuOpen .SidebarWorkspaceTitle,
+  .FdaAdminSidebarMain.MenuOpen .SidebarWorkspaceTitle,
   .FdaSidebarMain.MenuOpen .SidebarWorkspaceTitle,
+  .LeaAdminSidebarMain.MenuOpen .SidebarWorkspaceTitle,
   .LeaSidebarMain.MenuOpen .SidebarWorkspaceTitle {
     flex: 1;
     text-align: center;
@@ -690,12 +949,29 @@ function Sidebar({ sidebarType, role, agency }) {
     }
 
     // Determine type to render
-    let type = sidebarType
+    let type = sidebarType ? sidebarType.toUpperCase() : null
     if (!type) {
         const normalizedRole = (role || '').toUpperCase()
         const normalizedAgency = (agency || '').toUpperCase()
-        if (normalizedRole === 'SUPER_ADMIN' || normalizedRole === 'SUPERADMIN') {
-            type = 'SUPER_ADMIN'
+        if (
+            normalizedRole === 'SUPER_ADMIN' ||
+            normalizedRole === 'SUPERADMIN' ||
+            normalizedRole === 'NATIONAL_ADMIN' ||
+            normalizedRole === 'NATIONALADMIN'
+        ) {
+            type = 'NATIONAL_ADMIN'
+        } else if (
+            normalizedRole === 'FDA_ADMIN' ||
+            normalizedRole === 'FDAADMIN' ||
+            ((normalizedRole === 'ADMIN' || normalizedRole.includes('ADMIN')) && (normalizedAgency === 'FDA' || normalizedAgency.includes('FDA')))
+        ) {
+            type = 'FDA_ADMIN'
+        } else if (
+            normalizedRole === 'LEA_ADMIN' ||
+            normalizedRole === 'LEAADMIN' ||
+            ((normalizedRole === 'ADMIN' || normalizedRole.includes('ADMIN')) && (normalizedAgency === 'LEA' || normalizedAgency === 'CIDG' || normalizedAgency.includes('LEA') || normalizedAgency.includes('CIDG')))
+        ) {
+            type = 'LEA_ADMIN'
         } else if (normalizedRole === 'FDA' || normalizedAgency === 'FDA') {
             type = 'FDA'
         } else if (normalizedRole === 'LEA' || normalizedAgency === 'LEA' || normalizedAgency === 'CIDG') {
@@ -709,7 +985,7 @@ function Sidebar({ sidebarType, role, agency }) {
 
         try {
             if (refreshToken) {
-                await fetch('http://127.0.0.1:8000/auth/token/revoke', {
+                await fetch(`${API_BASE_URL}/auth/token/revoke`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ refresh_token: refreshToken }),
@@ -722,7 +998,7 @@ function Sidebar({ sidebarType, role, agency }) {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
 
-        if (type === 'SUPER_ADMIN') {
+        if (type === 'NATIONAL_ADMIN' || type === 'SUPER_ADMIN') {
             navigate('/');
         } else {
             navigate('/login');
@@ -733,7 +1009,7 @@ function Sidebar({ sidebarType, role, agency }) {
         <style dangerouslySetInnerHTML={{ __html: sidebarStyles }} />
     )
 
-    if (type === 'SUPER_ADMIN') {
+    if (type === 'NATIONAL_ADMIN' || type === 'SUPER_ADMIN') {
         return (
             <>
                 {renderStyles()}
@@ -748,9 +1024,9 @@ function Sidebar({ sidebarType, role, agency }) {
                     className={`SidebarOverlay ${menuOpen ? 'MenuOpen' : ''}`}
                     onClick={() => setMenuOpen(false)}
                 />
-                <div className={`SuperAdminSidebarMain ${menuOpen ? 'MenuOpen' : ''}`} ref={sidebarRef}>
-                    <div className='SuperAdminSidebarTop'>
-                        <p className='SidebarWorkspaceTitle'>ICMDA: Superadmin Workspace</p>
+                <div className={`NationalAdminSidebarMain SuperAdminSidebarMain ${menuOpen ? 'MenuOpen' : ''}`} ref={sidebarRef}>
+                    <div className='NationalAdminSidebarTop SuperAdminSidebarTop'>
+                        <p className='SidebarWorkspaceTitle'>National Admin Workspace</p>
                     </div>
                     <button
                         className='SidebarHamburgerBtn'
@@ -759,8 +1035,8 @@ function Sidebar({ sidebarType, role, agency }) {
                     >
                         <Menu size={20} />
                     </button>
-                    <div className='SuperAdminSidebarMenu'>
-                        {SuperAdminMenuItems.map((item) => {
+                    <div className='NationalAdminSidebarMenu SuperAdminSidebarMenu'>
+                        {NationalAdminMenuItems.map((item) => {
                             const Icon = item.icon
                             return (
                                 <button
@@ -771,6 +1047,102 @@ function Sidebar({ sidebarType, role, agency }) {
                                 >
                                     <span className='MenuIcons'>{Icon && <Icon />}</span>
                                     <span className='MenuLabels'>{item.label}</span>
+                                </button>
+                            )
+                        })}
+                    </div>
+                </div>
+            </>
+        )
+    }
+
+    if (type === 'FDA_ADMIN') {
+        return (
+            <>
+                {renderStyles()}
+                <button
+                    className={`SidebarMobileTrigger ${menuOpen ? 'IsOpen' : ''}`}
+                    aria-label={menuOpen ? 'Close sidebar menu' : 'Open sidebar menu'}
+                    onClick={toggleMenu}
+                >
+                    <Menu size={20} />
+                </button>
+                <div
+                    className={`SidebarOverlay ${menuOpen ? 'MenuOpen' : ''}`}
+                    onClick={() => setMenuOpen(false)}
+                />
+                <div className={`FdaAdminSidebarMain ${menuOpen ? 'MenuOpen' : ''}`} ref={sidebarRef}>
+                    <div className='FdaAdminSidebarTop'>
+                        <div className='SidebarLogoWrapper'><img src={FDALogo} alt="FDA Logo" /></div>
+                        <p className='SidebarWorkspaceTitle'>FDA Admin Workspace</p>
+                    </div>
+                    <button
+                        className='SidebarHamburgerBtn'
+                        aria-label={menuOpen ? 'Collapse menu' : 'Expand menu'}
+                        onClick={toggleMenu}
+                    >
+                        <Menu size={20} />
+                    </button>
+                    <div className='FdaAdminSidebarMenu'>
+                        {FDAAdminMenuItems.map((item) => {
+                            const Icon = item.icon
+                            return (
+                                <button
+                                    key={item.path}
+                                    className={`FdaAdminMenuBtn ${location.pathname === item.path ? 'active' : ''}`}
+                                    onClick={() => navigate(item.path)}
+                                    data-tooltip={item.label}
+                                >
+                                    <span className='FdaAdminMenuIcons'><Icon /></span>
+                                    <span className='FdaAdminMenuLabels'>{item.label}</span>
+                                </button>
+                            )
+                        })}
+                    </div>
+                </div>
+            </>
+        )
+    }
+
+    if (type === 'LEA_ADMIN') {
+        return (
+            <>
+                {renderStyles()}
+                <button
+                    className={`SidebarMobileTrigger ${menuOpen ? 'IsOpen' : ''}`}
+                    aria-label={menuOpen ? 'Close sidebar menu' : 'Open sidebar menu'}
+                    onClick={toggleMenu}
+                >
+                    <Menu size={20} />
+                </button>
+                <div
+                    className={`SidebarOverlay ${menuOpen ? 'MenuOpen' : ''}`}
+                    onClick={() => setMenuOpen(false)}
+                />
+                <div className={`LeaAdminSidebarMain ${menuOpen ? 'MenuOpen' : ''}`} ref={sidebarRef}>
+                    <div className='LeaAdminSidebarTop'>
+                        <div className='SidebarLogoWrapper'><img src={CIDGLogo} alt="CIDG LOGO" /></div>
+                        <p className='SidebarWorkspaceTitle'>LEA Admin Workspace</p>
+                    </div>
+                    <button
+                        className='SidebarHamburgerBtn'
+                        aria-label={menuOpen ? 'Collapse menu' : 'Expand menu'}
+                        onClick={toggleMenu}
+                    >
+                        <Menu size={20} />
+                    </button>
+                    <div className='LeaAdminSidebarMenu'>
+                        {LeaAdminMenuItems.map((item) => {
+                            const Icon = item.icon
+                            return (
+                                <button
+                                    key={item.path}
+                                    className={`LeaAdminMenuBtn ${location.pathname === item.path ? 'active' : ''}`}
+                                    onClick={() => navigate(item.path)}
+                                    data-tooltip={item.label}
+                                >
+                                    <span className='LeaAdminMenuIcons'><Icon /></span>
+                                    <span className='LeaAdminMenuLabels'>{item.label}</span>
                                 </button>
                             )
                         })}

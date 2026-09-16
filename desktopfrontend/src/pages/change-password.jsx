@@ -259,42 +259,42 @@ const styles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #fdfdfd;
+    background: #F1F5F9;
     padding: 32px 16px;
     box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+    overflow-y: auto;
   }
 
   .CPCard {
     width: 100%;
     max-width: 460px;
     background: #ffffff;
-    border-radius: 20px;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
     overflow: hidden;
     animation: CPSlideUp 0.35s ease;
   }
 
   @keyframes CPSlideUp {
-    from { opacity: 0; transform: translateY(24px); }
+    from { opacity: 0; transform: translateY(20px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  
   .CPCardHeader {
     background: linear-gradient(135deg, #1E293B 0%, #0f172a 100%);
-    padding: 32px 32px 28px;
+    padding: 28px 28px 24px;
     border-bottom: 4px solid #0D9488;
     text-align: center;
   }
-
-
 
   .CPCardTitle {
     font-size: 20px;
     font-weight: 700;
     color: #ffffff;
-    margin: 0 0 8px;
+    margin: 0 0 6px;
     font-family: 'Poppins', sans-serif;
+    letter-spacing: -0.2px;
   }
 
   .CPCardSubtitle {
@@ -304,12 +304,12 @@ const styles = `
     line-height: 1.5;
   }
 
-  /* Form*/
+  /* Form */
   .CPForm {
-    padding: 28px 32px 36px;
+    padding: 28px 30px 32px;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 16px;
   }
 
   .CPFormGroup {
@@ -321,14 +321,14 @@ const styles = `
   .CPLabel {
     font-size: 13px;
     font-weight: 600;
-    color: #374151;
+    color: #334155;
   }
 
   .CPRequired {
     color: #ef4444;
   }
 
-  /*Input with toggle*/
+  /* Input with toggle */
   .CPInputWrapper {
     position: relative;
     display: flex;
@@ -337,12 +337,13 @@ const styles = `
 
   .CPInput {
     width: 100%;
+    height: 44px;
     padding: 11px 44px 11px 14px;
     border: 1.5px solid #e2e8f0;
-    border-radius: 9px;
+    border-radius: 8px;
     font-size: 14px;
     color: #111827;
-    background: #f9fafb;
+    background: #ffffff;
     outline: none;
     transition: all 0.2s ease;
     box-sizing: border-box;
@@ -352,7 +353,6 @@ const styles = `
   .CPInput:focus {
     border-color: #0D9488;
     box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
-    background: #fff;
   }
 
   .cp-input-error {
@@ -368,8 +368,6 @@ const styles = `
     cursor: pointer;
     font-size: 12px;
     font-weight: 600;
-    line-height: 1;
-    padding: 4px 6px;
     color: #64748b;
     transition: color 0.15s ease;
     text-transform: uppercase;
@@ -400,14 +398,14 @@ const styles = `
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
-    padding: 14px 16px;
+    padding: 12px 14px;
   }
 
   .CPReqTitle {
     font-size: 12px;
     font-weight: 600;
     color: #475569;
-    margin: 0 0 10px;
+    margin: 0 0 8px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -422,60 +420,59 @@ const styles = `
   }
 
   .CPReqItem {
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 500;
     transition: color 0.2s ease;
   }
 
-  .req-met   { color: #166534; }
+  .req-met   { color: #16a34a; }
   .req-unmet { color: #94a3b8; }
 
-
   .CPSubmitBtn {
-    margin-top: 4px;
+    margin-top: 6px;
     width: 100%;
-    padding: 14px;
+    padding: 12px;
     background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
     color: #ffffff;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.22s ease;
-    box-shadow: 0 6px 20px rgba(13, 148, 136, 0.4);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3);
     font-family: 'Poppins', sans-serif;
     letter-spacing: 0.3px;
   }
 
   .CPSubmitBtn:hover {
     background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(13, 148, 136, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(13, 148, 136, 0.4);
   }
 
   .CPSubmitBtn:active {
     transform: translateY(0);
   }
 
-  /*Success Screen*/
+  /* Success Screen */
   .CPSuccessScreen {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 56px 32px;
+    padding: 48px 32px;
     gap: 16px;
   }
 
   .CPSuccessIcon {
-    font-size: 64px;
+    font-size: 56px;
     animation: CPPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @keyframes CPPop {
     from { transform: scale(0); opacity: 0; }
-    to   { transform: scale(1); opacity: 1; }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   .CPSuccessTitle {
@@ -491,12 +488,12 @@ const styles = `
     color: #64748b;
     line-height: 1.7;
     margin: 0;
-    max-width: 340px;
+    max-width: 360px;
   }
 
   .CPSuccessBtn {
     margin-top: 8px;
-    padding: 12px 32px;
+    padding: 12px 28px;
     background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%);
     color: #fff;
     font-size: 14px;
@@ -504,31 +501,31 @@ const styles = `
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.22s ease;
-    box-shadow: 0 6px 18px rgba(13, 148, 136, 0.35);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3);
     font-family: 'Poppins', sans-serif;
   }
 
   .CPSuccessBtn:hover {
     background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 22px rgba(13, 148, 136, 0.45);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(13, 148, 136, 0.4);
   }
 
   .CPErrorMsgContainer {
-    background-color: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.5);
+    background-color: #fef2f2;
+    border: 1px solid #fca5a5;
     padding: 10px 14px;
     border-radius: 8px;
-    margin-top: 15px;
-    margin-bottom: 5px;
+    margin-top: 4px;
     text-align: center;
   }
 
   .CPErrorMsg {
-    color: #ef4444 !important;
+    color: #dc2626 !important;
     margin: 0;
     font-size: 13px;
+    font-weight: 500;
     text-align: center;
     line-height: 1.5;
   }

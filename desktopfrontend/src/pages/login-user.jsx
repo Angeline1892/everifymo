@@ -5,6 +5,7 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle  } from 'lucide-react'
 import '../App.css'
 import FDALogo from '../images/FDA.png'
 import PNPLogo from '../images/pnp-cidg.jpg'
+import { API_BASE_URL } from '../utils/apiConfig'
 
 function Login(){
     const navigate = useNavigate();
@@ -20,13 +21,27 @@ function Login(){
     const [errors, setErrors] = useState({})
 
     // Load remembered email on mount
+    // on mount
+    // builds the per-agency localStorage key so FDA and LEA-CIDG
+    // "remember me" emails never overwrite each other
+    function rememberedEmailKey(forAgency) {
+      return forAgency ? `remembered_email_user_${forAgency}` : null
+    }
+
+    // Load remembered email whenever the agency changes
     useEffect(() => {
-      const savedEmail = localStorage.getItem('remembered_email')
+      const key = rememberedEmailKey(agency)
+      if (!key) return
+      const savedEmail = localStorage.getItem(key)
       if (savedEmail) {
         setEmail(savedEmail)
         setRememberMe(true)
+      } else {
+        setEmail('')
+        setRememberMe(false)
       }
-    }, [])
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [agency])
 
     // OTP verification states
     // controls whether to show the OTP screen or the login form
@@ -99,7 +114,7 @@ function Login(){
     async function handleResendOtp() {
       setLoginError('');
       try {
-        const response = await fetch('http://127.0.0.1:8000/auth/login', {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, agency }),
@@ -125,6 +140,7 @@ function Login(){
       setIsOtpSent(false);
       setOtp(new Array(6).fill(''));
       setLoginError('');
+      setPassword('');
     }
 
     // Format seconds as M:SS to match the superadmin login OTP timer
@@ -203,7 +219,7 @@ function Login(){
         setErrors({});
 
         try {
-          const response = await fetch('http://127.0.0.1:8000/auth/login', {
+          const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password, agency }),
@@ -214,10 +230,15 @@ function Login(){
             throw new Error(errorData.detail || 'Invalid email or password.');
           }
 
-          if (rememberMe) {
-            localStorage.setItem('remembered_email', email);
-          } else {
-            localStorage.removeItem('remembered_email');
+          // after successful OTP verification / login success
+          // new
+          const key = rememberedEmailKey(agency);
+          if (key) {
+            if (rememberMe) {
+              localStorage.setItem(key, email);
+            } else {
+              localStorage.removeItem(key);
+            }
           }
 
           setIsOtpSent(true);
@@ -235,7 +256,7 @@ function Login(){
         }
 
         try {
-          const response = await fetch('http://127.0.0.1:8000/auth/verify-otp', {
+          const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, otp: otpCode }),
@@ -260,6 +281,19 @@ function Login(){
           }
         } catch (err) {
           setLoginError(err.message);
+
+          // Always clear the OTP boxes and refocus box 1 on any invalid code
+          setOtp(new Array(6).fill(''));
+          setTimeout(() => {
+            otpRefs.current[0]?.focus();
+          }, 0);
+
+          // OTP exhausted its per-code attempts (backend's 3-try cap) —
+          // surface Resend immediately instead of waiting for the timer,
+          // and refocus box 1 so the user can jump straight to Resend/retry.
+          if (/request a new otp/i.test(err.message)) {
+            setTimer(0);
+          }
         }
       }
     }
@@ -267,157 +301,161 @@ function Login(){
   return (
     <div>
       <div className="LoginPage">
-        <div className="LeftPanel">
-          <div className="Agency AgencyTop">
-            <img src={FDALogo} alt="FDA AGENCY LOGO" className='FdaLogo'/>
-            <div>
-              <p>REPUBLIC OF THE PHILIPPINES</p>
-              <h3>FOOD AND DRUGS ADMINISTRATION</h3>
+        <div className='LoginGlassContainer'> 
+          <div className="LeftPanel">
+            <div className="Agency AgencyTop">
+              <img src={FDALogo} alt="FDA AGENCY LOGO" className='FdaLogo'/>
+              <div>
+                <p>REPUBLIC OF THE PHILIPPINES</p>
+                <h3>FOOD AND DRUGS ADMINISTRATION</h3>
+              </div>
+            </div>
+
+            <div className="Hero">
+              <h1>WELCOME! <br /> </h1>
+                <h4>
+                  This is Interagency <span>Complaint Management </span> <br />
+                  
+                   System Desktop Application (<span>ICMDA</span>)
+                </h4>
+              
+   
+            </div>
+
+            <div className="Agency AgencyBottom">
+              <img src={PNPLogo} alt="PNP-CIDG AGENCY LOGO" />
+              <div>
+                <p>REPUBLIC OF THE PHILIPPINES</p>
+                <h3>CRIMINAL INVESTIGATION AND DETECTION GROUP</h3>
+              </div>
             </div>
           </div>
 
-          <div className="Hero">
-            <h1>
-              Interagency <span>Complaint</span> <br />
-              Management System <br />
-            </h1>
-            <h4>Desktop Application</h4>
-          </div>
-
-          <div className="Agency AgencyBottom">
-            <img src={PNPLogo} alt="PNP-CIDG AGENCY LOGO" />
-            <div>
-              <p>REPUBLIC OF THE PHILIPPINES</p>
-              <h3>CRIMINAL INVESTIGATION AND DETECTION GROUP</h3>
-            </div>
-          </div>
-        </div>
-
-        <div className ="RightPanel">
-          {isOtpSent ? (
-            <>
-              <small>SECURITY VERIFICATION</small>
-              <h2>Enter Security Code</h2>
-              <p><i>We've sent a 6-digit verification code to your email.</i></p>
-            </>
-          ) : (
-            <>
-              <small>AUTHORIZED LOGIN</small>
-              <h2>Sign in to continue</h2>
-              <p><i>Select your agency and enter your credentials.</i></p>
-            </>
-          )}
-
-          <div className="LoginForm">
-            {!isOtpSent ? (
+          <div className ="RightPanel">
+            {isOtpSent ? (
               <>
-                <label htmlFor="agency">Agency <span>*</span></label>
-                <div className="AgencyButtons">
-                  <input type="radio" id="fda" name="agency" value="fda" onChange={() => handleAgencyChange('fda')} checked={agency === 'fda'} />
-                  <label htmlFor="fda" className="InterButtons AgencyButtonFDA">FDA</label>
-
-                  <input type="radio" id="cidg" name="agency" value="lea" onChange={() => handleAgencyChange('lea')} checked={agency === 'lea'} />
-                  <label htmlFor="cidg" className="InterButtons AgencyButtonCIDG">LEA-CIDG</label>
-                </div>
-                {errors.agency && <span className="LoginFieldError"><AlertCircle size={12} /> {errors.agency}</span>}
-
-                <label htmlFor="email">Email <span>*</span></label>
-                <div className="LoginInputWrapper">
-                  <Mail className="LoginInputIcon" size={16} />
-                  <input type="email" id="email" placeholder="youremail@gmail.com" value={email} onChange={handleEmailChange} required/>
-                </div>
-                 {errors.email && <span className="LoginFieldError"><AlertCircle size={12} /> {errors.email}</span>}
-
-
-                <label htmlFor="password">Password <span>*</span></label>
-                <div className="PasswordInputWrapper">
-                  <Lock className="LoginInputIcon" size={16} />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={handlePasswordChange}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="TogglePasswordBtn"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                 {errors.password && <span className="LoginFieldError"><AlertCircle size={12} /> {errors.password}</span>}
-
-                <div className="RememberMe">
-                  <label htmlFor="remember-me"> 
-                    <input
-                      type="checkbox"
-                      id="remember-me"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                    />
-                    Remember my email
-                  </label>
-                  <label htmlFor="forgot-password" className="ForgetPass"><a onClick={() => navigate('/forgot-password?from=interagency')} style={{cursor:'pointer'}}>Forgot password?</a></label>
-                </div>
+                <small>SECURITY VERIFICATION</small>
+                <h2>Enter Security Code</h2>
+                <p><i>We've sent a 6-digit verification code to your email.</i></p>
               </>
             ) : (
-              <div className="OtpContainer">
-                <div className="OtpInstructions">
-                  Enter the code sent to your email <span>{maskEmail(email)}</span>.
-                </div>
+              <>
+                <small>AUTHORIZED LOGIN</small>
+                <h2>Please log in to continue</h2>
+                <p><i>Select your agency and enter your credentials.</i></p>
+              </>
+            )}
 
-                <div className="LoginOtpInputGrid">
-                  {otp.map((digit, idx) => (
+            <div className="LoginForm">
+              {!isOtpSent ? (
+                <>
+                  <label htmlFor="agency">Agency <span>*</span></label>
+                  <div className="AgencyButtons">
+                    <input type="radio" id="fda" name="agency" value="fda" onChange={() => handleAgencyChange('fda')} checked={agency === 'fda'} />
+                    <label htmlFor="fda" className="InterButtons AgencyButtonFDA">FDA</label>
+
+                    <input type="radio" id="cidg" name="agency" value="lea" onChange={() => handleAgencyChange('lea')} checked={agency === 'lea'} />
+                    <label htmlFor="cidg" className="InterButtons AgencyButtonCIDG">LEA-CIDG</label>
+                  </div>
+                  {errors.agency && <span className="LoginFieldError"><AlertCircle size={12} /> {errors.agency}</span>}
+
+                  <label htmlFor="email">Email <span>*</span></label>
+                  <div className="LoginInputWrapper">
+                    <Mail className="LoginInputIcon" size={16} />
+                    <input type="email" id="email" placeholder="youremail@gmail.com" value={email} onChange={handleEmailChange} required/>
+                  </div>
+                  {errors.email && <span className="LoginFieldError"><AlertCircle size={12} /> {errors.email}</span>}
+
+
+                  <label htmlFor="password">Password <span>*</span></label>
+                  <div className="PasswordInputWrapper">
+                    <Lock className="LoginInputIcon" size={16} />
                     <input
-                      key={idx}
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      className="LoginOtpDigitInput"
-                      value={digit}
-                      ref={(el) => (otpRefs.current[idx] = el)}
-                      onChange={(e) => handleOtpChange(e.target, idx)}
-                      onKeyDown={(e) => handleOtpKeyDown(e, idx)}
-                      onPaste={handleOtpPaste}
+                      type={showPassword ? 'text' : 'password'}
+                      id="password"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={handlePasswordChange}
                       required
                     />
-                  ))}
-                </div>
+                    <button
+                      type="button"
+                      className="TogglePasswordBtn"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {errors.password && <span className="LoginFieldError"><AlertCircle size={12} /> {errors.password}</span>}
 
-                <div className="LoginOtpTimerContainer">
-                  {timer > 0 ? (
-                    <p>Resend code in <strong>{formatTimer(timer)}</strong></p>
-                  ) : (
-                    <p>
-                      Didn't receive the code?{' '}
-                      <button type="button" className="LoginResendButton" onClick={handleResendOtp}>
-                        Resend OTP
-                      </button>
-                    </p>
-                  )}
-                </div>
+                  <div className="RememberMe">
+                    <label htmlFor="remember-me"> 
+                      <input
+                        type="checkbox"
+                        id="remember-me"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                      />
+                      Remember my email
+                    </label>
+                    <label htmlFor="forgot-password" className="ForgetPass"><a onClick={() => navigate('/forgot-password?from=interagency')} style={{cursor:'pointer'}}>Forgot password?</a></label>
+                  </div>
+                </>
+              ) : (
+                <div className="OtpContainer">
+                  <div className="OtpInstructions">
+                    Enter the code sent to your email <span>{maskEmail(email)}</span>.
+                  </div>
 
-                
-              </div>
-            )}
-            
-            {loginError && <div className="LoginErrorMsgContainer"><p className="LoginErrorMsg">{loginError}</p></div>}
-            
-            <button className="LoginButton" onClick={handleLogin}>
-              {isOtpSent ? 'Verify & Login' : 'Login'}
-            </button>
-            {isOtpSent && (
-              <button type="button" className="LoginBackToLoginBtn" onClick={handleBackToLogin}>
-                ← Back to login credentials
+                  <div className="LoginOtpInputGrid">
+                    {otp.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="LoginOtpDigitInput"
+                        value={digit}
+                        ref={(el) => (otpRefs.current[idx] = el)}
+                        onChange={(e) => handleOtpChange(e.target, idx)}
+                        onKeyDown={(e) => handleOtpKeyDown(e, idx)}
+                        onPaste={handleOtpPaste}
+                        required
+                      />
+                    ))}
+                  </div>
+
+                  <div className="LoginOtpTimerContainer">
+                    {timer > 0 ? (
+                      <p>Resend code in <strong>{formatTimer(timer)}</strong></p>
+                    ) : (
+                      <p>
+                        Didn't receive the code?{' '}
+                        <button type="button" className="LoginResendButton" onClick={handleResendOtp}>
+                          Resend OTP
+                        </button>
+                      </p>
+                    )}
+                  </div>
+
+                  
+                </div>
+              )}
+              
+              {loginError && <div className="LoginErrorMsgContainer"><p className="LoginErrorMsg">{loginError}</p></div>}
+              
+              <button className="LoginButton" onClick={handleLogin}>
+                {isOtpSent ? 'Verify & Login' : 'Login'}
               </button>
-            )}
+              {isOtpSent && (
+                <button type="button" className="LoginBackToLoginBtn" onClick={handleBackToLogin}>
+                  ← Back to login credentials
+                </button>
+              )}
+            </div>
           </div>
         </div>
-
       </div>
 
     </div>

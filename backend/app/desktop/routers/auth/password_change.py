@@ -41,10 +41,16 @@ def change_password(
         related_user_id=current_user.user_id,
     )
 
+    password_action = (
+        AuditAction.UPDATE_SUPERADMIN_PASSWORD
+        if current_user.role == "superadmin"
+        else AuditAction.UPDATE_USER_PASSWORD
+    )
+
     write_audit_log(
         db,
         user=current_user,
-        action=AuditAction.UPDATE_USER_PASSWORD,
+        action=password_action,
         target_table="users",
         target_id=current_user.user_id,
         target_reference=current_user.email,

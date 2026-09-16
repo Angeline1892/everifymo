@@ -1,6 +1,9 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import Login from './pages/login-user.jsx'
+{/* for universal login*/ }
+import UniversalLogin from './pages/universal-login.jsx';
+import { API_BASE_URL } from './utils/apiConfig'
 
 {/* LEA-CIDG PAGES */ }
 import LeaDashboard from './pages/leacidgfolder/lea-dashboard.jsx';
@@ -15,6 +18,11 @@ import SuperadminOtpEmail from './pages/emailtemplates/superadmin-otp-email.jsx'
 
 import DeepLinkStatus from './pages/emailtemplates/invitation-status.jsx'
 import ProfileSetting from './pages/profile-setting.jsx';
+import AllNotifications from './pages/component/all-notifications.jsx';
+
+{/* NATIONAL ADMIN PAGES */ }
+import NationalAdminNewAdminManagement from './pages/nationaladminfolder/national-admin-new-admin-management.jsx';
+import NationalAdminInteragencyAdminManagement from './pages/nationaladminfolder/national-admin-interagency-admin-management.jsx';
 
 {/* SUPERADMIN PAGES */ }
 import SuperAdminLogin from './pages/superadminfolder/superadmin-login.jsx';
@@ -29,6 +37,7 @@ import UserEmailRegistration from './pages/emailtemplates/user-email-registratio
 import UserEmailActivation from './pages/emailtemplates/user-email-activation.jsx';
 import SuperadminEmailAddAdmin from './pages/emailtemplates/superadmin-email-add-admin.jsx';
 import SuperadminInviteStatus from './pages/emailtemplates/superadmin-invite-status.jsx';
+import ConvertedEmailTemplate from './pages/emailtemplates/converted-email-template.jsx';
 
 {/* FDA PAGES */ }
 import FDADashboard from './pages/fdafolder/fda-dashboard.jsx';
@@ -38,6 +47,17 @@ import FDAStatus from './pages/fdafolder/fda-status.jsx';
 import FDAProductDB from './pages/fdafolder/fda-product-db.jsx';
 import FDASavedDraft from './pages/fdafolder/fda-saved-draft.jsx';
 
+{/* FDA ADMIN PAGES */ }
+import FDAAdminUserManagement from './pages/fdaadminfolder/fda-admin-user-management.jsx';
+import FDAAdminAdminManagement from './pages/fdaadminfolder/fda-admin-admin-management.jsx';
+import FDAAdminAuditLogs from './pages/fdaadminfolder/fda-admin-audit-logs.jsx';
+
+{/* LEA ADMIN PAGES */ }
+import LEAAdminUserManagement from './pages/leaadminfolder/lea-admin-user-management.jsx';
+import LEAAdminAdminManagement from './pages/leaadminfolder/lea-admin-admin-management.jsx';
+import LEAAdminAuditLogs from './pages/leaadminfolder/lea-admin-audit-logs.jsx';
+
+
 
 function DeepLinkListener() {
   const navigate = useNavigate();
@@ -45,28 +65,25 @@ function DeepLinkListener() {
   useEffect(() => {
     console.log('DeepLinkListener mounted, waiting for token...');
 
-    window.electronAPI.onDeepLinkToken((token) => {
+    const unsubscribe = window.electronAPI.onDeepLinkToken((token) => {
       console.log('Token received:', token);
 
-      fetch(`http://localhost:8000/registration/validate/${token}`)
+      fetch(`${API_BASE_URL}/registration/validate/${token}`)
         .then((res) => res.json())
         .then((data) => {
           console.log('Validate response:', data);
 
-          if (data.role === 'superadmin') {
-            navigate('/superadmin-invite-status', {
-              state: { status: data.status, token },
-            });
-            return;
-          }
-
+           // All roles now go through the same flow: valid token -> set password,
+          // anything else (expired/invalid/used) -> the status page.
           if (data.status === 'valid') {
-            navigate('/user-registration', { state: { ...data, invite_token: token } });
+            navigate('/create-new-password', { state: { ...data, token } });
           } else {
-            navigate('/invitation-status', { state: { status: data.status, invite_token: token } });
+            navigate('/invitation-status', { state: { ...data, invite_token: token } });
           }
         });
     });
+
+    return unsubscribe;
   }, [navigate]);
 
   return null;
@@ -77,15 +94,18 @@ export default function App() {
     <BrowserRouter>
       <DeepLinkListener />
       <Routes>
-        <Route path='/' element={<SuperAdminLogin />} />
+        <Route path='/' element={<UniversalLogin />} />
 
         {/* AUTH ROUTES */}
         <Route path='/login' element={<Login />} />
-        <Route path='/superadmin-login' element={<SuperAdminLogin />} />
+        <Route path='/superadmin-login' element={<Login />} />
         <Route path='/forgot-password' element={<ForgotPassword />} />
         <Route path='/change-password' element={<ChangePassword />} />
         <Route path='/create-new-password' element={<CreateNewPassword />} />
         <Route path='/user-registration' element={<UserRegistration />} />
+
+        {/* for universal login*/}
+        <Route path='/universal-login' element={<UniversalLogin />} />
 
         {/* LEA-CIDG ROUTES */}
         <Route path='/leacidgfolder/lea-dashboard' element={<LeaDashboard />} />
@@ -93,6 +113,10 @@ export default function App() {
         <Route path='/leacidgfolder/lea-verification-request' element={<LeaVerificationRequest />} />
         <Route path='/leacidgfolder/lea-new-intake' element={<LeaNewIntake />} />
         <Route path='/leacidgfolder/lea-saved-draft' element={<LeaSavedDraft />} />
+
+        {/* NATIONAL ADMIN ROUTES */}
+        <Route path='/nationaladminfolder/national-admin-new-admin-management' element={<NationalAdminNewAdminManagement />} />
+        <Route path='/nationaladminfolder/national-admin-interagency-admin-management' element={<NationalAdminInteragencyAdminManagement />} />
 
         {/* SUPERADMIN ROUTES */}
         <Route path='/superadminfolder/superadmin-user-management' element={<SuperAdminUserManagement />} />
@@ -107,12 +131,14 @@ export default function App() {
         <Route path='/preview-email/activation' element={<UserEmailActivation />} />
         <Route path='/preview-email/superadmin-otp' element={<SuperadminOtpEmail />} />
         <Route path='/preview-email/superadmin-add-admin' element={<SuperadminEmailAddAdmin />} />
+        <Route path='/preview-email/converted-product' element={<ConvertedEmailTemplate />} />
 
         {/* DEEP LINK ROUTES */}
         <Route path='/invitation-status' element={<DeepLinkStatus />} />
         <Route path='/superadmin-invite-status' element={<SuperadminInviteStatus />} />
 
         <Route path='/profile-setting' element={<ProfileSetting />} />
+        <Route path='/all-notifications' element={<AllNotifications />} />
 
         {/* FDA ROUTES */}
         <Route path='/fdafolder/fda-dashboard' element={<FDADashboard />} />
@@ -121,6 +147,16 @@ export default function App() {
         <Route path='/fdafolder/fda-status' element={<FDAStatus />} />
         <Route path='/fdafolder/fda-product-db' element={<FDAProductDB />} />
         <Route path='/fdafolder/fda-saved-draft' element={<FDASavedDraft />} />
+
+        {/* FDA ADMIN ROUTES */}
+        <Route path='/fdaadminfolder/fda-admin-user-management' element={<FDAAdminUserManagement />} />
+        <Route path='/fdaadminfolder/fda-admin-admin-management' element={<FDAAdminAdminManagement />} />
+        <Route path='/fdaadminfolder/fda-admin-audit-logs' element={<FDAAdminAuditLogs />} />
+
+        {/* LEA ADMIN ROUTES */}
+        <Route path='/leaadminfolder/lea-admin-user-management' element={<LEAAdminUserManagement />} />
+        <Route path='/leaadminfolder/lea-admin-admin-management' element={<LEAAdminAdminManagement />} />
+        <Route path='/leaadminfolder/lea-admin-audit-logs' element={<LEAAdminAuditLogs />} />
       </Routes>
     </BrowserRouter>
   );
