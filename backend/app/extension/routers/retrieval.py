@@ -1,4 +1,3 @@
-'''
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -34,4 +33,3 @@ async def verify(request: RetrievalRequest):
         }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
-'''
