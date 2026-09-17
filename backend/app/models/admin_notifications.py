@@ -64,8 +64,11 @@ class AdminNotification(Base):
             "(is_read = false AND read_at IS NULL) OR (is_read = true AND read_at IS NOT NULL)",
             name="ck_admin_notifications_read_pair",
         ),
+        # File: app/models/admin_notifications.py — AdminNotification.__table_args__
+        # CHANGED: matches the new migration; keeps model and DB constraint text
+        # identical so `alembic revision --autogenerate` doesn't flag a phantom diff
         CheckConstraint(
-            "agency IS NULL OR agency IN ('FDA', 'LEA')",
+            "agency IS NULL OR agency IN ('FDA', 'LEA-CIDG')",
             name="ck_admin_notifications_agency",
         ),
         # Matches the main query pattern: unread notifications for a given
