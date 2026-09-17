@@ -13,8 +13,9 @@ COPY backend/main.py ./backend/main.py
 COPY backend/nlp ./backend/nlp
 COPY backend/app ./backend/app
 
-RUN cd backend && python nlp/preprocessing/buildassets.py
 
 ENV PYTHONPATH=/everifymo/backend
 
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8001"]
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]
