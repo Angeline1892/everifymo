@@ -8,8 +8,8 @@ from app.models.users import User
 from app.core.security import verify_password, hash_password
 from app.core.constants import Role, UserStatus, AuditAction
 from app.core.audit import write_audit_log, get_user_region_code
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+from app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 
 
 _DUMMY_PASSWORD_HASH = hash_password("dummy-password-for-timing-safety-only")
@@ -87,12 +87,11 @@ def _handle_failed_attempt(db: Session, user: User, http_request: Request | None
         region_code = get_user_region_code(db, user)
         db.commit()
 
-        notification_service.create_notification_for_all_superadmins(
-            db=db,
+        notification_service.notify_self_service_account_event(
+            db=db, target=user,
             event_type=NotificationEventType.ACCOUNT_LOCKED,
             title="Account locked out",
             message=f"{user_email} has been locked out after {attempts} failed login attempts.",
-            related_user_id=user_id,
         )
         write_audit_log(
             db,
@@ -110,12 +109,11 @@ def _handle_failed_attempt(db: Session, user: User, http_request: Request | None
         )
     elif attempts == 3:
         db.commit()
-        notification_service.create_notification_for_all_superadmins(
-            db=db,
+        notification_service.notify_self_service_account_event(
+            db=db, target=user,
             event_type=NotificationEventType.FAILED_LOGIN_WARNING,
             title="Repeated failed login attempts",
             message=f"{attempts} failed attempts on {user.email}.",
-            related_user_id=user.user_id,
         )
     else:
         db.commit()

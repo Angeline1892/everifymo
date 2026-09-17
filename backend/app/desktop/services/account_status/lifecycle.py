@@ -6,8 +6,8 @@ from app.models.users import User
 from app.models.user_sessions import UserSession
 from app.core.constants import Role
 from app.core.audit import write_audit_log, get_user_region_code
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+from app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 from .guards import assert_same_agency_and_region, assert_not_self, get_target, action_for_role
 
 
@@ -53,10 +53,12 @@ def suspend_account(db: Session, actor: User, target_id, request=None):
     target_id_val, target_email = target.user_id, target.email
     region_code = get_user_region_code(db, target) if target.region_id else None
 
-    notification_service.create_notification_for_all_superadmins(
-        db=db, event_type=NotificationEventType.ACCOUNT_SUSPENDED,
-        title="Account suspended", message=f"{target_email}'s account has been suspended.",
-        related_user_id=target_id_val,
+    notification_service.notify_account_event(
+        db=db, actor=actor, target_user_id=target_id_val,
+        target_role=target.role, target_region_id=target.region_id,
+        event_type=NotificationEventType.ACCOUNT_SUSPENDED,
+        title="Account suspended",
+        message=f"{target_email}'s account has been suspended.",
     )
     write_audit_log(
         db, user=actor, action=action_for_role(target.role, "SUSPEND"),
@@ -80,10 +82,12 @@ def reactivate_account(db: Session, actor: User, target_id, request=None):
     target_id_val, target_email = target.user_id, target.email
     region_code = get_user_region_code(db, target) if target.region_id else None
 
-    notification_service.create_notification_for_all_superadmins(
-        db=db, event_type=NotificationEventType.ACCOUNT_REACTIVATED,
-        title="Account reactivated", message=f"{target_email}'s account has been reactivated.",
-        related_user_id=target_id_val,
+    notification_service.notify_account_event(
+        db=db, actor=actor, target_user_id=target_id_val,
+        target_role=target.role, target_region_id=target.region_id,
+        event_type=NotificationEventType.ACCOUNT_REACTIVATED,
+        title="Account reactivated",
+        message=f"{target_email}'s account has been reactivated.",
     )
     write_audit_log(
         db, user=actor, action=action_for_role(target.role, "REACTIVATE"),
@@ -110,10 +114,12 @@ def unlock_account(db: Session, actor: User, target_id, request=None):
     target_id_val, target_email = target.user_id, target.email
     region_code = get_user_region_code(db, target) if target.region_id else None
 
-    notification_service.create_notification_for_all_superadmins(
-        db=db, event_type=NotificationEventType.ACCOUNT_UNLOCKED,
-        title="Account unlocked", message=f"{target_email}'s account has been unlocked.",
-        related_user_id=target_id_val,
+    notification_service.notify_account_event(
+        db=db, actor=actor, target_user_id=target_id_val,
+        target_role=target.role, target_region_id=target.region_id,
+        event_type=NotificationEventType.ACCOUNT_UNLOCKED,
+        title="Account unlocked",
+        message=f"{target_email}'s account has been unlocked.",
     )
     write_audit_log(
         db, user=actor, action=action_for_role(target.role, "UNLOCK"),

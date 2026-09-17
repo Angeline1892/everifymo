@@ -15,8 +15,8 @@ from sqlalchemy.sql import func
 from app.database.base import Base
 
 
-class SuperadminNotification(Base):
-    __tablename__ = "superadmin_notifications"
+class AdminNotification(Base):
+    __tablename__ = "admin_notifications"
 
     notification_id = Column(
         UUID(as_uuid=True),
@@ -41,6 +41,17 @@ class SuperadminNotification(Base):
         nullable=True,
     )
 
+    # Event's own context, not the recipient's — a national_admin has no
+    # region of their own but still needs to see which agency/region an
+    # event concerns. Both nullable: national_admin-account events have
+    # neither.
+    agency = Column(String(10), nullable=True)
+    region_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("regions.region_id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
     is_read = Column(Boolean, nullable=False, server_default=text("false"))
     read_at = Column(DateTime(timezone=True), nullable=True)
 
@@ -51,12 +62,19 @@ class SuperadminNotification(Base):
         # code path can desync them.
         CheckConstraint(
             "(is_read = false AND read_at IS NULL) OR (is_read = true AND read_at IS NOT NULL)",
-            name="ck_superadmin_notifications_read_pair",
+            name="ck_admin_notifications_read_pair",
+        ),
+        # File: app/models/admin_notifications.py — AdminNotification.__table_args__
+        # CHANGED: matches the new migration; keeps model and DB constraint text
+        # identical so `alembic revision --autogenerate` doesn't flag a phantom diff
+        CheckConstraint(
+            "agency IS NULL OR agency IN ('FDA', 'LEA-CIDG')",
+            name="ck_admin_notifications_agency",
         ),
         # Matches the main query pattern: unread notifications for a given
         # superadmin, newest first (badge count + dropdown list).
         Index(
-            "ix_superadmin_notifications_recipient_unread",
+            "ix_admin_notifications_recipient_unread",
             "recipient_id",
             "is_read",
             "created_at",
