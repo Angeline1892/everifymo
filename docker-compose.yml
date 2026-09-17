@@ -7,4 +7,5 @@ services:
     volumes:
       - .:/everifymo
     env_file:
-      - ./backend/.env
+      - path: ./backend/.env
+        required: false
