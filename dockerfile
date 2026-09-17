@@ -8,6 +8,11 @@ RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/wh
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY backend/ ./backend/
 
+COPY backend/main.py ./backend/main.py
 COPY backend/nlp ./backend/nlp
+COPY backend/app ./backend/app
+
+ENV PYTHONPATH=/everifymo/backend
+
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8001"]
