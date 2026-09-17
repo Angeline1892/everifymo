@@ -14,8 +14,6 @@ COPY backend/nlp ./backend/nlp
 COPY backend/app ./backend/app
 
 
-ENV PYTHONPATH=/everifymo/backend
-
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 ENTRYPOINT ["./entrypoint.sh"]
