@@ -40,7 +40,8 @@ def list_notifications(
     Works identically for national_admin, fda_admin, and lea_admin - the
     service function branches on current_admin's own role/region.
     """
-    notifications = service.get_notifications(
+    # CHANGED: get_notifications now returns a (list, has_more) tuple.
+    notifications, has_more = service.get_notifications(
         db=db,
         current_admin=current_admin,
         limit=limit,
@@ -48,7 +49,11 @@ def list_notifications(
     )
     unread_count = service.get_unread_count(db=db, current_admin=current_admin)
 
-    return NotificationListResponse(notifications=notifications, unread_count=unread_count)
+    return NotificationListResponse(
+        notifications=notifications,
+        unread_count=unread_count,
+        has_more=has_more,
+    )
 
 
 @router.get("/unread-count", response_model=UnreadCountResponse)
