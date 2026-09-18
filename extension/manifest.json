@@ -1,8 +1,16 @@
 {
   "manifest_version": 3,
   "name": "E-VERIFY",
-  "version": "1.0",
+  "version": "0.0.1",
   "description": "Real-time FDA product verification for Philippine e-commerce platforms.",
+  "default_locale": "en",
+
+  "icons": {
+    "16": "extension/assets/images/icon16.png",
+    "32": "extension/assets/images/icon32.png",
+    "48": "extension/assets/images/icon48.png",
+    "128": "extension/assets/images/icon128.png"
+  },
 
   "action": {
     "default_popup": "popup/popup.html"
