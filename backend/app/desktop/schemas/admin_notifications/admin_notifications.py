@@ -44,10 +44,16 @@ class NotificationListResponse(BaseModel):
     Wrapper returned by GET /notifications - the list itself plus the
     unread count, so the frontend doesn't need a second request just to
     know how many are unread.
+
+    # ADDED: has_more tells the frontend whether another page of STORED
+    # notifications exists, computed via a limit+1 fetch in the service
+    # rather than inferred from response length (which broke once
+    # computed entries could push a page over `limit`).
     """
 
     notifications: List[NotificationOut]
     unread_count: int
+    has_more: bool
 
 
 class UnreadCountResponse(BaseModel):

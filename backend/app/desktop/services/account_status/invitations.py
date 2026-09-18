@@ -69,10 +69,12 @@ def delete_invited_account(db: Session, actor, target_id, request=None):
     target_id_val, target_email, target_role = target.user_id, target.email, target.role
     region_code = get_user_region_code(db, target) if target.region_id else None
 
-    notification_service.create_notification_for_all_superadmins(
-        db=db, event_type=NotificationEventType.ACCOUNT_DELETED,
-        title="Account deleted", message=f"{target_email}'s account has been deleted.",
-        related_user_id=target_id_val,
+    notification_service.notify_account_event(
+        db=db, actor=actor, target_user_id=target_id_val,
+        target_role=target_role, target_region_id=target.region_id,
+        event_type=NotificationEventType.ACCOUNT_DELETED,
+        title="Account deleted",
+        message=f"{target_email}'s account has been deleted.",
     )
 
     db.query(AccountInvitationToken).filter(AccountInvitationToken.user_id == target.user_id).delete()
