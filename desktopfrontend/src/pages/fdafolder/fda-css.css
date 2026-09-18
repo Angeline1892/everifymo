@@ -5602,3 +5602,101 @@ h6 {
 .FdaVerifToast_warning .FdaVerifToastIconWrap {
   color: #D97706;
 }
+
+.FdaVerifSectionCard {
+  background: #FDFDFD;
+  border: 1.5px solid #EDEDED;
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-sizing: border-box;
+}
+
+.FdaVerifSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.FdaVerifSectionHeader h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #030303;
+  margin: 0;
+}
+
+.FdaVerifDocsGrid {
+  display: block;
+  max-width: 320px;
+}
+
+.FdaVerifDocCard {
+  background: #EDEDED;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.FdaVerifDocIcon {
+  color: #1A1A2E;
+  flex-shrink: 0;
+}
+
+.FdaVerifDocInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.FdaVerifDocName {
+  font-size: 12px;
+  font-weight: 600;
+  color: #030303;
+  margin: 0 0 1px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.FdaVerifDocMeta {
+  font-size: 10.5px;
+  color: #1F2937;
+  opacity: 0.6;
+}
+
+.FdaVerifDocActions {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.FdaVerifDocActionBtn {
+  background: #FDFDFD;
+  border: 1px solid #EDEDED;
+  color: #13213C;
+  padding: 5px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.FdaVerifDocActionBtn:hover {
+  background: #1A1A2E;
+  color: #FDFDFD;
+}
+
+.FdaVerifNoDocsText {
+  font-size: 12.5px;
+  color: #1F2937;
+  opacity: 0.6;
+  margin: 0;
+}
+
+.FdaVerifBlueIcon {
+  color: #1A1A2E;
+}

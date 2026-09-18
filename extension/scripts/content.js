@@ -512,6 +512,12 @@ function renderResult(status, productTitle, results = []) {
   showState(stateId);
 }
 
+function matchTier(pct) {
+  if (pct >= 90) return 'best';
+  if (pct >= 70) return 'high';
+  return 'partial';
+}
+
 function populateMatches(stateId, results) {
   const suffix = stateId === 'state-unregistered' ? '-red' : '';
   const cards = modal.querySelectorAll(`#${stateId} .match-card${suffix}`);
@@ -522,8 +528,20 @@ function populateMatches(stateId, results) {
     card.style.display = '';
     card.querySelector(`.match-title${suffix}`).textContent = match.title;
     const pct = Math.round((match.score ?? match.cosine_similarity ?? 0) * 100);
+    const tier = matchTier(pct);
+
     card.querySelector(`.match-percent${suffix}`).textContent = `${pct}%`;
-    card.querySelector(`.progress-fill${suffix}`).style.width = `${pct}%`;
+
+    const fillEl = card.querySelector(`.progress-fill${suffix}`);
+    fillEl.style.width = `${pct}%`;
+    fillEl.classList.remove(`fill-best${suffix}`, `fill-high${suffix}`, `fill-partial${suffix}`);
+    fillEl.classList.add(`fill-${tier}${suffix}`);
+
+    const scoreEl = card.querySelector(`.match-score${suffix}`);
+    if (scoreEl) {
+      scoreEl.classList.remove(`match-score-best${suffix}`, `match-score-high${suffix}`, `match-score-partial${suffix}`);
+      scoreEl.classList.add(`match-score-${tier}${suffix}`);
+    }
   });
 }
 
