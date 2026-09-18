@@ -1,7 +1,6 @@
 # backend/app/desktop/routers/auth/registration.py
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone, timedelta
 
@@ -13,29 +12,30 @@ from app.models.regions import Region
 from app.desktop.schemas.auth.registration import (
     ValidateTokenResponse, TokenStatus,
     RegistrationCompleteRequest, RegistrationCompleteResponse,
+    ResendInviteRequest, ResendInviteResponse,
+    RequestResendRequest, RequestResendResponse,
 )
 
-from app.core.constants import UserStatus, AuditAction
+from app.core.constants import UserStatus, Role, AuditAction
+from app.core.security import hash_password
+from app.desktop.services.account_status.guards import agency_of
+from app.desktop.services.auth.email import (
+    send_personnel_invite_email,
+    send_admin_invite_email,
+    send_national_admin_invite_email,
+)
 
-from app.desktop.schemas.auth.registration import ResendInviteRequest, ResendInviteResponse
 import secrets
 
 from app.desktop.schemas.auth.registration import RequestResendRequest, RequestResendResponse
 
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+from app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 from app.core.audit import write_audit_log, get_user_region_code
 
-# All registration-related endpoints will start with /registration
 router = APIRouter(prefix="/registration", tags=["Registration"])
 
-    #
-    #
-    #
-    #
-    #
-    #
-    # GET /registration/validate/{invite_token}
+
 @router.get("/validate/{invite_token}", response_model=ValidateTokenResponse)
 def validate_token(invite_token: str, db: Session = Depends(get_db)):
     set_bypass_rls(db, True)
@@ -65,7 +65,7 @@ def validate_token(invite_token: str, db: Session = Depends(get_db)):
             resend_already_requested=token_row.resend_requested_at is not None,
         )
 
-    region_row = db.query(Region).filter(Region.region_id == user_row.region_id).first()
+    region_row = db.query(Region).filter(Region.region_id == user_row.region_id).first() if user_row and user_row.region_id else None
 
     return ValidateTokenResponse(
         status=TokenStatus.valid,
@@ -75,210 +75,165 @@ def validate_token(invite_token: str, db: Session = Depends(get_db)):
         region_name=region_row.region_name if region_row else None,
     )
 
-    #
-    #
-    #
-    #
-    #
-    #
-    # POST /registration/complete
+
 @router.post("/complete", response_model=RegistrationCompleteResponse)
 def complete_registration(data: RegistrationCompleteRequest, http_request: Request, db: Session = Depends(get_db)):
+    set_bypass_rls(db, True)
 
-    # Same as before — officer isn't logged in yet, so we need this
-    # to be allowed to look at the users table at all
-    set_bypass_rls(db, True)   
-
-    # This time the token comes from the request body (the form data),
-    # not from the URL like in validate_token
     token_row = db.query(AccountInvitationToken).filter(
-        AccountInvitationToken.invite_token == data.invite_token   
+        AccountInvitationToken.invite_token == data.invite_token
     ).first()
 
-
-    # Same checks as validate_token — we don't trust that the token is
-    # still good just because the officer got this far. It could have
-    # expired or been used in between loading the form and submitting it.
     if not token_row:
-        raise HTTPException(status_code=404, detail="Invalid invitation token.")   
+        raise HTTPException(status_code=404, detail="Invalid invitation token.")
 
     if token_row.used_at is not None:
-        # 409 = the token exists, but its state conflicts with what we're trying to do
-        raise HTTPException(status_code=409, detail="This invitation has already been used to complete registration.")   
+        raise HTTPException(status_code=409, detail="This invitation has already been used to complete registration.")
 
     if token_row.expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="This invitation has expired.")
 
-    # Token is good — find the stub account this invite belongs to
     user_row = db.query(User).filter(User.user_id == token_row.user_id).first()
+    if not user_row:
+        raise HTTPException(status_code=404, detail="Associated account not found.")
 
-    # Check employee_id uniqueness up front so we can give a clean error
-    # instead of relying on the DB constraint to catch it after the fact
-    existing_employee_id = db.query(User).filter(
-        User.employee_id == data.employee_id,
-        User.user_id != user_row.user_id,
-    ).first()
-    if existing_employee_id:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Employee ID '{data.employee_id}' is already in use.",
-        )
+    # Profile fields (name, position, employee_id, contact_number, department)
+    # are no longer collected here — the admin who created this account already
+    # supplied them. This endpoint's only job is setting the password.
+    user_row.password_hash = hash_password(data.password)
+    user_row.force_password_change = False  # they chose it themselves
 
-    # Same idea for contact_number — no DB constraint backs this one up,
-    # so this pre-check is the only thing preventing duplicates
-    existing_contact_number = db.query(User).filter(
-        User.contact_number == data.contact_number,
-        User.user_id != user_row.user_id,
-    ).first()
-    if existing_contact_number:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Contact number '{data.contact_number}' is already in use.",
-        )
+    # Personnel skip pending-approval entirely and go straight to active —
+    # their profile was already fully vetted/entered by their Agency Admin
+    # at invite time, so there's no separate approval step for them.
+    # Admin (fda/lea) and National Admin still require a fellow
+    # admin/national admin to activate them afterward.
+    is_personnel = user_row.role in Role.PERSONNEL_ROLES
+    user_row.status = UserStatus.ACTIVE if is_personnel else UserStatus.PENDING_APPROVAL
 
-    # Fill in everything the officer typed into the registration form
-    user_row.first_name = data.first_name
-    user_row.last_name = data.last_name          
-    user_row.middle_name = data.middle_name
-    user_row.position = data.position           
-    user_row.employee_id = data.employee_id
-    user_row.contact_number = data.contact_number
-    user_row.department = data.department
-
-    # Account has moved from "invited" to "waiting for SuperAdmin to review it"
-    user_row.status = UserStatus.PENDING_APPROVAL       
-
-    # Mark this token as used so it can never be used again
     token_row.used_at = datetime.now(timezone.utc)
 
-    # Save both changes together — either both go through, or neither does
     try:
         db.commit()
     except IntegrityError as e:
         db.rollback()
-        constraint = str(e.orig)
-        if "users_employee_id_key" in constraint:
-            detail = f"Employee ID '{data.employee_id}' is already in use."
-        elif "users_contact_number_key" in constraint:
-            detail = f"Contact number '{data.contact_number}' is already in use."
-        else:
-            detail = "A record with these details already exists."
-        raise HTTPException(status_code=409, detail=detail)
+        raise HTTPException(status_code=409, detail="A record with these details already exists.")
 
-    notification_service.create_notification_for_all_superadmins(
-        db=db,
-        event_type=NotificationEventType.REGISTRATION_ACCOMPLISHED,
-        title="Registration completed",
-        message=f"{user_row.email} completed registration and is now awaiting approval.",
-        related_user_id=user_row.user_id,
-    )
+    user_id = user_row.user_id
+    user_email = user_row.email
+    user_role = user_row.role
+    region_code = get_user_region_code(db, user_row) if user_row.region_id else None
 
-    write_audit_log(
-        db,
-        user=user_row,
-        action=AuditAction.PERSONNEL_PENDING_APPROVAL,
-        target_table="users",
-        target_id=user_row.user_id,
-        target_reference=user_row.email,
-        request=http_request,
-        region_code=get_user_region_code(db, user_row),
-    )
-
-
-    return RegistrationCompleteResponse(
-        message="Registration submitted successfully.",
-        status=UserStatus.PENDING_APPROVAL,   
-    )
-
-    #
-    #
-    #
-    #
-    #
-    #
-    # POST /registration/resend-invite
-@router.post("/resend-invite", response_model=ResendInviteResponse)
-def resend_invite(data: ResendInviteRequest, http_request: Request, db: Session = Depends(get_db)):
-
-    # Same as the other two endpoints — officer isn't logged in,
-    # so we need this to be allowed to look at these tables at all
-    set_bypass_rls(db, True)   
-
-    # Find the old, presumably-expired token the officer is trying to resend
-    old_token_row = db.query(AccountInvitationToken).filter(
-        AccountInvitationToken.invite_token == data.invite_token   
-    ).first()
-
-    # If registration was never started with this token, there's nothing to resend
-    if not old_token_row:
-        raise HTTPException(status_code=404, detail="Invitation not found.")
-    
-    # If registration was already completed with this token, there's
-    # nothing to resend — the account has already moved on.
-    if old_token_row.used_at is not None:
-        raise HTTPException(status_code=409, detail="This invitation was already used to complete registration.")
-
-    # Resending only makes sense if the old one is genuinely expired —
-    # otherwise someone could keep generating new tokens for a link that still works fine
-    if old_token_row.expires_at > datetime.now(timezone.utc):   
-        raise HTTPException(status_code=400, detail="This invitation has not expired yet.")
-
-    # Build a brand new token, pointing at the same user.
-    # We don't touch or delete the old row — it stays in the table for audit purposes.
-    new_token = AccountInvitationToken(
-        user_id=old_token_row.user_id,                        
-        invite_token=secrets.token_urlsafe(32),
-        expires_at=datetime.now(timezone.utc) + timedelta(hours=48),
-    )
-
-    # This is a brand new row, never fetched from the database, so we
-    # need add() before commit() will know to save it.
-    db.add(new_token)   
-    db.commit()
-
-    user_row = db.query(User).filter(User.user_id == old_token_row.user_id).first()
-    notification_service.create_notification_for_all_superadmins(
-        db=db,
-        event_type=NotificationEventType.RESEND_LINK_REQUESTED,
-        title="Invitation link resent",
-        message=f"{user_row.email if user_row else 'A user'} generated a new invitation link after theirs expired.",
-        related_user_id=old_token_row.user_id,
-    )
-
-    if user_row:
-        request_invite_action = (
-            AuditAction.SUPERADMIN_REQUEST_INVITE
-            if user_row.role == "superadmin"
-            else AuditAction.PERSONNEL_REQUEST_INVITE
+    if is_personnel:
+        notification_service.notify_self_service_account_event(
+            db=db, target=user_row,
+            event_type=NotificationEventType.ACCOUNT_ACTIVATED,
+            title="Personnel registration completed",
+            message=f"{user_email} completed registration and their account is now active.",
         )
+
         write_audit_log(
             db,
             user=user_row,
-            action=request_invite_action,
+            action=AuditAction.PERSONNEL_SELF_ACTIVATED,
+            target_table="users",
+            target_id=user_id,
+            target_reference=user_email,
+            old_value={"status": "invited"},
+            new_value={"status": "active"},
+            request=http_request,
+            region_code=region_code,
+        )
+    else:
+        notification_service.notify_self_service_account_event(
+            db=db, target=user_row,
+            event_type=NotificationEventType.ACCOUNT_PENDING_APPROVAL,
+            title="Registration completed - awaiting approval",
+            message=f"{user_email} completed registration and is now awaiting approval.",
+        )
+
+        write_audit_log(
+            db,
+            user=user_row,
+            action=_pending_approval_action_for_role(user_role),
+            target_table="users",
+            target_id=user_id,
+            target_reference=user_email,
+            request=http_request,
+            region_code=region_code,
+        )
+
+    return RegistrationCompleteResponse(
+        message="Registration submitted successfully.",
+        status=user_row.status,
+    )
+
+
+@router.post("/resend-invite", response_model=ResendInviteResponse)
+def resend_invite(data: ResendInviteRequest, background_tasks: BackgroundTasks, http_request: Request, db: Session = Depends(get_db)):
+    set_bypass_rls(db, True)
+
+    old_token_row = db.query(AccountInvitationToken).filter(
+        AccountInvitationToken.invite_token == data.invite_token
+    ).first()
+
+    if not old_token_row:
+        raise HTTPException(status_code=404, detail="Invitation not found.")
+
+    if old_token_row.used_at is not None:
+        raise HTTPException(status_code=409, detail="This invitation was already used to complete registration.")
+
+    if old_token_row.expires_at > datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="This invitation has not expired yet.")
+
+    new_token = AccountInvitationToken(
+        user_id=old_token_row.user_id,
+        invite_token=secrets.token_urlsafe(32),
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=48),
+    )
+    db.add(new_token)
+    db.commit()
+
+    user_row = db.query(User).filter(User.user_id == old_token_row.user_id).first()
+
+    if user_row:
+        if user_row.role == Role.NATIONAL_ADMIN:
+            background_tasks.add_task(send_national_admin_invite_email, user_row.email, new_token.invite_token)
+        else:
+            region_row = db.query(Region).filter(Region.region_id == user_row.region_id).first() if user_row.region_id else None
+            region_name = region_row.region_name if region_row else None
+            agency_name = agency_of(user_row.role)
+            if user_row.role in Role.ADMIN_ROLES:
+                background_tasks.add_task(send_admin_invite_email, user_row.email, agency_name, region_name, new_token.invite_token)
+            else:
+                background_tasks.add_task(send_personnel_invite_email, user_row.email, agency_name, region_name, new_token.invite_token)
+
+    notification_service.notify_self_service_account_event(
+        db=db, target=user_row,
+        event_type=NotificationEventType.RESEND_LINK_REQUESTED,
+        title="Invitation link resent",
+        message=f"{user_row.email if user_row else 'A user'} generated a new invitation link after theirs expired.",
+    )
+
+    if user_row:
+        write_audit_log(
+            db,
+            user=user_row,
+            action=_request_invite_action_for_role(user_row.role),
             target_table="account_invitation_tokens",
             target_id=user_row.user_id,
             target_reference=user_row.email,
             request=http_request,
-            region_code=get_user_region_code(db, user_row),
+            region_code=get_user_region_code(db, user_row) if user_row.region_id else None,
         )
 
-    return ResendInviteResponse(
-        message="A new invitation has been generated.",
-    )
+    return ResendInviteResponse(message="A new invitation has been generated.")
 
-  #
-  #
-  #
-  #
-  #
-  #
-  # POST /registration/request-resend
+
 @router.post("/request-resend", response_model=RequestResendResponse)
 def request_resend(data: RequestResendRequest, http_request: Request, db: Session = Depends(get_db)):
-    # Officer isn't logged in, same bypass as every other registration endpoint
     set_bypass_rls(db, True)
 
-    # Find the token the officer is asking to have resent
     token_row = db.query(AccountInvitationToken).filter(
         AccountInvitationToken.invite_token == data.invite_token
     ).first()
@@ -289,44 +244,58 @@ def request_resend(data: RequestResendRequest, http_request: Request, db: Sessio
     if token_row.used_at is not None:
         raise HTTPException(status_code=409, detail="This invitation was already used.")
 
-    # Only makes sense to request a resend if the link is actually expired
     if token_row.expires_at > datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="This invitation has not expired yet.")
 
-    # Don't let the same expired token flood SuperAdmin with repeat requests
     if token_row.resend_requested_at is not None:
         raise HTTPException(status_code=409, detail="A resend has already been requested for this invitation.")
 
-    # Just flag the request — SuperAdmin decides whether to actually resend
     token_row.resend_requested_at = datetime.now(timezone.utc)
     db.commit()
 
     user_row = db.query(User).filter(User.user_id == token_row.user_id).first()
-    notification_service.create_notification_for_all_superadmins(
-        db=db,
+    notification_service.notify_self_service_account_event(
+        db=db, target=user_row,
         event_type=NotificationEventType.RESEND_LINK_REQUESTED,
         title="Resend requested",
         message=f"{user_row.email if user_row else 'A user'} requested a new invitation link.",
-        related_user_id=token_row.user_id,
     )
 
     if user_row:
-        request_invite_action = (
-            AuditAction.SUPERADMIN_REQUEST_INVITE
-            if user_row.role == "superadmin"
-            else AuditAction.PERSONNEL_REQUEST_INVITE
-        )
         write_audit_log(
             db,
             user=user_row,
-            action=request_invite_action,
+            action=_request_invite_action_for_role(user_row.role),
             target_table="account_invitation_tokens",
             target_id=user_row.user_id,
             target_reference=user_row.email,
             request=http_request,
-            region_code=get_user_region_code(db, user_row),
+            region_code=get_user_region_code(db, user_row) if user_row.region_id else None,
         )
 
-    return RequestResendResponse(
-        message="Your request has been sent to the administrator.",
-    )
+    return RequestResendResponse(message="Your request has been sent to the administrator.")
+
+
+# --- role-aware audit action helpers (mirrors the ones in services/auth/invite.py) ---
+# NOTE: personnel no longer goes through _pending_approval_action_for_role at all
+# (see complete_registration above) — this helper now only ever gets called for
+# admin/national_admin, but the personnel branch is left in place rather than
+# removed, since request_resend/resend_invite still cover all three roles via
+# _request_invite_action_for_role below and share this file's pattern.
+
+def _pending_approval_action_for_role(role: str) -> str:
+    from app.core.constants import AuditAction, Role
+    if role == Role.NATIONAL_ADMIN:
+        return AuditAction.SUPERADMIN_PENDING_APPROVAL  # national_admin is a 1:1 successor to superadmin; no new constant added
+    if role in Role.ADMIN_ROLES:
+        return AuditAction.ADMIN_PENDING_APPROVAL
+    return AuditAction.PERSONNEL_PENDING_APPROVAL
+
+
+def _request_invite_action_for_role(role: str) -> str:
+    from app.core.constants import AuditAction, Role
+    if role == Role.NATIONAL_ADMIN:
+        return AuditAction.SUPERADMIN_REQUEST_INVITE  # same reuse as above
+    if role in Role.ADMIN_ROLES:
+        return AuditAction.ADMIN_REQUEST_INVITE
+    return AuditAction.PERSONNEL_REQUEST_INVITE

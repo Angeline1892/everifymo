@@ -1,465 +1,194 @@
-# backend/app/desktop/routers/admin_management/management.py        
+# backend/app/desktop/routers/admin_management/management.py
 import uuid
-import secrets
-from datetime import datetime, timedelta, timezone
-
-from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
+from fastapi import APIRouter, Depends, BackgroundTasks, Request, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import text
-
-from app.core.audit import write_audit_log, get_user_region_code
-from app.core.constants import AuditAction
 
 from app.database.sessions import get_db
 from app.models.users import User
-from app.models.user_sessions import UserSession
+from app.models.regions import Region
 from app.models.account_invitation_tokens import AccountInvitationToken
-from app.desktop.schemas.admin_management.management import (
-    SuperadminListItem,
-    SuperadminSummary,
-    InviteSuperadminRequest,
+from app.core.constants import Role
+from app.core.dependencies import get_current_national_admin, get_current_agency_admin, get_current_admin_or_national_admin
+from app.desktop.schemas.account_management.create import CreateAdminRequest, CreateFellowAdminRequest
+from app.desktop.schemas.account_management.list import AccountListItem, AccountSummary
+from app.desktop.services.auth.invite import create_invited_account, activate_account
+from app.desktop.services.auth.email import send_admin_invite_email, send_admin_activation_email
+from app.desktop.services.account_status import (
+    compute_display_status, suspend_account, reactivate_account, unlock_account,
+    resend_invite_link, delete_invited_account,
 )
-from app.core.constants import UserStatus
-from app.core.dependencies import get_current_superadmin
-from app.desktop.services.auth.email import send_invite_email
-from app.desktop.services.auth.email import send_superadmin_invite_email
-from app.desktop.services.admin_management.invite import create_invited_superadmin
-from app.desktop.services.admin_management.invite import activate_superadmin
-from app.desktop.services.auth.email import send_superadmin_activation_email
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+
+from app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
+
+from app.desktop.services.account_status.guards import agency_of, assert_employee_id_available
+
+router = APIRouter(prefix="/admin-management", tags=["admin-management"])
 
 
-router = APIRouter(prefix="/admin/superadmins", tags=["superadmin-management"])
+def _region_name(db: Session, region_id) -> str | None:
+    region = db.query(Region).filter(Region.region_id == region_id).first()
+    return region.region_name if region else None
 
 
-def compute_admin_status(user: User, latest_token) -> str:
-    if user.status == UserStatus.ACTIVE:
-        if not user.is_active:
-            return "Suspended"
-        if user.is_locked:
-            return "Locked"
-        return "Active"
-
-    if user.status == UserStatus.INVITED:
-        if not latest_token:
-            return "Invited"
-
-        expires_at = latest_token.expires_at
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        token_expired = expires_at < datetime.now(timezone.utc)
-
-        if not token_expired:
-            return "Invited"
-        if latest_token.resend_requested_at is not None:
-            return "Resend Requested"
-        return "Link Expired"
-
-    if user.status == UserStatus.PENDING_APPROVAL:
-        return "Pending Approval"
-
-    return user.status
-
-
-@router.get("", response_model=list[SuperadminListItem])
-def list_superadmins(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin),
-):
-    db.execute(text("SET app.bypass_rls = 'true'"))
-
-    admins = db.query(User).filter(User.role == "superadmin").all()
+@router.get("", response_model=list[AccountListItem])
+def list_admins(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_or_national_admin)):
+    query = db.query(User).filter(User.role.in_(Role.ADMIN_ROLES))
+    if current_user.role != Role.NATIONAL_ADMIN:
+        query = query.filter(User.role == current_user.role, User.region_id == current_user.region_id)
+    admins = query.all()
     if not admins:
         return []
 
-    admin_ids = [a.user_id for a in admins]
-    tokens = (
-        db.query(AccountInvitationToken)
-        .filter(AccountInvitationToken.user_id.in_(admin_ids))
-        .order_by(AccountInvitationToken.created_at.asc())
-        .all()
-    )
-    tokens_map = {t.user_id: t for t in tokens}
-
-    result = []
-    for admin in admins:
-        latest_token = tokens_map.get(admin.user_id)
-        result.append(
-            SuperadminListItem(
-                admin_id=admin.user_id,
-                first_name=admin.first_name,
-                last_name=admin.last_name,
-                email=admin.email,
-                invitation_date=latest_token.created_at if latest_token else None,
-                expiration_date=latest_token.expires_at if latest_token else None,
-                status=compute_admin_status(admin, latest_token),
-                is_locked=admin.is_locked,
-            )
-        )
-    return result
+    tokens = {
+        t.user_id: t for t in db.query(AccountInvitationToken)
+        .filter(AccountInvitationToken.user_id.in_([a.user_id for a in admins]))
+        .order_by(AccountInvitationToken.created_at.asc()).all()
+    }
+    regions = {r.region_id: r.region_name for r in db.query(Region).all()}
+    return [
+        AccountListItem(
+            user_id=a.user_id, first_name=a.first_name, middle_name=a.middle_name,
+            last_name=a.last_name, email=a.email,
+            agency="FDA" if a.role == Role.FDA_ADMIN else "LEA-CIDG",
+            region=regions.get(a.region_id),
+            # --- fix: these were previously omitted, so AccountListItem always
+            # defaulted them to None even though the schema supports them ---
+            department=a.department,
+            position=a.position,
+            employee_id=a.employee_id,
+            contact_number=a.contact_number,
+            invitation_date=tokens.get(a.user_id).created_at if tokens.get(a.user_id) else None,
+            expiration_date=tokens.get(a.user_id).expires_at if tokens.get(a.user_id) else None,
+            status=compute_display_status(a, tokens.get(a.user_id)), is_locked=a.is_locked,
+        ) for a in admins
+    ]
 
 
-@router.get("/summary", response_model=SuperadminSummary)
-def superadmin_summary(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin),
+@router.get("/summary", response_model=AccountSummary)
+def admin_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_or_national_admin)):
+    query = db.query(User).filter(User.role.in_(Role.ADMIN_ROLES))
+    if current_user.role != Role.NATIONAL_ADMIN:
+        query = query.filter(User.role == current_user.role, User.region_id == current_user.region_id)
+    total = query.count()
+    active = query.filter(User.status == "active", User.is_active == True).count()
+    suspended = query.filter(User.status == "active", User.is_active == False).count()
+    return AccountSummary(total=total, active=active, suspended=suspended)
+
+
+@router.post("/by-national-admin", status_code=201)
+async def create_admin(
+    payload: CreateAdminRequest, background_tasks: BackgroundTasks, http_request: Request,
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_national_admin),
 ):
-    db.execute(text("SET app.bypass_rls = 'true'"))
-    base = db.query(User).filter(User.role == "superadmin")
-
-    total = base.count()
-    active = base.filter(User.status == UserStatus.ACTIVE, User.is_active == True).count()
-    suspended = base.filter(User.status == UserStatus.ACTIVE, User.is_active == False).count()
-
-    invited_admins = base.filter(User.status == UserStatus.INVITED).all()
-    invited_count = 0
-    expired_count = 0
-    if invited_admins:
-        ids = [a.user_id for a in invited_admins]
-        tokens = (
-            db.query(AccountInvitationToken)
-            .filter(AccountInvitationToken.user_id.in_(ids))
-            .order_by(AccountInvitationToken.created_at.asc())
-            .all()
-        )
-        tokens_map = {t.user_id: t for t in tokens}
-        for a in invited_admins:
-            status = compute_admin_status(a, tokens_map.get(a.user_id))
-            if status == "Link Expired":
-                expired_count += 1
-            else:
-                invited_count += 1
-
-    return SuperadminSummary(
-        total_admins=total,
-        active=active,
-        invited=invited_count,
-        invitation_expired=expired_count,
-        suspended=suspended,
+    assert_employee_id_available(db, payload.employee_id)
+    role = {"FDA": Role.FDA_ADMIN, "LEA-CIDG": Role.LEA_ADMIN}[payload.agency]
+    user_id, token = create_invited_account(
+        db, email=payload.email, role=role, created_by=current_user.user_id,
+        first_name=payload.first_name, last_name=payload.last_name, middle_name=payload.middle_name,
+        contact_number=payload.contact_number, employee_id=payload.employee_id,
+        position=payload.position, department=payload.department,
+        region_id=payload.region_id, request=http_request,
     )
-
-
-@router.post("/invite", status_code=201)
-async def invite_superadmin(
-    payload: InviteSuperadminRequest,
-    http_request: Request,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin),
-):
-    db.execute(text("SET app.bypass_rls = 'true'"))
-    existing = db.query(User).filter_by(email=payload.email).first()
-    if existing:
-        raise HTTPException(400, "A user with this email already exists.")
-
-    admin_id, token = create_invited_superadmin(
-        db,
+    background_tasks.add_task(
+        send_admin_invite_email,
         payload.email,
-        payload.first_name,
-        payload.last_name,
-        created_by=current_user.user_id,
-        request=http_request,
+        payload.agency,
+        _region_name(db, payload.region_id),
+        token,
     )
-
-    background_tasks.add_task(send_superadmin_invite_email, payload.email, token)
-
-    return {"message": "Superadmin invitation sent", "admin_id": str(admin_id)}
+    return {"message": "Invitation sent", "user_id": str(user_id)}
 
 
-@router.post("/{admin_id}/resend")
-async def resend_superadmin_invitation(
-    admin_id: uuid.UUID,
-    http_request: Request,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin),
+@router.post("/by-fellow-admin", status_code=201)
+async def create_fellow_admin(
+    payload: CreateFellowAdminRequest, background_tasks: BackgroundTasks, http_request: Request,
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_agency_admin),
 ):
-    db.execute(text("SET app.bypass_rls = 'true'"))
-    admin = db.query(User).filter(User.user_id == admin_id, User.role == "superadmin").first()
-    if not admin:
-        raise HTTPException(status_code=404, detail="Superadmin not found")
-    if admin.status != UserStatus.INVITED:
-        raise HTTPException(status_code=400, detail="Cannot resend invite for an admin who is not in invited status")
-
-    admin_email = admin.email
-    admin_id_val = admin.user_id
-
-    token = secrets.token_urlsafe(32)
-    expires = datetime.now(timezone.utc) + timedelta(days=2)
-
-    new_token = AccountInvitationToken(
-        user_id=admin_id_val,
-        invite_token=token,
-        expires_at=expires,
-        resend_requested_at=None,
+    assert_employee_id_available(db, payload.employee_id) 
+    user_id, token = create_invited_account(
+        db, email=payload.email, role=current_user.role, created_by=current_user.user_id,
+        first_name=payload.first_name, last_name=payload.last_name, middle_name=payload.middle_name,
+        contact_number=payload.contact_number, employee_id=payload.employee_id,
+        position=payload.position, department=payload.department,
+        region_id=current_user.region_id, request=http_request,
     )
-    db.add(new_token)
-    db.commit()
-
-    background_tasks.add_task(send_superadmin_invite_email, admin_email, token)
-
-    notification_service.create_notification_for_all_superadmins(
-        db=db,
-        event_type=NotificationEventType.RESEND_LINK_REQUESTED,
-        title="Invitation resent",
-        message=f"Invitation resent to {admin_email}.",
-        related_user_id=admin_id_val,
+    background_tasks.add_task(
+        send_admin_invite_email,
+        payload.email,
+        agency_of(current_user.role),
+        _region_name(db, current_user.region_id),
+        token,
     )
-
-    write_audit_log(
-        db,
-        user=current_user,
-        action=AuditAction.INVITE_SUPERADMIN_RESENT,
-        target_table="users",
-        target_id=admin_id_val,
-        target_reference=admin_email,
-        old_value={"status": "invited"},
-        new_value={"status": "resend requested"},
-        request=http_request,
-        region_code=None,
-        user_role_override="superadmin",
-    )
-
-    return {"message": "Invitation resent successfully"}
+    return {"message": "Invitation sent", "user_id": str(user_id)}
 
 
-@router.post("/{admin_id}/suspend")
-def suspend_superadmin(
-    admin_id: uuid.UUID,
-    http_request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin),
-):
-    if admin_id == current_user.user_id:
-        raise HTTPException(status_code=400, detail="You cannot suspend your own account.")
+@router.post("/{user_id}/activate")
+async def activate(user_id: uuid.UUID, background_tasks: BackgroundTasks, http_request: Request,
+                    db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_or_national_admin)):
+    target_id, target_email = activate_account(db, target_id=user_id, activated_by=current_user, request=http_request)
+    target_user = db.query(User).filter(User.user_id == target_id).first()
+    full_name = f"{target_user.first_name} {target_user.last_name}".strip() if target_user else target_email
+    agency_name = agency_of(target_user.role) if target_user else None
+    region = _region_name(db, target_user.region_id) if target_user else None
+    background_tasks.add_task(send_admin_activation_email, target_email, full_name, agency_name, region)
+    return {"message": "Account activated", "user_id": str(target_id)}
 
-    db.execute(text("SET app.bypass_rls = 'true'"))
-    admin = db.query(User).filter(User.user_id == admin_id, User.role == "superadmin").first()
-    if not admin:
-        raise HTTPException(status_code=404, detail="Superadmin not found")
 
-    # Ashanti code starts here
-    # Atomic check-and-write: the WHERE clause's subquery and the SET happen
-    # as one indivisible DB operation, so two concurrent suspend requests
-    # (e.g. A suspending B and B suspending A at the same instant) can't both
-    # read "safe" before either write lands. Same pattern as the SLA reminder
-    # service's atomic claim UPDATE. If the subquery finds zero OTHER active,
-    # unlocked, ACTIVE-status superadmins at the moment this statement
-    # actually runs, the UPDATE matches no rows and RETURNING gives back
-    # nothing. The status = 'active' clause (matching UserStatus.ACTIVE)
-    # excludes an INVITED-but-not-yet-activated admin from being miscounted
-    # as "another admin who can actually log in."
-    result = db.execute(
-        text("""
-            UPDATE users
-            SET is_active = false
-            WHERE user_id = :admin_id
-              AND role = 'superadmin'
-              AND (
-                SELECT COUNT(*) FROM users AS others
-                WHERE others.role = 'superadmin'
-                  AND others.is_active = true
-                  AND others.is_locked = false
-                  AND others.status = 'active'
-                  AND others.user_id != :admin_id
-              ) > 0
-            RETURNING user_id
-        """),
-        {"admin_id": str(admin_id)},
-    )
-    if not result.fetchone():
-        db.rollback()
+@router.post("/{user_id}/suspend")
+async def suspend(user_id: uuid.UUID, http_request: Request,
+                   db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_or_national_admin)):
+    if user_id == current_user.user_id:
         raise HTTPException(
             status_code=400,
-            detail="Cannot suspend the only remaining active superadmin.",
+            detail="You cannot suspend your own account.",
         )
-    # Ashanti code ends here
-
-    db.refresh(admin)  # local ORM object is stale after the raw UPDATE — resync it
-
-    admin_id_val = admin.user_id
-    admin_email = admin.email
-
-    db.query(UserSession).filter(UserSession.user_id == admin.user_id).delete()
-    db.commit()
-
-    notification_service.create_notification_for_all_superadmins(
-        db=db,
-        event_type=NotificationEventType.ACCOUNT_SUSPENDED,
-        title="Superadmin suspended",
-        message=f"{admin_email}'s superadmin account has been suspended.",
-        related_user_id=admin_id_val,
-    )
-
-    write_audit_log(
-        db,
-        user=current_user,
-        action=AuditAction.SUSPEND_SUPERADMIN_ACCOUNT,
-        target_table="users",
-        target_id=admin_id_val,
-        target_reference=admin_email,
-        old_value={"status": "active"},
-        new_value={"status": "suspended"},
-        request=http_request,
-        region_code=None,
-        user_role_override="superadmin",
-    )
-
-    return {"message": "Superadmin account suspended successfully"}
+    return {"message": "Account suspended", "user_id": str(suspend_account(db, current_user, user_id, request=http_request))}
 
 
-@router.post("/{admin_id}/reactivate")
-def reactivate_superadmin(
-    admin_id: uuid.UUID,
-    http_request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin),
-):
-    db.execute(text("SET app.bypass_rls = 'true'"))
-    admin = db.query(User).filter(User.user_id == admin_id, User.role == "superadmin").first()
-    if not admin:
-        raise HTTPException(status_code=404, detail="Superadmin not found")
-    admin.is_active = True
-
-    admin_id_val = admin.user_id
-    admin_email = admin.email
-
-    db.commit()
-
-    notification_service.create_notification_for_all_superadmins(
-        db=db,
-        event_type=NotificationEventType.ACCOUNT_REACTIVATED,
-        title="Superadmin reactivated",
-        message=f"{admin_email}'s superadmin account has been reactivated.",
-        related_user_id=admin_id_val,
-    )
-
-    write_audit_log(
-        db,
-        user=current_user,
-        action=AuditAction.REACTIVATE_SUPERADMIN_ACCOUNT,
-        target_table="users",
-        target_id=admin_id_val,
-        target_reference=admin_email,
-        old_value={"status": "suspended"},
-        new_value={"status": "active"},
-        request=http_request,
-        region_code=None,
-        user_role_override="superadmin",
-    )
-
-    return {"message": "Superadmin account reactivated successfully"}
-
-
-@router.delete("/{admin_id}")
-def delete_superadmin(
-    admin_id: uuid.UUID,
-    http_request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin),
-):
-    if admin_id == current_user.user_id:
-        raise HTTPException(status_code=400, detail="You cannot delete your own account.")
-
-    db.execute(text("SET app.bypass_rls = 'true'"))
-    admin = db.query(User).filter(User.user_id == admin_id, User.role == "superadmin").first()
-    if not admin:
-        raise HTTPException(status_code=404, detail="Superadmin not found")
-
-    if not (admin.status == UserStatus.ACTIVE and not admin.is_active) and admin.status != UserStatus.INVITED:
-        raise HTTPException(status_code=400, detail="Only suspended superadmins or invited/expired invitations can be deleted.")
-
-    deleted_admin_id = admin.user_id
-    deleted_admin_email = admin.email
-    deleted_admin_previous_status = "suspended" if (admin.status == UserStatus.ACTIVE and not admin.is_active) else "invited"
-
-    notification_service.create_notification_for_all_superadmins(
-            db=db,
-            event_type=NotificationEventType.ACCOUNT_DELETED,
-            title="Superadmin deleted",
-            message=f"{deleted_admin_email}'s superadmin account has been deleted.",
-            related_user_id=deleted_admin_id,
+@router.post("/{user_id}/reactivate")
+async def reactivate(user_id: uuid.UUID, http_request: Request,
+                      db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_or_national_admin)):
+    if user_id == current_user.user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot reactivate your own account.",
         )
-    
+    return {"message": "Account reactivated", "user_id": str(reactivate_account(db, current_user, user_id, request=http_request))}
 
-    db.query(AccountInvitationToken).filter(AccountInvitationToken.user_id == admin_id).delete()
-    db.delete(admin)
-    db.commit()
 
-    
-    write_audit_log(
-        db,
-        user=current_user,
-        action=AuditAction.DELETE_SUPERADMIN_ACCOUNT,
-        target_table="users",
-        target_id=deleted_admin_id,
-        target_reference=deleted_admin_email,
-        old_value={"status": deleted_admin_previous_status},
-        new_value={"status": "deleted"},
-        request=http_request,
-        region_code=None,
-        user_role_override="superadmin",
+@router.post("/{user_id}/unlock")
+async def unlock(user_id: uuid.UUID, http_request: Request,
+                  db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_or_national_admin)):
+    if user_id == current_user.user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot unlock your own account.",
+        )
+    return {"message": "Account unlocked", "user_id": str(unlock_account(db, current_user, user_id, request=http_request))}
+
+
+@router.post("/{user_id}/resend-link")
+async def resend_link(user_id: uuid.UUID, background_tasks: BackgroundTasks, http_request: Request,
+                       db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_or_national_admin)):
+    target_id, target_email, target_role, token = resend_invite_link(db, current_user, user_id, request=http_request)
+    target_user = db.query(User).filter(User.user_id == target_id).first()
+    background_tasks.add_task(
+        send_admin_invite_email,
+        target_email,
+        agency_of(target_role),
+        _region_name(db, target_user.region_id) if target_user else None,
+        token,
     )
-
-    return {"message": "Superadmin deleted successfully"}
-
+    return {"message": "New invitation sent", "user_id": str(target_id)}
 
 
-@router.post("/{admin_id}/activate")
-async def activate_superadmin_endpoint(
-    admin_id: uuid.UUID,
-    http_request: Request,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin),
-):
-    admin_id_val, admin_email = activate_superadmin(db, admin_id, activated_by=current_user, request=http_request)
-    background_tasks.add_task(send_superadmin_activation_email, admin_email)
-    return {"message": "Superadmin account activated."}
-
-
-@router.post("/{admin_id}/unlock")
-def unlock_superadmin(
-    admin_id: uuid.UUID,
-    http_request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superadmin),
-):
-    db.execute(text("SET app.bypass_rls = 'true'"))
-    admin = db.query(User).filter(User.user_id == admin_id, User.role == "superadmin").first()
-    if not admin:
-        raise HTTPException(status_code=404, detail="Superadmin not found")
-    admin.is_locked = False
-    admin.failed_login_attempts = 0
-    admin.locked_until = None
-    admin.failed_otp_attempts = 0
-
-    admin_id_val = admin.user_id
-    admin_email = admin.email
-
-    db.commit()
-
-    notification_service.create_notification_for_all_superadmins(
-        db=db,
-        event_type=NotificationEventType.ACCOUNT_UNLOCKED,
-        title="Superadmin unlocked",
-        message=f"{admin_email}'s superadmin account has been unlocked.",
-        related_user_id=admin_id_val,
-    )
-
-    write_audit_log(
-        db,
-        user=current_user,
-        action=AuditAction.UNLOCK_SUPERADMIN_ACCOUNT,
-        target_table="users",
-        target_id=admin_id_val,
-        target_reference=admin_email,
-        old_value={"status": "locked"},
-        new_value={"status": "active"},
-        request=http_request,
-        region_code=None,
-        user_role_override="superadmin",
-    )
-
-    return {"message": "Superadmin account unlocked successfully"}
+@router.delete("/{user_id}")
+async def delete_account(user_id: uuid.UUID, http_request: Request,
+                          db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_or_national_admin)):
+    if user_id == current_user.user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot delete your own account.",
+        )
+    return {"message": "Invitation deleted", "user_id": str(delete_invited_account(db, current_user, user_id, request=http_request))}

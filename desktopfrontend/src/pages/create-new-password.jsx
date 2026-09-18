@@ -4,6 +4,25 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../utils/apiConfig';
 
+const PERSONNEL_ROLES = ['fda_personnel', 'lea_personnel'];
+
+function getApprovalMessage(role) {
+  switch (role) {
+    case 'national_admin':
+      return "Your account is now awaiting approval from a fellow National Admin before you can log in.";
+    case 'fda_admin':
+      return "Your account is now awaiting approval from a fellow FDA Admin or the National Admin before you can log in.";
+    case 'lea_admin':
+      return "Your account is now awaiting approval from a fellow LEA-CIDG Admin or the National Admin before you can log in.";
+    case 'fda_personnel':
+      return "Your account is now awaiting approval from your FDA Agency Admin before you can log in.";
+    case 'lea_personnel':
+      return "Your account is now awaiting approval from your LEA-CIDG Agency Admin before you can log in.";
+    default:
+      return "Your account is now awaiting approval before you can log in.";
+  }
+}
+
 function CreateNewPassword() {
   const navigate = useNavigate();
   const location = useLocation(); 
@@ -11,6 +30,8 @@ function CreateNewPassword() {
 
   // add near the top, after location is defined:
   const inviteToken = location.state?.token;
+  const role = location.state?.role;
+  const isPersonnel = PERSONNEL_ROLES.includes(role);
   const [form, setForm] = useState({
     newPassword: '',
     confirmPassword: '',
@@ -29,6 +50,12 @@ function CreateNewPassword() {
     special: /[^A-Za-z0-9]/.test(form.newPassword),
   };
   const allChecksPassed = Object.values(checks).every(Boolean);
+
+  function tabForRole(role) {
+  if (role === 'national_admin') return 'national-admin';
+  if (role === 'fda_admin' || role === 'lea_admin') return 'interagency-admin';
+  return 'personnel'; // fda_personnel, lea_personnel, or unknown -> personnel
+  }
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -63,17 +90,18 @@ function CreateNewPassword() {
     setSubmitting(true);
 
     try {
-    const token = location.state?.token; // make sure token is passed in via navigate() state
-
-    const response = await fetch(`${API_BASE_URL}/auth/password/create-from-invite`, {
+    // Posts to the generalized /registration/complete (password-only,
+    // profile fields already collected by the admin at invite time) —
+    // NOT the old /auth/password/create-from-invite, which is
+    // superadmin-only leftover logic (mislabels audit entries and sets
+    // is_active=False regardless of actual role).
+    const response = await fetch(`${API_BASE_URL}/registration/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // inside handleSubmit, replace the line:
-      // const token = location.state?.token;
-      // with just using inviteToken directly:
       body: JSON.stringify({
-        token: inviteToken,
-        new_password: form.newPassword,
+        invite_token: inviteToken,
+        password: form.newPassword,
+        confirm_password: form.confirmPassword,
       }),
     });
 
@@ -94,7 +122,7 @@ function CreateNewPassword() {
     }
 
   function handleGoToLogin() {
-    navigate('/universal-login?tab=superadmin');
+    navigate(`/universal-login?tab=${tabForRole(role)}`);
   }
 
 
@@ -127,7 +155,14 @@ function CreateNewPassword() {
               <div className="CNPSuccessIcon">🔐</div>
               <h2 className="CNPSuccessTitle">Password Created!</h2>
               <p className="CNPSuccessDesc">
-                Your Superadmin password has been created successfully. Your account is now awaiting approval from a fellow Superadmin before you can log in. You'll receive an email once it's activated.
+                {/* Backend now branches by role: personnel go straight to
+                    active on registration completion (their info was
+                    already fully vetted by the Agency Admin at invite
+                    time), while admin/national_admin still require a
+                    fellow admin/national admin to activate them. */}
+                {isPersonnel
+                  ? "Your account is now active. You can log in right away."
+                  : getApprovalMessage(role)}
               </p>
               <button className="CNPSuccessBtn" onClick={handleGoToLogin}>
                 Back to Login
@@ -145,9 +180,9 @@ function CreateNewPassword() {
       <div className="CNPPageContainer">
         <div className="CNPCard">
           <div className="CNPCardHeader">
-            <h1 className="CNPCardTitle">Create Your Superadmin Password</h1>
+            <h1 className="CNPCardTitle">Create Your Password</h1>
             <p className="CNPCardSubtitle">
-              Welcome! Please set a secure password for your Superadmin personnel account before logging in.
+              Welcome! Please set a secure password for your account before logging in.
             </p>
           </div>
 

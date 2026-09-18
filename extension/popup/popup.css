@@ -63,6 +63,7 @@ body {
   font-family: 'Poppins', sans-serif;
   font-size: 1.125rem;
   font-weight: 700;
+  color: #2E7D32;
 }
 
 .header-link {
@@ -737,14 +738,14 @@ body {
 .link-sign-in-up {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #1F2937;
+  color: #2E7D32;
   cursor: pointer;
   text-decoration: underline;
   transition: color 0.3s ease-in-out;
   width: fit-content;
 }
 
-.link-sign-in-up:hover { color: #4B5563; }
+.link-sign-in-up:hover { color: #66BB6A; }
 
 .home-section {
   background-color: #FDFDFD;

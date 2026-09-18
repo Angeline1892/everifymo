@@ -14,7 +14,10 @@ import {
   ChevronRight,
   XCircle,
   X,
-  Paperclip
+  Paperclip,
+  Download,
+  Eye,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { apiFetch } from "../../utils/apiFetch";
 
@@ -107,7 +110,9 @@ function FdaStatus() {
   const [attachmentPreview, setAttachmentPreview] = useState(null);
   const [attachmentName, setAttachmentName] = useState(null);
   const [attachmentUrl, setAttachmentUrl] = useState(null);
-  const [lightboxImage, setLightboxImage] = useState(null);
+  const [showAttachmentPreview, setShowAttachmentPreview] = useState(false);
+  const [attachmentMimeType, setAttachmentMimeType] = useState(null);
+  const [attachmentSizeDisplay, setAttachmentSizeDisplay] = useState(null);
 
   const [historyPage, setHistoryPage] = useState(1);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -488,7 +493,7 @@ function FdaStatus() {
                   <div className="FdaNoticeBanner" style={{ marginTop: 16, marginBottom: 10 }}>
                     <Mail size={18} />
                     <div className="FdaNoticeBannerText">
-                      This complaint has no email on file (likely a guest submission or a deleted account).
+                      This complaint has no email on file (likely a submission from deleted account).
                       The consumer will not receive an email notification when you push this update.
                     </div>
                   </div>
@@ -543,79 +548,80 @@ function FdaStatus() {
                   </div>
 
                   <div className="FdaFormGroup" style={{ marginBottom: 18 }}>
-                    <label>Attach evidence (optional)</label>
-                    <div className="FdaFileUploadWrapper">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAttachmentChange}
-                      />
-                      <div className="FdaFileUploadContent">
-                        <Paperclip size={20} />
-                        <span>Click to upload a screenshot or photo</span>
-                        {attachmentName && <span className="FdaFileName">{attachmentName}</span>}
+                    <div className="FdaVerifSectionCard">
+                      <div className="FdaVerifSectionHeader">
+                        <Paperclip size={16} className="FdaVerifBlueIcon" />
+                        <h3>Evidence Attached by Consumer</h3>
+                      </div>
+                      <div className="FdaVerifDocsGrid">
+                        {selectedComplaint.hasAttachment && attachmentUrl ? (
+                          <div className="FdaVerifDocCard">
+                            <div className="FdaVerifDocIcon">
+                              <ImageIcon size={18} />
+                            </div>
+                            <div className="FdaVerifDocInfo">
+                              <p className="FdaVerifDocName">{selectedComplaint.attachmentName || "Screenshot"}</p>
+                              <span className="FdaVerifDocMeta">{attachmentSizeDisplay}</span>
+                            </div>
+                            <div className="FdaVerifDocActions">
+                              <button
+                                className="FdaVerifDocActionBtn"
+                                title="Inspect Attachment"
+                                onClick={() => setShowAttachmentPreview(true)}
+                              >
+                                <Eye size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        ) : selectedComplaint.hasAttachment ? (
+                          <p className="FdaVerifNoDocsText">Loading attachment&hellip;</p>
+                        ) : (
+                          <p className="FdaVerifNoDocsText">No evidence documents attached to this complaint.</p>
+                        )}
                       </div>
                     </div>
-                    {attachmentPreview && (
-                      <div style={{ marginTop: 10, position: "relative", display: "inline-block" }}>
-                        <img
-                          src={attachmentPreview}
-                          alt="Attachment preview"
-                          className="FdaModalImagePreview"
-                          style={{ maxWidth: 220 }}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleRemoveAttachment}
-                          className="FdaVerifIconButton"
-                          style={{
-                            position: "absolute",
-                            top: 4,
-                            right: 4,
-                            background: "#FDFDFD",
-                            borderRadius: "50%",
-                          }}
-                          aria-label="Remove attachment"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    )}
-                    {attachmentUrl && (
-                      <img
-                        src={attachmentUrl}
-                        alt="Complaint evidence"
-                        className="FdaModalImagePreview"
-                        style={{ ...thumbnailStyle, marginTop: 10 }}
-                        onClick={() => setLightboxImage(attachmentUrl)}
-                      />
-                    )}
-                    {lightboxImage && (
-                      <div
-                        className="FdaVerifModalOverlay"
-                        onClick={() => setLightboxImage(null)}
-                        role="dialog"
-                        aria-modal="true"
-                      >
-                        <img
-                          src={lightboxImage}
-                          alt="Evidence full view"
-                          style={{
-                            maxWidth: "90vw",
-                            maxHeight: "90vh",
-                            borderRadius: 8,
-                            objectFit: "contain",
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <button
-                          className="FdaVerifToastCloseBtn"
-                          onClick={() => setLightboxImage(null)}
-                          aria-label="Close image"
-                          style={{ position: "absolute", top: 20, right: 20 }}
-                        >
-                          <X size={20} />
-                        </button>
+
+                    {showAttachmentPreview && attachmentUrl && (
+                      <div className="FdaVerifModalOverlay" role="dialog" aria-modal="true">
+                        <div className="FdaVerifDocModalContainer">
+                          <div className="FdaVerifDocModalHeader">
+                            <div className="FdaVerifDocModalTitleGroup">
+                              <Paperclip size={18} className="FdaVerifGreenIcon" />
+                              <div>
+                                <h3>{selectedComplaint.attachmentName || "Attached evidence"}</h3>
+                              </div>
+                            </div>
+                            <button className="FdaVerifIconButton" onClick={() => setShowAttachmentPreview(false)}>
+                              <X size={18} />
+                            </button>
+                          </div>
+
+                          <div className="FdaVerifDocModalBody">
+                            <img
+                              src={attachmentUrl}
+                              alt={selectedComplaint.attachmentName || "Complaint evidence"}
+                              className="FdaVerifDocImagePreview"
+                            />
+                          </div>
+
+                          <div className="FdaVerifModalFooter">
+                            <button className="FdaVerifBtnOutline" onClick={() => setShowAttachmentPreview(false)}>
+                              Close Preview
+                            </button>
+                            <button
+                              className="FdaVerifBtnDownloadAttachment"
+                              onClick={() => {
+                                const a = document.createElement("a");
+                                a.href = attachmentUrl;
+                                a.download = selectedComplaint.attachmentName || "evidence";
+                                a.click();
+                              }}
+                            >
+                              <Download size={14} />
+                              <span>Download Attachment</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

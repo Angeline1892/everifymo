@@ -191,6 +191,7 @@ def list_complaints(db: Session = Depends(get_db), current_user = Depends(get_cu
             "reporterUsername": reporter_username,
             "reporterEmail": reporter_email,
             "hasAttachment": bool(c.attachment_path),
+            "attachmentName": c.attachment_name,
         })
 
     return result
