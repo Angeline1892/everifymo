@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, Menu } from 'electron'
 import { fileURLToPath } from 'url'
 import path from 'path'
 
@@ -65,6 +65,7 @@ if (!gotLock) {
   })
 
   app.whenReady().then(() => {
+    Menu.setApplicationMenu(null)
     createWindow()
 
     // Windows/Linux: app was fully closed, this link is what launched it

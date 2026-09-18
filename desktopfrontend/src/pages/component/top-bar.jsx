@@ -193,8 +193,8 @@ const isMockWorkspace =
         ? !localStorage.getItem('access_token')
         : false;
 
-    // New state — actual fetched user name
-    const [userName, setUserName] = useState(null);
+    // New state — actual fetched user name (lazy-read from cache to prevent navigation flash)
+    const [userName, setUserName] = useState(() => localStorage.getItem('user_name') || null);
     const [nameLoading, setNameLoading] = useState(!isMockWorkspace);
 
     // ---- fetch the authenticated user's real name (skip for mock workspaces) ----
@@ -213,7 +213,10 @@ const isMockWorkspace =
                 if (!res.ok) return;
                 const data = await res.json();
                 const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ');
-                if (!cancelled && fullName) setUserName(fullName);
+                if (!cancelled && fullName) {
+                    setUserName(fullName);
+                    localStorage.setItem('user_name', fullName);
+                }
             } catch (err) {
                 console.error('Failed to fetch user profile:', err);
             } finally {
@@ -224,6 +227,18 @@ const isMockWorkspace =
         fetchUserName();
         return () => { cancelled = true; };
     }, [isMockWorkspace, workspace]);
+
+    // Keep TopBar user name in sync when profile is saved in ProfileSetting
+    useEffect(() => {
+        const handleProfileUpdated = (e) => {
+            const updated = e?.detail?.userName || localStorage.getItem('user_name');
+            if (updated) {
+                setUserName(updated);
+            }
+        };
+        window.addEventListener('profile-updated', handleProfileUpdated);
+        return () => window.removeEventListener('profile-updated', handleProfileUpdated);
+    }, []);
 
     // dropdown open/close states
     const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -398,6 +413,7 @@ const isMockWorkspace =
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('agency');
         localStorage.removeItem('role');
+        localStorage.removeItem('user_name');
 
         navigate(getLoginRedirectPath());
     };

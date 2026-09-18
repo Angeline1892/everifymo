@@ -23,6 +23,7 @@ import AllNotifications from './pages/component/all-notifications.jsx';
 {/* NATIONAL ADMIN PAGES */ }
 import NationalAdminNewAdminManagement from './pages/nationaladminfolder/national-admin-new-admin-management.jsx';
 import NationalAdminInteragencyAdminManagement from './pages/nationaladminfolder/national-admin-interagency-admin-management.jsx';
+import NationalAdminAuditLogs from './pages/nationaladminfolder/national-admin-audit-logs.jsx';
 
 {/* SUPERADMIN PAGES */ }
 import SuperAdminLogin from './pages/superadminfolder/superadmin-login.jsx';
@@ -117,6 +118,7 @@ export default function App() {
         {/* NATIONAL ADMIN ROUTES */}
         <Route path='/nationaladminfolder/national-admin-new-admin-management' element={<NationalAdminNewAdminManagement />} />
         <Route path='/nationaladminfolder/national-admin-interagency-admin-management' element={<NationalAdminInteragencyAdminManagement />} />
+        <Route path='/nationaladminfolder/national-admin-audit-logs' element={<NationalAdminAuditLogs />} />
 
         {/* SUPERADMIN ROUTES */}
         <Route path='/superadminfolder/superadmin-user-management' element={<SuperAdminUserManagement />} />

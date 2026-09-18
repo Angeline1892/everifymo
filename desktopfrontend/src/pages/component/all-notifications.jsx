@@ -325,53 +325,84 @@ export default function AllNotifications() {
         }
 
         .NotifFilterTabs {
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          background: #EBEFF5;
-          padding: 4px;
-          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.55);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.85);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+          border-radius: 9999px;
+          padding: 5px;
           gap: 4px;
+          flex-wrap: nowrap;
+          white-space: nowrap;
+          max-width: 100%;
+          overflow-x: auto;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .NotifFilterTabs::-webkit-scrollbar {
+          display: none;
         }
 
         .NotifFilterTabBtn {
+          padding: 8px 18px;
+          background: transparent;
+          border: none;
+          border-radius: 9999px;
+          color: #51606f;
+          font-family: 'Poppins', sans-serif;
+          font-size: 0.88rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          white-space: nowrap;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 7px 20px;
-          border-radius: 7px;
-          border: none;
-          background: transparent;
-          color: #64748B;
-          font-size: 13.5px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-family: inherit;
+          gap: 8px;
+          line-height: 1.4;
           user-select: none;
         }
 
         .NotifFilterTabBtn:hover:not(.active) {
-          color: #1E293B;
-          background: rgba(255, 255, 255, 0.6);
+          background: rgba(255, 255, 255, 0.8);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .NotifFilterTabBtn:hover:not(.active).agency-fda {
+          color: #1B4332;
+        }
+
+        .NotifFilterTabBtn:hover:not(.active).agency-lea {
+          color: #13213C;
+        }
+
+        .NotifFilterTabBtn:hover:not(.active).agency-superadmin {
+          color: #0D9488;
         }
 
         /* Agency-specific active tab highlight colors */
+        .NotifFilterTabBtn.active {
+          border-radius: 9999px;
+          color: #FDFDFD !important;
+        }
+
         .NotifFilterTabBtn.active.agency-fda {
-          background: #1B4332;
-          color: #FFFFFF;
-          box-shadow: 0 2px 6px rgba(27, 67, 50, 0.25);
+          background: #1B4332 !important;
+          box-shadow: 0 4px 12px rgba(27, 67, 50, 0.25);
         }
 
         .NotifFilterTabBtn.active.agency-lea {
-          background: #13213C;
-          color: #FFFFFF;
-          box-shadow: 0 2px 6px rgba(19, 33, 60, 0.25);
+          background: #13213C !important;
+          box-shadow: 0 4px 12px rgba(19, 33, 60, 0.25);
         }
 
         .NotifFilterTabBtn.active.agency-superadmin {
-          background: #0D9488;
-          color: #FFFFFF;
-          box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
+          background: #0D9488 !important;
+          box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
         }
 
         .NotifSummaryText {
@@ -663,12 +694,13 @@ export default function AllNotifications() {
             align-items: flex-start;
           }
           .NotifFilterTabs {
-            width: 100%;
+            max-width: 100%;
           }
           .NotifFilterTabBtn {
             flex: 1;
             justify-content: center;
-            padding: 7px 10px;
+            padding: 7px 12px;
+            font-size: 0.82rem;
           }
           .NotifRowItem {
             padding: 12px 14px;
