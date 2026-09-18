@@ -8,8 +8,8 @@ from app.models.users import User
 from app.core.security import verify_password, hash_password
 from app.core.constants import Role, UserStatus, AuditAction
 from app.core.audit import write_audit_log
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+from app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 
 
 class NationalAdminThrottledError(Exception):
@@ -138,8 +138,8 @@ def _handle_failed_attempt(db: Session, user: User, http_request: Request | None
             backoff = _backoff_seconds_for(attempts)
             user.locked_until = datetime.now(timezone.utc) + timedelta(seconds=backoff)
             db.commit()
-            notification_service.create_notification_for_all_superadmins(
-                db=db,
+            notification_service.notify_self_service_account_event(
+                db=db, target=user,
                 event_type=NotificationEventType.FAILED_LOGIN_WARNING,
                 title="Last national admin under repeated attack",
                 message=(
@@ -147,19 +147,17 @@ def _handle_failed_attempt(db: Session, user: User, http_request: Request | None
                     f"only active national admin. Account was throttled (locked out for "
                     f"{backoff}s) rather than permanently locked. Investigate immediately."
                 ),
-                related_user_id=user.user_id,
             )
         else:
             db.refresh(user)  # local ORM object is stale after the raw UPDATE
             user_id = user.user_id
             user_email = user.email
             db.commit()
-            notification_service.create_notification_for_all_superadmins(
-                db=db,
+            notification_service.notify_self_service_account_event(
+                db=db, target=user,
                 event_type=NotificationEventType.ACCOUNT_LOCKED,
                 title="Account locked out",
                 message=f"{user_email} has been locked out after {attempts} failed login attempts.",
-                related_user_id=user_id,
             )
             write_audit_log(
                 db,
@@ -177,12 +175,11 @@ def _handle_failed_attempt(db: Session, user: User, http_request: Request | None
             )
     elif attempts == 3:
         db.commit()
-        notification_service.create_notification_for_all_superadmins(
-            db=db,
+        notification_service.notify_self_service_account_event(
+            db=db, target=user,
             event_type=NotificationEventType.FAILED_LOGIN_WARNING,
             title="Repeated failed login attempts",
             message=f"{attempts} failed attempts on {user.email}.",
-            related_user_id=user.user_id,
         )
     else:
         db.commit()
