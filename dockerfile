@@ -17,7 +17,7 @@ COPY extensionBackend ./extensionBackend
 
 COPY backend/app/models/ ./backend/app/models/
 
-ENV PYTHONPATH=/everifymo/backend
+ENV PYTHONPATH=/everifymo/backend:/everifymo/extensionBackend
 
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
