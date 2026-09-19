@@ -63,25 +63,62 @@ function StatusBadge({ status }) {
 
 function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPassword }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [openUpward, setOpenUpward] = useState(false);
+  const [menuStyle, setMenuStyle] = useState({});
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
   const displayStatus = user.status;
 
-  function openMenu() {
+  const updateMenuPosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
-    const upward = spaceBelow < 220;
-    setMenuPos({
-      top: upward ? Math.max(8, rect.top - 200) : rect.bottom + 6,
-      left: Math.max(8, rect.right - 185),
-    });
-    setIsOpen(true);
-  }
+    const spaceAbove = rect.top;
+    const upward = spaceBelow < 220 && spaceAbove > spaceBelow;
+    const right = Math.max(8, window.innerWidth - rect.right);
+
+    if (upward) {
+      setMenuStyle({
+        position: 'fixed',
+        bottom: `${Math.max(8, window.innerHeight - rect.top + 4)}px`,
+        top: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '175px',
+        maxHeight: `${Math.max(120, rect.top - 16)}px`,
+        overflowY: 'auto',
+      });
+    } else {
+      setMenuStyle({
+        position: 'fixed',
+        top: `${rect.bottom + 4}px`,
+        bottom: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '175px',
+        maxHeight: `${Math.max(120, spaceBelow - 16)}px`,
+        overflowY: 'auto',
+      });
+    }
+    setOpenUpward(upward);
+  }, []);
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (!isOpen) {
+      updateMenuPosition();
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
+    updateMenuPosition();
+
     function handleOutsideClick(event) {
       if (
         menuRef.current && !menuRef.current.contains(event.target) &&
@@ -90,9 +127,22 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
         setIsOpen(false);
       }
     }
-    document.addEventListener('click', handleOutsideClick);
-    return () => document.removeEventListener('click', handleOutsideClick);
-  }, [isOpen]);
+
+    function handleScrollOrResize(event) {
+      if (menuRef.current && menuRef.current.contains(event.target)) return;
+      setIsOpen(false);
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [isOpen, updateMenuPosition]);
 
   return (
     <div className={`FDAAdminDropdownWrapper ${isOpen ? 'active-open' : ''}`}>
@@ -101,10 +151,7 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
         className="FDAAdminDropdownTrigger"
         data-tooltip="Actions"
         title="More Actions"
-        onClick={(e) => {
-          e.stopPropagation();
-          isOpen ? setIsOpen(false) : openMenu();
-        }}
+        onClick={handleToggle}
       >
         <MoreVertical size={16} />
       </button>
@@ -112,9 +159,9 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
       {isOpen &&
         createPortal(
           <div
-            className="FDAAdminDropdownMenu"
+            className={`FDAAdminDropdownMenu ${openUpward ? 'open-upward' : ''}`}
             ref={menuRef}
-            style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }}
+            style={menuStyle}
           >
             <button
               className="FDAAdminDropdownItem"

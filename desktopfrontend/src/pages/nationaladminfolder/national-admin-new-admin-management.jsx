@@ -141,24 +141,82 @@ function NationalAdminActionDropdown({
 }) {
   const status = computeAdminStatus(nationalAdmin);
   const [openUpward, setOpenUpward] = useState(false);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [menuStyle, setMenuStyle] = useState({});
   const triggerRef = useRef(null);
+  const menuRef = useRef(null);
 
+  const updateMenuPosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const upward = spaceBelow < 220 && spaceAbove > spaceBelow;
+    const right = Math.max(8, window.innerWidth - rect.right);
+
+    if (upward) {
+      setMenuStyle({
+        position: 'fixed',
+        bottom: `${Math.max(8, window.innerHeight - rect.top + 4)}px`,
+        top: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '165px',
+        maxHeight: `${Math.max(120, rect.top - 16)}px`,
+        overflowY: 'auto',
+      });
+    } else {
+      setMenuStyle({
+        position: 'fixed',
+        top: `${rect.bottom + 4}px`,
+        bottom: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '165px',
+        maxHeight: `${Math.max(120, spaceBelow - 16)}px`,
+        overflowY: 'auto',
+      });
+    }
+    setOpenUpward(upward);
+  }, []);
 
   const handleToggle = (e) => {
     e.stopPropagation();
-    if (!isOpen && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const upward = spaceBelow < 170;
-      setOpenUpward(upward);
-      setMenuPos({
-        top: upward ? Math.max(8, rect.top - 150) : rect.bottom + 4,
-        left: Math.max(8, rect.right - 190),
-      });
+    if (!isOpen) {
+      updateMenuPosition();
     }
     toggleDropdown();
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    updateMenuPosition();
+
+    function handleOutsideClick(event) {
+      if (
+        menuRef.current && !menuRef.current.contains(event.target) &&
+        triggerRef.current && !triggerRef.current.contains(event.target)
+      ) {
+        toggleDropdown();
+      }
+    }
+
+    function handleScrollOrResize(event) {
+      if (menuRef.current && menuRef.current.contains(event.target)) return;
+      toggleDropdown();
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [isOpen, toggleDropdown, updateMenuPosition]);
 
   return (
     <div className={`NAMDropdownWrapper ${isOpen ? 'active-open' : ''}`}>
@@ -175,14 +233,9 @@ function NationalAdminActionDropdown({
       {isOpen &&
         createPortal(
           <div
+            ref={menuRef}
             className={`NAMDropdownMenu ${openUpward ? 'open-upward' : ''}`}
-            style={{
-              position: 'fixed',
-              top: `${menuPos.top}px`,
-              left: `${menuPos.left}px`,
-              zIndex: 9999,
-              width: '165px',
-            }}
+            style={menuStyle}
           >
             <button
               className="NAMDropdownItem"
