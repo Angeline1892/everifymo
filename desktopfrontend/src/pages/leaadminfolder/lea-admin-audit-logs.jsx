@@ -259,29 +259,31 @@ export default function LEAAdminAuditLogs() {
             </div>
 
             {/* Exactly LEA | System Tabs (NO FDA) */}
-            <div className="LEAAdminAuditTabsWrapper">
-              <button
-                className={`LEAAdminAuditTabBtn ${activeTab === 'LEA' ? 'active' : ''}`}
-                onClick={() => {
-                  setActiveTab('LEA');
-                  setCurrentPage(1);
-                  setActionFilter('All');
-                }}
-              >
-                LEA-CIDG Activity
-                <span className="LEAAdminAuditTabBadge">{MOCK_LEA_AUDIT_LOGS.length}</span>
-              </button>
-              <button
-                className={`LEAAdminAuditTabBtn ${activeTab === 'System' ? 'active' : ''}`}
-                onClick={() => {
-                  setActiveTab('System');
-                  setCurrentPage(1);
-                  setActionFilter('All');
-                }}
-              >
-                System Events
-                <span className="LEAAdminAuditTabBadge">{MOCK_SYSTEM_AUDIT_LOGS.length}</span>
-              </button>
+            <div className="LEAAdminAuditTabsRow">
+              <div className="LEAAdminAuditTabsWrapper">
+                <button
+                  className={`LEAAdminAuditTabBtn ${activeTab === 'LEA' ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveTab('LEA');
+                    setCurrentPage(1);
+                    setActionFilter('All');
+                  }}
+                >
+                  LEA-CIDG Activity
+                  <span className="LEAAdminAuditTabBadge">{MOCK_LEA_AUDIT_LOGS.length}</span>
+                </button>
+                <button
+                  className={`LEAAdminAuditTabBtn ${activeTab === 'System' ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveTab('System');
+                    setCurrentPage(1);
+                    setActionFilter('All');
+                  }}
+                >
+                  System Events
+                  <span className="LEAAdminAuditTabBadge">{MOCK_SYSTEM_AUDIT_LOGS.length}</span>
+                </button>
+              </div>
             </div>
 
             {/* Filter Bar */}

@@ -1,7 +1,8 @@
 // desktopfrontend/src/pages/fdaadminfolder/fda-admin-admin-management.jsx
 import './fda-admin-css.css';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { apiFetch } from '../../utils/apiFetch';
 import {
   Send,
   UserCheck,
@@ -16,10 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Edit3,
   Search,
   CheckCircle2,
-  ShieldAlert,
   User,
   Fingerprint,
   Phone,
@@ -31,90 +30,24 @@ import {
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
 
-export function computeAdminStatus(admin) {
-  if (!admin) return '';
-  const rawStatus = (admin.status || '').toString().trim().toLowerCase();
-
-  // 1. Pending Approval check (must be recognized before generic active/inactive logic)
-  if (rawStatus === 'pending_approval' || rawStatus === 'pending approval') {
-    return 'Pending Approval';
-  }
-
-  // 2. Locked must take precedence over Active
-  // Condition: status == active && is_active == true && is_locked == true
-  if (
-    (rawStatus === 'active' && admin.is_active === true && admin.is_locked === true) ||
-    rawStatus === 'locked' ||
-    (admin.is_locked === true && rawStatus === 'active' && admin.is_active !== false)
-  ) {
-    return 'Locked';
-  }
-
-  // 3. Suspended: status == active && is_active == false
-  if (
-    (rawStatus === 'active' && admin.is_active === false) ||
-    rawStatus === 'suspended' ||
-    rawStatus === 'suspend'
-  ) {
-    return 'Suspended';
-  }
-
-  // 4. Active: status == active && is_active == true && is_locked != true
-  if (
-    rawStatus === 'active' ||
-    (!rawStatus && admin.is_active === true && !admin.is_locked)
-  ) {
-    return 'Active';
-  }
-
-  // 5. Invited / Resend Requested / Link Expired
-  if (
-    rawStatus === 'invited' ||
-    rawStatus === 'resend requested' ||
-    rawStatus === 'resend_requested' ||
-    rawStatus === 'link expired' ||
-    rawStatus === 'link_expired'
-  ) {
-    let isExpired = false;
-    if (typeof admin.is_token_expired === 'boolean') {
-      isExpired = admin.is_token_expired;
-    } else if (typeof admin.token_expired === 'boolean') {
-      isExpired = admin.token_expired;
-    } else if (admin.expiration_date || admin.expires_at) {
-      const expDate = new Date(admin.expiration_date || admin.expires_at);
-      if (!isNaN(expDate.getTime())) {
-        isExpired = expDate.getTime() < Date.now();
-      }
-    } else if (
-      rawStatus === 'link expired' ||
-      rawStatus === 'link_expired' ||
-      rawStatus === 'resend requested' ||
-      rawStatus === 'resend_requested'
-    ) {
-      isExpired = true;
+function extractErrorMessage(errorData, fallback) {
+    const detail = errorData?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+        return detail.map(d => d?.msg || JSON.stringify(d)).join(' ');
     }
-
-    const hasResendRequest =
-      admin.resend_requested_at !== null && admin.resend_requested_at !== undefined;
-
-    if (hasResendRequest && isExpired) {
-      return 'Resend Requested';
+    if (detail && typeof detail === 'object') {
+        return detail.msg || detail.message || JSON.stringify(detail);
     }
-    if (!hasResendRequest && isExpired) {
-      return 'Link Expired';
-    }
-    return 'Invited';
-  }
-
-  return admin.status || 'Active';
+    return fallback;
 }
 
-// Mirroring the exact status system from Superadmin Admin Management
+// Status badge: backend (`compute_display_status`) already returns the final
+// label, so we no longer re-derive it from raw is_active/is_locked flags.
 const STATUS_META = {
   Invited: { label: 'Invited', className: 'badge-pending' },
   Active: { label: 'Active', className: 'badge-active' },
   Suspended: { label: 'Suspended', className: 'badge-suspended' },
-  Suspend: { label: 'Suspended', className: 'badge-suspended' },
   'Resend Requested': { label: 'Resend Requested', className: 'badge-pending' },
   'Link Expired': { label: 'Link Expired', className: 'badge-expired' },
   'Pending Approval': { label: 'Pending Approval', className: 'badge-pending' },
@@ -122,174 +55,89 @@ const STATUS_META = {
 };
 
 function StatusBadge({ status }) {
-  const statusStr = typeof status === 'object' && status !== null ? computeAdminStatus(status) : status;
-  const meta = STATUS_META[statusStr] || { label: statusStr, className: '' };
+  const meta = STATUS_META[status] || { label: status, className: '' };
   return <span className={`FDAAdminStatusBadge ${meta.className}`}>{meta.label}</span>;
 }
 
-// Realistic mock FDA Admin accounts
-const INITIAL_FDA_ADMINS = [
-  {
-    id: 'fda-adm-001',
-    first_name: 'Gabriel',
-    middle_name: 'Jose',
-    last_name: 'Alvarez',
-    fullname: 'Gabriel Jose Alvarez',
-    employee_id: 'FDA-ADM-0104',
-    email: 'gabriel.alvarez@fda.gov.ph',
-    contact_number: '09171234567',
-    agency: 'FDA Admin',
-    region: 'National Capital Region (NCR)',
-    department: 'Executive Field Regulatory Bureau',
-    position: 'Regional Admin Supervisor',
-    status: 'Active',
-  },
-  {
-    id: 'fda-adm-002',
-    first_name: 'Lourdes',
-    middle_name: 'Santos',
-    last_name: 'Magsaysay',
-    fullname: 'Lourdes Santos Magsaysay',
-    employee_id: 'FDA-ADM-0219',
-    email: 'lourdes.magsaysay@fda.gov.ph',
-    contact_number: '09228881234',
-    agency: 'FDA Admin',
-    region: 'Region VII - Central Visayas',
-    department: 'Field Operations Administration',
-    position: 'Regional Administrator',
-    status: 'Active',
-  },
-  {
-    id: 'fda-adm-003',
-    first_name: 'Cynthia',
-    middle_name: 'Navarro',
-    last_name: 'Dizon',
-    fullname: 'Cynthia Navarro Dizon',
-    employee_id: 'FDA-ADM-0435',
-    email: 'cynthia.dizon@fda.gov.ph',
-    contact_number: '09176543210',
-    agency: 'FDA Admin',
-    region: 'Region IV-A - CALABARZON',
-    department: 'Regulatory Compliance and Oversight',
-    position: 'Senior Administrative Officer',
-    status: 'Link Expired',
-  },
-  {
-    id: 'fda-adm-004',
-    first_name: 'Angelica',
-    middle_name: 'Torres',
-    last_name: 'Aquino',
-    fullname: 'Angelica Torres Aquino',
-    employee_id: 'FDA-ADM-0678',
-    email: 'angelica.aquino@fda.gov.ph',
-    contact_number: '09289900112',
-    agency: 'FDA Admin',
-    region: 'Region I - Ilocos Region',
-    department: 'Inspection & Enforcement Management',
-    position: 'Regional Admin Coordinator',
-    status: 'Suspended',
-  },
-  {
-    id: 'fda-adm-005',
-    first_name: 'Eduardo',
-    middle_name: 'Cruz',
-    last_name: 'Bermudez',
-    fullname: 'Eduardo Cruz Bermudez',
-    employee_id: 'FDA-ADM-0891',
-    email: 'eduardo.bermudez@fda.gov.ph',
-    contact_number: '09193344556',
-    agency: 'FDA Admin',
-    region: 'Region III - Central Luzon',
-    department: 'Inter-Agency Operations',
-    position: 'Security & Access Administrator',
-    status: 'Locked',
-  },
-  {
-    id: 'fda-adm-006',
-    first_name: 'Patricia',
-    middle_name: 'Roxas',
-    last_name: 'Lim',
-    fullname: 'Patricia Roxas Lim',
-    employee_id: 'FDA-ADM-0922',
-    email: 'patricia.lim@fda.gov.ph',
-    contact_number: '09214455667',
-    agency: 'FDA Admin',
-    region: 'Region XI - Davao Region',
-    department: 'Administrative Services Division',
-    position: 'Associate Admin Director',
-    status: 'Invited',
-  },
-  {
-    id: 'fda-adm-007',
-    first_name: 'Mariano',
-    middle_name: 'Ponce',
-    last_name: 'Castillo',
-    fullname: 'Mariano Ponce Castillo',
-    employee_id: 'FDA-ADM-0554',
-    email: 'mariano.castillo@fda.gov.ph',
-    contact_number: '09175556677',
-    agency: 'FDA Admin',
-    region: 'Region II - Cagayan Valley',
-    department: 'Field Operations Administration',
-    position: 'Regional Admin Officer',
-    status: 'Pending Approval',
-    is_active: false,
-    is_locked: false,
-  },
-];
-
-const PHILIPPINE_REGIONS = [
-  'National Capital Region (NCR)',
-  'Cordillera Administrative Region (CAR)',
-  'Region I - Ilocos Region',
-  'Region II - Cagayan Valley',
-  'Region III - Central Luzon',
-  'Region IV-A - CALABARZON',
-  'MIMAROPA Region',
-  'Region V - Bicol Region',
-  'Region VI - Western Visayas',
-  'Region VII - Central Visayas',
-  'Region VIII - Eastern Visayas',
-  'Region IX - Zamboanga Peninsula',
-  'Region X - Northern Mindanao',
-  'Region XI - Davao Region',
-  'Region XII - SOCCSKSARGEN',
-  'Region XIII - Caraga',
-  'Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)',
-];
-
-function AdminMgmtActionDropdown({ admin, onAction, onView, onEdit }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+function AdminMgmtActionDropdown({ admin, isSelf, isOpen, toggleDropdown, onAction, onView }) {
+  const [openUpward, setOpenUpward] = useState(false);
+  const [menuStyle, setMenuStyle] = useState({});
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
-  const displayStatus = computeAdminStatus(admin);
+  const displayStatus = admin.status;
 
-  function openMenu() {
+  const updateMenuPosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
-    const upward = spaceBelow < 190;
-    setMenuPos({
-      top: upward ? Math.max(8, rect.top - 170) : rect.bottom + 6,
-      left: Math.max(8, rect.right - 185),
-    });
-    setIsOpen(true);
-  }
+    const spaceAbove = rect.top;
+    const upward = spaceBelow < 220 && spaceAbove > spaceBelow;
+    const right = Math.max(8, window.innerWidth - rect.right);
+
+    if (upward) {
+      setMenuStyle({
+        position: 'fixed',
+        bottom: `${Math.max(8, window.innerHeight - rect.top + 4)}px`,
+        top: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '175px',
+        maxHeight: `${Math.max(120, rect.top - 16)}px`,
+        overflowY: 'auto',
+      });
+    } else {
+      setMenuStyle({
+        position: 'fixed',
+        top: `${rect.bottom + 4}px`,
+        bottom: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '175px',
+        maxHeight: `${Math.max(120, spaceBelow - 16)}px`,
+        overflowY: 'auto',
+      });
+    }
+    setOpenUpward(upward);
+  }, []);
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (!isOpen) {
+      updateMenuPosition();
+    }
+    toggleDropdown();
+  };
 
   useEffect(() => {
     if (!isOpen) return;
+    updateMenuPosition();
+
     function handleOutsideClick(event) {
       if (
         menuRef.current && !menuRef.current.contains(event.target) &&
         triggerRef.current && !triggerRef.current.contains(event.target)
       ) {
-        setIsOpen(false);
+        toggleDropdown();
       }
     }
-    document.addEventListener('click', handleOutsideClick);
-    return () => document.removeEventListener('click', handleOutsideClick);
-  }, [isOpen]);
+
+    function handleScrollOrResize(event) {
+      if (menuRef.current && menuRef.current.contains(event.target)) return;
+      toggleDropdown();
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [isOpen, toggleDropdown, updateMenuPosition]);
 
   return (
     <div className={`FDAAdminDropdownWrapper ${isOpen ? 'active-open' : ''}`}>
@@ -298,10 +146,7 @@ function AdminMgmtActionDropdown({ admin, onAction, onView, onEdit }) {
         className="FDAAdminDropdownTrigger"
         data-tooltip="Actions"
         title="More Actions"
-        onClick={(e) => {
-          e.stopPropagation();
-          isOpen ? setIsOpen(false) : openMenu();
-        }}
+        onClick={handleToggle}
       >
         <MoreVertical size={16} />
       </button>
@@ -309,121 +154,49 @@ function AdminMgmtActionDropdown({ admin, onAction, onView, onEdit }) {
       {isOpen &&
         createPortal(
           <div
-            className="FDAAdminDropdownMenu"
+            className={`FDAAdminDropdownMenu ${openUpward ? 'open-upward' : ''}`}
             ref={menuRef}
-            style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }}
+            style={menuStyle}
           >
-            <button
-              className="FDAAdminDropdownItem"
-              onClick={() => {
-                onView();
-                setIsOpen(false);
-              }}
-            >
+            <button className="FDAAdminDropdownItem" onClick={() => { onView(); toggleDropdown(); }}>
               <Eye size={14} /> View Details
             </button>
 
-            {/* Active -> Edit Profile, Suspend (NO RESET PASSWORD ON ADMIN MGMT!) */}
-            {displayStatus === 'Active' && (
-              <>
-                <button
-                  className="FDAAdminDropdownItem"
-                  onClick={() => {
-                    onEdit();
-                    setIsOpen(false);
-                  }}
-                >
-                  <Edit3 size={14} /> Edit Profile
-                </button>
-                <div className="FDAAdminDropdownDivider" />
-                <button
-                  className="FDAAdminDropdownItem danger"
-                  onClick={() => {
-                    onAction('suspend');
-                    setIsOpen(false);
-                  }}
-                >
-                  <UserX size={14} /> Suspend Account
-                </button>
-              </>
+            {displayStatus === 'Active' && !isSelf && (
+              <button className="FDAAdminDropdownItem danger" onClick={() => { onAction('suspend'); toggleDropdown(); }}>
+                <UserX size={14} /> Suspend Account
+              </button>
             )}
 
-            {/* Suspended -> Reactivate, Delete */}
-            {(displayStatus === 'Suspended' || displayStatus === 'Suspend') && (
-              <>
-                <button
-                  className="FDAAdminDropdownItem primary-action"
-                  onClick={() => {
-                    onAction('reactivate');
-                    setIsOpen(false);
-                  }}
-                >
-                  <RotateCcw size={14} /> Reactivate Account
-                </button>
-                <div className="FDAAdminDropdownDivider" />
-                <button
-                  className="FDAAdminDropdownItem danger"
-                  onClick={() => {
-                    onAction('delete');
-                    setIsOpen(false);
-                  }}
-                >
-                  <Trash2 size={14} /> Delete Account
-                </button>
-              </>
+            {displayStatus === 'Suspended' && !isSelf && (
+              <button className="FDAAdminDropdownItem primary-action" onClick={() => { onAction('reactivate'); toggleDropdown(); }}>
+                <RotateCcw size={14} /> Reactivate Account
+              </button>
             )}
 
-            {/* Pending Approval -> Activate */}
             {displayStatus === 'Pending Approval' && (
-              <button
-                className="FDAAdminDropdownItem primary-action"
-                onClick={() => {
-                  onAction('activate');
-                  setIsOpen(false);
-                }}
-              >
+              <button className="FDAAdminDropdownItem primary-action" onClick={() => { onAction('activate'); toggleDropdown(); }}>
                 <CheckCircle2 size={14} /> Activate Account
               </button>
             )}
 
-            {/* Resend link */}
             {['Resend Requested', 'Link Expired'].includes(displayStatus) && (
-              <button
-                className="FDAAdminDropdownItem"
-                onClick={() => {
-                  onAction('resend');
-                  setIsOpen(false);
-                }}
-              >
+              <button className="FDAAdminDropdownItem" onClick={() => { onAction('resend'); toggleDropdown(); }}>
                 <Send size={14} /> Resend Link
               </button>
             )}
 
-            {/* Link Expired -> Delete */}
             {displayStatus === 'Link Expired' && (
               <>
                 <div className="FDAAdminDropdownDivider" />
-                <button
-                  className="FDAAdminDropdownItem danger"
-                  onClick={() => {
-                    onAction('delete');
-                    setIsOpen(false);
-                  }}
-                >
+                <button className="FDAAdminDropdownItem danger" onClick={() => { onAction('delete'); toggleDropdown(); }}>
                   <Trash2 size={14} /> Delete Account
                 </button>
               </>
             )}
 
-            {/* Locked -> Unlock */}
             {displayStatus === 'Locked' && (
-              <button
-                className="FDAAdminDropdownItem primary-action"
-                onClick={() => {
-                  onAction('unlock');
-                  setIsOpen(false);
-                }}
-              >
+              <button className="FDAAdminDropdownItem primary-action" onClick={() => { onAction('unlock'); toggleDropdown(); }}>
                 <UserCheck size={14} /> Unlock Account
               </button>
             )}
@@ -502,8 +275,11 @@ function ConfirmModal({ open, actionType, onConfirm, onCancel }) {
   );
 }
 
-// 2-Step Add FDA Admin Flow
-function AddAdminFlow({ open, onClose, onCreated }) {
+// 2-step Add Admin flow — wired to POST /admin-management/by-fellow-admin.
+// Agency + region are derived server-side from the logged-in admin, but we
+// now also fetch and DISPLAY the real values here (via GET /profile),
+// passed down as the `myProfile` prop, instead of hardcoded placeholder text.
+function AddAdminFlow({ open, onClose, onCreated, myProfile }) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -512,13 +288,12 @@ function AddAdminFlow({ open, onClose, onCreated }) {
     employeeId: '',
     contactNumber: '',
     email: '',
-    agency: 'FDA Admin', // Read-only
-    region: '',
     department: '',
     position: '',
   });
-
   const [errors, setErrors] = useState({});
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -530,16 +305,21 @@ function AddAdminFlow({ open, onClose, onCreated }) {
         employeeId: '',
         contactNumber: '',
         email: '',
-        agency: 'FDA Admin',
-        region: '',
         department: '',
         position: '',
       });
       setErrors({});
+      setSubmitError('');
+      setSending(false);
     }
   }, [open]);
 
   if (!open) return null;
+
+  // Real agency/region of the current logged-in admin, fetched via /profile
+  // by the parent component. Falls back to "Loading…" until it resolves.
+  const agencyDisplay = myProfile ? `${myProfile.agency} Admin` : 'Loading…';
+  const regionDisplay = myProfile?.region || 'Loading…';
 
   function validate() {
     const errs = {};
@@ -564,10 +344,6 @@ function AddAdminFlow({ open, onClose, onCreated }) {
       }
     }
 
-    if (!formData.region) {
-      errs.region = 'Region is required. Please select an agency region.';
-    }
-
     return errs;
   }
 
@@ -582,26 +358,37 @@ function AddAdminFlow({ open, onClose, onCreated }) {
     setStep(2);
   }
 
-  function handleFinalConfirm() {
-    const fullName = [formData.firstName, formData.middleName, formData.lastName].filter(Boolean).join(' ');
-    const newAdmin = {
-      id: `fda-adm-${Date.now()}`,
-      first_name: formData.firstName.trim(),
-      middle_name: formData.middleName.trim(),
-      last_name: formData.lastName.trim(),
-      fullname: fullName,
-      employee_id: formData.employeeId.trim(),
-      email: formData.email.trim().toLowerCase(),
-      contact_number: formData.contactNumber.trim(),
-      agency: 'FDA Admin',
-      region: formData.region,
-      department: formData.department.trim(),
-      position: formData.position.trim(),
-      status: 'Active', // Confirmed accounts automatically Active
-    };
+  async function handleFinalConfirm() {
+    setSending(true);
+    setSubmitError('');
+    try {
+      const res = await apiFetch('/admin-management/by-fellow-admin', {
+        method: 'POST',
+        body: JSON.stringify({
+          first_name: formData.firstName.trim(),
+          middle_name: formData.middleName.trim() || null,
+          last_name: formData.lastName.trim(),
+          email: formData.email.trim(),
+          contact_number: formData.contactNumber.trim() || null,
+          employee_id: formData.employeeId.trim() || null,
+          position: formData.position.trim() || null,
+          department: formData.department.trim() || null,
+        }),
+      });
 
-    onCreated(newAdmin);
-    onClose();
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(errData, 'Failed to send invitation.'));
+      }
+
+      onCreated(formData.email.trim(), [formData.firstName, formData.middleName, formData.lastName].filter(Boolean).join(' '));
+      onClose();
+    } catch (err) {
+      setSubmitError(err.message || 'Something went wrong.');
+      setStep(1); // let them fix the input
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -611,7 +398,8 @@ function AddAdminFlow({ open, onClose, onCreated }) {
           <div className="FDAAdminModalHeader">
             <h3 className="FDAAdminModalTitle">Add New FDA Admin</h3>
             <p className="FDAAdminModalSubtitle">
-              Provision a new administrative account for FDA workspace operations.
+              Provision a new administrative account for FDA workspace operations. The account
+              will be added under your current agency and region.
             </p>
             <button className="FDAAdminModalCloseBtn" onClick={onClose}>
               <X size={18} />
@@ -620,7 +408,6 @@ function AddAdminFlow({ open, onClose, onCreated }) {
 
           <form onSubmit={handleFormSubmit}>
             <div className="FDAAdminModalBody">
-              {/* Row 1: First Name, Middle Name, Last Name */}
               <div className="FDAAdminFormRow3">
                 <div className="FDAAdminFormGroup">
                   <label className="FDAAdminLabel">
@@ -679,7 +466,6 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                 </div>
               </div>
 
-              {/* Row 2: Employee ID, Contact Number */}
               <div className="FDAAdminFormRow">
                 <div className="FDAAdminFormGroup">
                   <label className="FDAAdminLabel">Employee ID</label>
@@ -721,7 +507,6 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                 </div>
               </div>
 
-              {/* Row 3: Email Address */}
               <div className="FDAAdminFormGroup">
                 <label className="FDAAdminLabel">
                   Email Address <span className="FDAAdminRequired">*</span>
@@ -743,48 +528,23 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                 )}
               </div>
 
-              {/* Row 4: Agency, Region */}
               <div className="FDAAdminFormRow">
                 <div className="FDAAdminFormGroup">
-                  <label className="FDAAdminLabel">Agency (Read-only)</label>
+                  <label className="FDAAdminLabel">Agency</label>
                   <div className="FDAAdminInputWrapper">
                     <Building2 className="FDAAdminInputIcon" size={17} />
-                    <input
-                      type="text"
-                      className="FDAAdminInput readonly-input"
-                      value={formData.agency}
-                      readOnly
-                      disabled
-                    />
+                    <input type="text" className="FDAAdminInput readonly-input" value={agencyDisplay} readOnly disabled />
                   </div>
                 </div>
-
                 <div className="FDAAdminFormGroup">
-                  <label className="FDAAdminLabel">
-                    Region <span className="FDAAdminRequired">*</span>
-                  </label>
+                  <label className="FDAAdminLabel">Region</label>
                   <div className="FDAAdminInputWrapper">
                     <MapPin className="FDAAdminInputIcon" size={17} />
-                    <select
-                      className={`FDAAdminSelect ${errors.region ? 'input-error' : ''}`}
-                      value={formData.region}
-                      onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                    >
-                      <option value="">Select Region</option>
-                      {PHILIPPINE_REGIONS.map((reg) => (
-                        <option key={reg} value={reg}>{reg}</option>
-                      ))}
-                    </select>
+                    <input type="text" className="FDAAdminInput readonly-input" value={regionDisplay} readOnly disabled />
                   </div>
-                  {errors.region && (
-                    <span className="FDAAdminFieldError">
-                      <AlertCircle size={12} /> {errors.region}
-                    </span>
-                  )}
                 </div>
               </div>
 
-              {/* Row 5: Department, Position */}
               <div className="FDAAdminFormRow">
                 <div className="FDAAdminFormGroup">
                   <label className="FDAAdminLabel">Department</label>
@@ -799,7 +559,6 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                     />
                   </div>
                 </div>
-
                 <div className="FDAAdminFormGroup">
                   <label className="FDAAdminLabel">Position</label>
                   <div className="FDAAdminInputWrapper">
@@ -814,6 +573,12 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                   </div>
                 </div>
               </div>
+
+              {submitError && (
+                <span className="FDAAdminFieldError">
+                  <AlertCircle size={12} /> {submitError}
+                </span>
+              )}
             </div>
 
             <div className="FDAAdminModalFooter">
@@ -827,19 +592,18 @@ function AddAdminFlow({ open, onClose, onCreated }) {
           </form>
         </div>
       ) : (
-        /* STEP 2: Summary Confirmation */
         <div className="FDAAdminModal" style={{ maxWidth: '480px' }}>
           <div className="FDAAdminModalHeader">
             <h3 className="FDAAdminModalTitle">Confirm Administrator Creation</h3>
             <p className="FDAAdminModalSubtitle">
-              Verify administrator credentials before finalizing account creation.
+              Verify administrator credentials before sending the invitation.
             </p>
           </div>
 
           <div className="FDAAdminModalBody">
             <div className="FDAAdminSummaryNotice">
-              <CircleCheckBig size={18} />
-              <span>This account will be created directly with <strong>Active</strong> administrative status.</span>
+              <Mail size={18} />
+              <span>An invitation link will be emailed to this address. The account stays <strong>Invited</strong> until it's accepted.</span>
             </div>
 
             <div className="FDAAdminSummaryBox">
@@ -848,18 +612,6 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                 <span className="FDAAdminSummaryValue">
                   {[formData.firstName, formData.middleName, formData.lastName].filter(Boolean).join(' ') || '-'}
                 </span>
-              </div>
-              <div className="FDAAdminSummaryRow">
-                <span className="FDAAdminSummaryLabel">First Name:</span>
-                <span className="FDAAdminSummaryValue">{formData.firstName || '-'}</span>
-              </div>
-              <div className="FDAAdminSummaryRow">
-                <span className="FDAAdminSummaryLabel">Middle Name:</span>
-                <span className="FDAAdminSummaryValue">{formData.middleName || '-'}</span>
-              </div>
-              <div className="FDAAdminSummaryRow">
-                <span className="FDAAdminSummaryLabel">Last Name:</span>
-                <span className="FDAAdminSummaryValue">{formData.lastName || '-'}</span>
               </div>
               <div className="FDAAdminSummaryRow">
                 <span className="FDAAdminSummaryLabel">Employee ID:</span>
@@ -876,12 +628,12 @@ function AddAdminFlow({ open, onClose, onCreated }) {
               <div className="FDAAdminSummaryRow">
                 <span className="FDAAdminSummaryLabel">Agency:</span>
                 <span className="FDAAdminSummaryValue">
-                  <span className="FDAAdminAgencyTag">FDA Admin</span>
+                  <span className="FDAAdminAgencyTag">{agencyDisplay}</span>
                 </span>
               </div>
               <div className="FDAAdminSummaryRow">
                 <span className="FDAAdminSummaryLabel">Region:</span>
-                <span className="FDAAdminSummaryValue">{formData.region || '-'}</span>
+                <span className="FDAAdminSummaryValue">{regionDisplay}</span>
               </div>
               <div className="FDAAdminSummaryRow">
                 <span className="FDAAdminSummaryLabel">Department:</span>
@@ -892,14 +644,20 @@ function AddAdminFlow({ open, onClose, onCreated }) {
                 <span className="FDAAdminSummaryValue">{formData.position || '-'}</span>
               </div>
             </div>
+
+            {submitError && (
+              <span className="FDAAdminFieldError">
+                <AlertCircle size={12} /> {submitError}
+              </span>
+            )}
           </div>
 
           <div className="FDAAdminModalFooter">
-            <button type="button" className="FDAAdminCancelBtn" onClick={() => setStep(1)}>
+            <button type="button" className="FDAAdminCancelBtn" onClick={() => setStep(1)} disabled={sending}>
               Go Back
             </button>
-            <button type="button" className="FDAAdminConfirmBtn primary" onClick={handleFinalConfirm}>
-              Confirm / Add New Admin
+            <button type="button" className="FDAAdminConfirmBtn primary" onClick={handleFinalConfirm} disabled={sending}>
+              {sending ? 'Sending Invitation…' : 'Confirm / Send Invitation'}
             </button>
           </div>
         </div>
@@ -908,191 +666,9 @@ function AddAdminFlow({ open, onClose, onCreated }) {
   );
 }
 
-// Edit Profile Modal for FDA Admin
-function EditAdminModal({ open, admin, onClose, onSave }) {
-  const [form, setForm] = useState({
-    firstName: '',
-    middleName: '',
-    lastName: '',
-    employeeId: '',
-    contactNumber: '',
-    email: '',
-    agency: 'FDA Admin',
-    region: '',
-    department: '',
-    position: '',
-  });
 
-  useEffect(() => {
-    if (admin) {
-      setForm({
-        firstName: admin.first_name || '',
-        middleName: admin.middle_name || '',
-        lastName: admin.last_name || '',
-        employeeId: admin.employee_id || '',
-        contactNumber: admin.contact_number || '',
-        email: admin.email || '',
-        agency: 'FDA Admin',
-        region: admin.region || 'National Capital Region (NCR)',
-        department: admin.department || '',
-        position: admin.position || '',
-      });
-    }
-  }, [admin]);
-
-  if (!open || !admin) return null;
-
-  function handleSave(e) {
-    e.preventDefault();
-    const updated = {
-      ...admin,
-      first_name: form.firstName.trim(),
-      middle_name: form.middleName.trim(),
-      last_name: form.lastName.trim(),
-      fullname: [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' '),
-      employee_id: form.employeeId.trim(),
-      contact_number: form.contactNumber.trim(),
-      email: form.email.trim(),
-      agency: 'FDA Admin',
-      region: form.region,
-      department: form.department.trim(),
-      position: form.position.trim(),
-    };
-    onSave(updated);
-    onClose();
-  }
-
-  return (
-    <div className="FDAAdminModalOverlay">
-      <div className="FDAAdminModal">
-        <div className="FDAAdminModalHeader">
-          <h3 className="FDAAdminModalTitle">Edit Administrator Profile</h3>
-          <p className="FDAAdminModalSubtitle">Update credentials for this FDA Administrator.</p>
-          <button className="FDAAdminModalCloseBtn" onClick={onClose}><X size={18} /></button>
-        </div>
-        <form onSubmit={handleSave}>
-          <div className="FDAAdminModalBody">
-            <div className="FDAAdminFormGrid">
-              <div className="FDAAdminFormGroup">
-                <label className="FDAAdminLabel">First Name</label>
-                <input
-                  type="text"
-                  className="FDAAdminInput"
-                  value={form.firstName}
-                  onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="FDAAdminFormGroup">
-                <label className="FDAAdminLabel">Middle Name</label>
-                <input
-                  type="text"
-                  className="FDAAdminInput"
-                  value={form.middleName}
-                  onChange={(e) => setForm({ ...form, middleName: e.target.value })}
-                />
-              </div>
-              <div className="FDAAdminFormGroup">
-                <label className="FDAAdminLabel">Last Name</label>
-                <input
-                  type="text"
-                  className="FDAAdminInput"
-                  value={form.lastName}
-                  onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="FDAAdminFormGroup">
-                <label className="FDAAdminLabel">Employee ID</label>
-                <input
-                  type="text"
-                  className="FDAAdminInput"
-                  value={form.employeeId}
-                  onChange={(e) => setForm({ ...form, employeeId: e.target.value })}
-                />
-              </div>
-              <div className="FDAAdminFormGroup">
-                <label className="FDAAdminLabel">Contact Number</label>
-                <input
-                  type="tel"
-                  maxLength={11}
-                  className="FDAAdminInput"
-                  value={form.contactNumber}
-                  onChange={(e) => setForm({ ...form, contactNumber: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="FDAAdminFormGroup">
-                <label className="FDAAdminLabel">Email Address</label>
-                <input
-                  type="email"
-                  className="FDAAdminInput"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="FDAAdminFormGroup">
-                <label className="FDAAdminLabel">Agency (Read-only)</label>
-                <input
-                  type="text"
-                  className="FDAAdminInput readonly-input"
-                  value={form.agency}
-                  readOnly
-                  disabled
-                />
-              </div>
-              <div className="FDAAdminFormGroup">
-                <label className="FDAAdminLabel">Region</label>
-                <select
-                  className="FDAAdminSelect"
-                  style={{ width: '100%' }}
-                  value={form.region}
-                  onChange={(e) => setForm({ ...form, region: e.target.value })}
-                >
-                  {PHILIPPINE_REGIONS.map((reg) => (
-                    <option key={reg} value={reg}>{reg}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="FDAAdminFormGroup">
-                <label className="FDAAdminLabel">Department</label>
-                <input
-                  type="text"
-                  className="FDAAdminInput"
-                  value={form.department}
-                  onChange={(e) => setForm({ ...form, department: e.target.value })}
-                />
-              </div>
-              <div className="FDAAdminFormGroup">
-                <label className="FDAAdminLabel">Position</label>
-                <input
-                  type="text"
-                  className="FDAAdminInput"
-                  value={form.position}
-                  onChange={(e) => setForm({ ...form, position: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="FDAAdminModalFooter">
-            <button type="button" className="FDAAdminCancelBtn" onClick={onClose}>Cancel</button>
-            <button type="submit" className="FDAAdminConfirmBtn primary">Save Changes</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// View Admin Details
 function ViewAdminModal({ open, admin, onClose }) {
   if (!open || !admin) return null;
-
-  const resolvedFullName =
-    admin.fullname ||
-    [admin.first_name, admin.middle_name, admin.last_name].filter(Boolean).join(' ') ||
-    '-';
 
   return (
     <div className="FDAAdminModalOverlay">
@@ -1120,7 +696,7 @@ function ViewAdminModal({ open, admin, onClose }) {
 
               <div className="FDAAdminVDField full-span">
                 <span className="FDAAdminVDLabel">Full Name</span>
-                <span className="FDAAdminVDValue">{resolvedFullName}</span>
+                <span className="FDAAdminVDValue">{admin.fullname || '-'}</span>
               </div>
 
               <div className="FDAAdminVDField">
@@ -1160,7 +736,7 @@ function ViewAdminModal({ open, admin, onClose }) {
               <div className="FDAAdminVDField full-span">
                 <span className="FDAAdminVDLabel">Account Status</span>
                 <span className="FDAAdminVDValue">
-                  <StatusBadge status={admin} />
+                  <StatusBadge status={admin.status} />
                 </span>
               </div>
             </div>
@@ -1177,11 +753,19 @@ function ViewAdminModal({ open, admin, onClose }) {
 }
 
 export default function FDAAdminAdminManagement() {
-  const [admins, setAdmins] = useState(INITIAL_FDA_ADMINS);
+  const [admins, setAdmins] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+
+  // Real region/agency of the LOGGED-IN admin, fetched once from GET /profile.
+  // Passed into AddAdminFlow so the "Add New FDA Admin" form shows real data
+  // instead of the old hardcoded "Same as your region" placeholder text.
+  const [myProfile, setMyProfile] = useState(null);
+  const [activeDropdownId, setActiveDropdownId] = useState(null); 
+
   const [statusFilter, setStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewAdmin, setViewAdmin] = useState(null);
-  const [editAdmin, setEditAdmin] = useState(null);
   const [addFlowOpen, setAddFlowOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -1199,63 +783,118 @@ export default function FDAAdminAdminManagement() {
     setTimeout(() => setToastMessage(''), 4000);
   }
 
-  function handleAddAdminSuccess(newAdmin) {
-    setAdmins((prev) => [newAdmin, ...prev]);
-    showToast(`FDA Admin account for ${newAdmin.fullname} created and activated.`);
+  // `silent`: when true, skips toggling the table-wide `loading` state.
+  // Used for refetches triggered by an action (activate/suspend/etc.) so the
+  // whole table doesn't flash back to "Loading administrator records…" —
+  // only the initial mount-time fetch shows that loading state.
+  const fetchAdmins = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    setFetchError('');
+    try {
+      const res = await apiFetch('/admin-management');
+      if (!res.ok) throw new Error('Failed to load administrator records.');
+      const data = await res.json();
+      setAdmins(
+        data.map((a) => ({
+          id: a.user_id,
+          first_name: a.first_name,
+          middle_name: a.middle_name,
+          last_name: a.last_name,
+          fullname: [a.first_name, a.middle_name, a.last_name].filter(Boolean).join(' '),
+          email: a.email,
+          agency: a.agency,
+          region: a.region,
+          department: a.department,
+          position: a.position,
+          employee_id: a.employee_id,
+          contact_number: a.contact_number,
+          status: a.status,
+          is_locked: a.is_locked,
+        }))
+      );
+    } catch (err) {
+      setFetchError(err.message || 'Something went wrong.');
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, []);
+
+  const fetchMyProfile = useCallback(async () => {
+    try {
+      const res = await apiFetch('/profile');
+      if (!res.ok) return;
+      const data = await res.json();
+      setMyProfile(data); 
+    } catch (err) {
+      console.error('Failed to fetch current admin profile:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAdmins();
+    fetchMyProfile();
+  }, [fetchAdmins, fetchMyProfile]);
+
+   useEffect(() => {
+    function handleOutsideClick(event) {
+      if (
+        !event.target.closest('.FDAAdminDropdownWrapper') &&
+        !event.target.closest('.FDAAdminDropdownMenu')
+      ) {
+        setActiveDropdownId(null);
+      }
+    }
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, []);
+
+  function handleAddAdminSuccess(email) {
+    showToast(`Invitation sent to ${email}.`);
+    fetchAdmins(true); // silent — table already has data, just refresh it quietly
   }
 
   function openConfirm(actionType, adminId) {
     setConfirmModal({ open: true, actionType, targetId: adminId });
   }
 
-  function handleConfirmAction() {
+  async function handleConfirmAction() {
     const { actionType, targetId } = confirmModal;
-    setAdmins((prev) =>
-      prev.flatMap((a) => {
-        if (a.id !== targetId) return [a];
-        if (actionType === 'activate') {
-          showToast(`Admin account ${a.fullname} activated.`);
-          return [{ ...a, status: 'Active', is_active: true, is_locked: false }];
-        }
-        if (actionType === 'suspend') {
-          showToast(`Admin account ${a.fullname} suspended.`);
-          return [{ ...a, status: 'Suspended', is_active: false }];
-        }
-        if (actionType === 'reactivate') {
-          showToast(`Admin account ${a.fullname} reactivated.`);
-          return [{ ...a, status: 'Active', is_active: true, is_locked: false }];
-        }
-        if (actionType === 'unlock') {
-          showToast(`Admin account ${a.fullname} unlocked.`);
-          return [{ ...a, status: 'Active', is_active: true, is_locked: false }];
-        }
-        if (actionType === 'resend') {
-          showToast(`Invitation resent to ${a.email}.`);
-          return [{ ...a, status: 'Invited' }];
-        }
-        if (actionType === 'delete') {
-          showToast(`Admin entry for ${a.fullname} deleted.`);
-          return [];
-        }
-        return [a];
-      })
-    );
+    const actionPathMap = {
+      suspend: 'suspend',
+      reactivate: 'reactivate',
+      activate: 'activate',
+      unlock: 'unlock',
+      resend: 'resend-link',
+    };
+
     setConfirmModal({ open: false, actionType: '', targetId: null });
+
+    try {
+      if (actionType === 'delete') {
+        const res = await apiFetch(`/admin-management/${targetId}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(extractErrorMessage(errData, 'Delete failed.'));
+        }
+        showToast('Admin entry deleted.');
+      } else {
+        const path = actionPathMap[actionType];
+        if (!path) return;
+        const res = await apiFetch(`/admin-management/${targetId}/${path}`, { method: 'POST' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(extractErrorMessage(errData, 'Action failed.'));
+        }
+        showToast('Account updated.');
+      }
+      await fetchAdmins(true); // silent — no full-table "Loading…" flash after an action
+    } catch (err) {
+      showToast(err.message || 'Something went wrong.');
+    }
   }
 
-  function handleSaveEdit(updatedAdmin) {
-    setAdmins((prev) => prev.map((a) => (a.id === updatedAdmin.id ? updatedAdmin : a)));
-    showToast(`Profile for ${updatedAdmin.fullname} successfully updated.`);
-  }
-
-  // Search & Filter
   const filteredAdmins = admins.filter((a) => {
-    const dispStatus = computeAdminStatus(a);
-    const matchesStatus =
-      statusFilter === 'All'
-        ? true
-        : dispStatus === statusFilter ||
-          (statusFilter === 'Suspended' && dispStatus === 'Suspend');
+    const matchesStatus = statusFilter === 'All' || a.status === statusFilter;
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
@@ -1282,7 +921,6 @@ export default function FDAAdminAdminManagement() {
         <TopBar topbarType="FDA_ADMIN" />
         <div className="FDAAdminMainfeed">
           <div className="FDAAdminPageContainer">
-            {/* Header */}
             <div className="FDAAdminPageHeader">
               <div className="FDAAdminPageTitleBlock">
                 <h1 className="FDAAdminPageTitle">
@@ -1302,27 +940,17 @@ export default function FDAAdminAdminManagement() {
               </button>
             </div>
 
-            {/* Stats Row - Primary Account States Only */}
+            {fetchError && (
+              <div className="FDAAdminFieldError" style={{ marginBottom: '12px' }}>
+                <AlertCircle size={12} /> {fetchError}
+              </div>
+            )}
+
             <div className="FDAAdminStatsRow">
               {[
-                {
-                  label: 'Active',
-                  value: admins.filter((a) => computeAdminStatus(a) === 'Active').length,
-                  className: 'stat-active',
-                },
-                {
-                  label: 'Suspended',
-                  value: admins.filter((a) => {
-                    const s = computeAdminStatus(a);
-                    return s === 'Suspended' || s === 'Suspend';
-                  }).length,
-                  className: 'stat-suspended',
-                },
-                {
-                  label: 'Locked',
-                  value: admins.filter((a) => computeAdminStatus(a) === 'Locked').length,
-                  className: 'stat-locked',
-                },
+                { label: 'Active', value: admins.filter((a) => a.status === 'Active').length, className: 'stat-active' },
+                { label: 'Suspended', value: admins.filter((a) => a.status === 'Suspended').length, className: 'stat-suspended' },
+                { label: 'Locked', value: admins.filter((a) => a.status === 'Locked').length, className: 'stat-locked' },
               ].map((s) => (
                 <div key={s.label} className={`FDAAdminStatCard ${s.className}`}>
                   <span className="FDAAdminStatValue">{s.value}</span>
@@ -1331,7 +959,6 @@ export default function FDAAdminAdminManagement() {
               ))}
             </div>
 
-            {/* Filters & Search */}
             <div className="FDAAdminFiltersContainer">
               <div className="FDAAdminSearchGroup">
                 <Search size={16} className="FDAAdminSearchIcon" />
@@ -1385,7 +1012,6 @@ export default function FDAAdminAdminManagement() {
               </div>
             </div>
 
-            {/* Table */}
             <div className="FDAAdminTableWrapper">
               <table className="FDAAdminTable">
                 <thead>
@@ -1401,7 +1027,13 @@ export default function FDAAdminAdminManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayedAdmins.length > 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="FDAAdminEmpty">
+                        Loading administrator records…
+                      </td>
+                    </tr>
+                  ) : displayedAdmins.length > 0 ? (
                     displayedAdmins.map((admin, idx) => (
                       <tr key={admin.id}>
                         <td className="FDAAdminTdCenter">{startIndex + idx + 1}</td>
@@ -1413,15 +1045,23 @@ export default function FDAAdminAdminManagement() {
                         <td>{admin.region || '-'}</td>
                         <td>{admin.department || '-'}</td>
                         <td>
-                          <StatusBadge status={admin} />
+                          <StatusBadge status={admin.status} />
                         </td>
                         <td className="FDAAdminTdCenter">
+                          {myProfile !== null ? (
                           <AdminMgmtActionDropdown
                             admin={admin}
+                            isSelf={admin.id === myProfile?.user_id}
+                            isOpen={activeDropdownId === admin.id}                                   
+                            toggleDropdown={() =>
+                              setActiveDropdownId(activeDropdownId === admin.id ? null : admin.id)    
+                            }
                             onAction={(type) => openConfirm(type, admin.id)}
                             onView={() => setViewAdmin(admin)}
-                            onEdit={() => setEditAdmin(admin)}
                           />
+                          ) : (
+                            <span className="FDAAdminActionsPlaceholder">—</span>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -1435,7 +1075,7 @@ export default function FDAAdminAdminManagement() {
                 </tbody>
               </table>
 
-              {totalItems > 0 && (
+              {!loading && totalItems > 0 && (
                 <div className="FDAAdminPaginationWrapper">
                   <span className="FDAAdminPaginationInfo">
                     Showing {startIndex + 1}–{endIndex} of {totalItems} admin entries
@@ -1472,14 +1112,13 @@ export default function FDAAdminAdminManagement() {
         </div>
       </div>
 
-      {/* Add Admin Flow */}
       <AddAdminFlow
         open={addFlowOpen}
         onClose={() => setAddFlowOpen(false)}
         onCreated={handleAddAdminSuccess}
+        myProfile={myProfile}
       />
 
-      {/* Confirmation Modal */}
       <ConfirmModal
         open={confirmModal.open}
         actionType={confirmModal.actionType}
@@ -1487,22 +1126,12 @@ export default function FDAAdminAdminManagement() {
         onCancel={() => setConfirmModal({ open: false, actionType: '', targetId: null })}
       />
 
-      {/* View Admin Modal */}
       <ViewAdminModal
         open={!!viewAdmin}
         admin={viewAdmin}
         onClose={() => setViewAdmin(null)}
       />
 
-      {/* Edit Admin Modal */}
-      <EditAdminModal
-        open={!!editAdmin}
-        admin={editAdmin}
-        onClose={() => setEditAdmin(null)}
-        onSave={handleSaveEdit}
-      />
-
-      {/* Success Toast */}
       {toastMessage && (
         <div className="FDAAdminToast">
           <CheckCircle2 size={18} />

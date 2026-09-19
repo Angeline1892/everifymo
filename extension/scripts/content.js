@@ -18,13 +18,26 @@ document.body.appendChild(verifyBtn);
 let debounceTimer;
 let pendingSelection = '';
 
+let verifyButtonEnabled = true; // default
+
+chrome.storage.local.get(['verifyButtonEnabled'], (result) => {
+  verifyButtonEnabled = result.verifyButtonEnabled !== false;
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.verifyButtonEnabled) {
+    verifyButtonEnabled = changes.verifyButtonEnabled.newValue;
+    if (!verifyButtonEnabled) verifyBtn.style.display = "none";
+  }
+});
+
 document.addEventListener("mouseup", () => {
     clearTimeout(debounceTimer);
  
     debounceTimer = setTimeout(() => {
         const selectedText = window.getSelection().toString();
  
-        if (selectedText.length > 0) {
+        if (selectedText.length > 0 && verifyButtonEnabled) {
             pendingSelection = selectedText;
             const range = window.getSelection().getRangeAt(0).getBoundingClientRect();
  
@@ -538,3 +551,4 @@ verifyBtn.addEventListener("click", () => {
     renderResult(status, lastProductTitle, results);
   });
 });
+

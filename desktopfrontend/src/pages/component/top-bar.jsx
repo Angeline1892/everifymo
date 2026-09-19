@@ -148,6 +148,22 @@ function TopBar({ topbarType, role, agency }) {
         if (rawRole) type = rawRole;
         else if (rawAgency) type = rawAgency;
     }
+    
+
+    // Maps the current workspace to the correct UniversalLogin tab on logout
+    const getLoginRedirectPath = () => {
+        switch (workspace) {
+            case 'NATIONAL_ADMIN':
+                return '/universal-login?tab=national-admin';
+            case 'FDA_ADMIN':
+            case 'LEA_ADMIN':
+                return '/universal-login?tab=interagency-admin';
+            case 'FDA':
+            case 'LEA':
+            default:
+                return '/universal-login?tab=personnel';
+        }
+    };
 
     const getWorkspace = () => {
         if (type) {
@@ -172,11 +188,57 @@ function TopBar({ topbarType, role, agency }) {
     const normalizedAgency = isSuperadmin ? 'superadmin' : (workspace === 'FDA_ADMIN' || workspace === 'FDA') ? 'fda' : 'lea';
     const notificationsBasePath = isSuperadmin ? '/notifications' : '/personnel-notifications';
 
-    // Mock mode: used for FDA_ADMIN, LEA_ADMIN prototypes, or NATIONAL_ADMIN when unauthenticated/prototype
-    const isMockWorkspace =
-        workspace === 'FDA_ADMIN' ||
-        workspace === 'LEA_ADMIN' ||
-        (workspace === 'NATIONAL_ADMIN' && (!localStorage.getItem('access_token') || topbarType === 'NATIONAL_ADMIN'));
+const isMockWorkspace =
+    (workspace === 'FDA_ADMIN' || workspace === 'LEA_ADMIN' || workspace === 'NATIONAL_ADMIN')
+        ? !localStorage.getItem('access_token')
+        : false;
+
+    // New state — actual fetched user name (lazy-read from cache to prevent navigation flash)
+    const [userName, setUserName] = useState(() => localStorage.getItem('user_name') || null);
+    const [nameLoading, setNameLoading] = useState(!isMockWorkspace);
+
+    // ---- fetch the authenticated user's real name (skip for mock workspaces) ----
+    useEffect(() => {
+        if (isMockWorkspace) {
+            setUserName(null);
+            setNameLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+        const fetchUserName = async () => {
+            setNameLoading(true);
+            try {
+                const res = await apiFetch('/profile');
+                if (!res.ok) return;
+                const data = await res.json();
+                const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ');
+                if (!cancelled && fullName) {
+                    setUserName(fullName);
+                    localStorage.setItem('user_name', fullName);
+                }
+            } catch (err) {
+                console.error('Failed to fetch user profile:', err);
+            } finally {
+                if (!cancelled) setNameLoading(false);
+            }
+        };
+
+        fetchUserName();
+        return () => { cancelled = true; };
+    }, [isMockWorkspace, workspace]);
+
+    // Keep TopBar user name in sync when profile is saved in ProfileSetting
+    useEffect(() => {
+        const handleProfileUpdated = (e) => {
+            const updated = e?.detail?.userName || localStorage.getItem('user_name');
+            if (updated) {
+                setUserName(updated);
+            }
+        };
+        window.addEventListener('profile-updated', handleProfileUpdated);
+        return () => window.removeEventListener('profile-updated', handleProfileUpdated);
+    }, []);
 
     // dropdown open/close states
     const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -330,7 +392,6 @@ function TopBar({ topbarType, role, agency }) {
         navigate('/profile-setting', { state: { workspace } });
     };
 
-    // Logout — redirects to correct login page based on agency/workspace
     const handleLogoutClick = async () => {
         setIsProfileOpen(false);
 
@@ -352,12 +413,9 @@ function TopBar({ topbarType, role, agency }) {
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('agency');
         localStorage.removeItem('role');
+        localStorage.removeItem('user_name');
 
-        if (workspace === 'NATIONAL_ADMIN') {
-            navigate('/universal-login?tab=superadmin');
-        } else {
-            navigate('/universal-login');
-        }
+        navigate(getLoginRedirectPath());
     };
 
     // Gated End Session UI Handlers — opens modal first, never ends session prematurely
@@ -382,11 +440,26 @@ function TopBar({ topbarType, role, agency }) {
         }
     };
 
+    const getRoleLabel = () => {
+        switch (workspace) {
+            case 'NATIONAL_ADMIN':
+                return 'National Admin';
+            case 'FDA_ADMIN':
+                return 'FDA Admin';
+            case 'LEA_ADMIN':
+                return 'LEA Admin';
+            case 'FDA':
+                return 'FDA Personnel';
+            case 'LEA':
+                return 'LEA-CIDG Personnel';
+            default:
+                return 'Personnel';
+        }
+    };
+
     const getDisplayName = () => {
-        if (workspace === 'NATIONAL_ADMIN') return 'National Admin';
-        if (workspace === 'FDA_ADMIN') return 'FDA Admin';
-        if (workspace === 'LEA_ADMIN') return 'LEA Admin';
-        return 'Admin';
+        if (userName) return userName;
+        return getRoleLabel();
     };
 
     const getAvatarClass = () => {

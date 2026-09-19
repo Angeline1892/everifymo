@@ -22,8 +22,9 @@ import CIDGLogo from '../../images/pnp-cidg.jpg'
 import FDALogo from '../../images/FDA.png'
 
 const NationalAdminMenuItems = [
-      { icon: UserCog, label: 'Interagency Admin Management', path: '/nationaladminfolder/national-admin-interagency-admin-management' },
+    { icon: UserCog, label: 'Interagency Admin Management', path: '/nationaladminfolder/national-admin-interagency-admin-management' },
     { icon: UsersRound, label: 'National Admin Management', path: '/nationaladminfolder/national-admin-new-admin-management' },
+    { icon: ScrollText, label: 'Audit Logs', path: '/nationaladminfolder/national-admin-audit-logs' },
 ]
 
 // Backwards compatibility alias
