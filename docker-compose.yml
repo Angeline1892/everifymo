@@ -18,7 +18,7 @@ services:
       - default
 
   postgres:
-    image: postgres:latest
+    image: postgres:17
     container_name: everify_db
     restart: unless-stopped
     environment:
@@ -27,6 +27,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - /etc/dokploy/data/everifymo/postgres:/var/lib/postgresql/data
+    networks:
+      - default
       
 networks:
   dokploy-network:
