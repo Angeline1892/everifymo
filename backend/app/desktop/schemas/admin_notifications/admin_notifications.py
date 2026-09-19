@@ -1,10 +1,11 @@
+# backend/app/desktop/schemas/admin_notifications/admin_notifications.py
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from app.desktop.schemas.superadmin_notifications.notification_enums import (
+from app.desktop.schemas.admin_notifications.notification_enums import (
     NotificationEventType,
 )
 
@@ -13,10 +14,10 @@ class NotificationOut(BaseModel):
     """
     Shape of a single notification returned to the frontend.
 
-    Covers both real DB rows (from superadmin_notifications) and computed,
-    non-persisted entries (invite_not_activated / invite_expired), which is
-    why notification_id is Optional - those two are generated fresh on
-    every request rather than stored.
+    Covers both real DB rows (from admin_notifications) and computed,
+    non-persisted entries (invite_not_activated / invite_expired), which
+    is why notification_id is Optional - those two are generated fresh
+    on every request rather than stored.
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -26,6 +27,13 @@ class NotificationOut(BaseModel):
     title: str
     message: str
     related_user_id: Optional[UUID] = None
+
+    # Event's own context (which agency/region this concerns) - NOT the
+    # recipient's own scope. Both None for national_admin-account events,
+    # since that role has no agency/region of its own.
+    agency: Optional[str] = None
+    region_id: Optional[UUID] = None
+
     is_read: bool
     read_at: Optional[datetime] = None
     created_at: datetime
@@ -36,10 +44,16 @@ class NotificationListResponse(BaseModel):
     Wrapper returned by GET /notifications - the list itself plus the
     unread count, so the frontend doesn't need a second request just to
     know how many are unread.
+
+    # ADDED: has_more tells the frontend whether another page of STORED
+    # notifications exists, computed via a limit+1 fetch in the service
+    # rather than inferred from response length (which broke once
+    # computed entries could push a page over `limit`).
     """
 
     notifications: List[NotificationOut]
     unread_count: int
+    has_more: bool
 
 
 class UnreadCountResponse(BaseModel):

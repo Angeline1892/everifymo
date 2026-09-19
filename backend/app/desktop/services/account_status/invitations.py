@@ -5,8 +5,8 @@ from fastapi import HTTPException
 
 from app.models.account_invitation_tokens import AccountInvitationToken
 from app.core.audit import write_audit_log, get_user_region_code
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+from app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 from .guards import assert_same_agency_and_region, get_target, action_for_role
 
 
@@ -34,10 +34,12 @@ def resend_invite_link(db: Session, actor, target_id, request=None):
     target_id_val, target_email, target_role = target.user_id, target.email, target.role
     region_code = get_user_region_code(db, target) if target.region_id else None
 
-    notification_service.create_notification_for_all_superadmins(
-        db=db, event_type=NotificationEventType.RESEND_LINK_REQUESTED,
-        title="Invitation resent", message=f"Invitation resent to {target_email}.",
-        related_user_id=target_id_val,
+    notification_service.notify_account_event(
+        db=db, actor=actor, target_user_id=target_id_val,
+        target_role=target_role, target_region_id=target.region_id,
+        event_type=NotificationEventType.RESEND_LINK_REQUESTED,
+        title="Invitation resent",
+        message=f"Invitation resent to {target_email}.",
     )
     write_audit_log(
         db, user=actor, action=action_for_role(target_role, "INVITE_RESENT"),
@@ -67,10 +69,12 @@ def delete_invited_account(db: Session, actor, target_id, request=None):
     target_id_val, target_email, target_role = target.user_id, target.email, target.role
     region_code = get_user_region_code(db, target) if target.region_id else None
 
-    notification_service.create_notification_for_all_superadmins(
-        db=db, event_type=NotificationEventType.ACCOUNT_DELETED,
-        title="Account deleted", message=f"{target_email}'s account has been deleted.",
-        related_user_id=target_id_val,
+    notification_service.notify_account_event(
+        db=db, actor=actor, target_user_id=target_id_val,
+        target_role=target_role, target_region_id=target.region_id,
+        event_type=NotificationEventType.ACCOUNT_DELETED,
+        title="Account deleted",
+        message=f"{target_email}'s account has been deleted.",
     )
 
     db.query(AccountInvitationToken).filter(AccountInvitationToken.user_id == target.user_id).delete()

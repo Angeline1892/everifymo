@@ -135,7 +135,7 @@ function UniversalLogin() {
           justify-content: space-between;
           align-items: stretch;
           width: min(95vw, 1450px);
-          min-height: 700px;
+          min-height: 750px;
           background: rgba(253, 253, 253, 0.07);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
@@ -230,20 +230,20 @@ function UniversalLogin() {
         }
 
         .universal-login-tabs-container {
-          display: flex;
-          width: 90%;
-          margin: 0 auto 18px auto;
-          background: rgba(29, 52, 57, 0.07);
-          border: 1px solid rgba(29, 52, 57, 0.12);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          border-radius: 10px;
-          padding: 4px;
-          gap: 4px;
-          box-sizing: border-box;
-          box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
-          height: 44px;
-          flex-shrink: 0;
+         display: flex;
+        width: 100%;
+        margin: 0 auto 28px auto;
+        background: rgba(29, 52, 57, 0.07);
+        border: 1px solid rgba(29, 52, 57, 0.12);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 10px;
+        padding: 4px;
+        gap: 4px;
+        box-sizing: border-box;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+        height: 44px;
+        flex-shrink: 0;
         }
 
         .universal-login-tab-btn {
@@ -290,7 +290,7 @@ function UniversalLogin() {
         .universal-login-right-panel {
           width: 510px;
           max-width: 100%;
-          min-height: 580px;
+          min-height: 620px;
           height: auto;
           background: #ffffff;
           padding: 24px 28px;
@@ -333,28 +333,28 @@ function UniversalLogin() {
 
         .universal-login-otp-header {
           text-align: center;
-          margin-bottom: 6px;
+          margin-bottom: 10px;
         }
         .universal-login-otp-header h2, .universal-login-otp-header h3 {
-          font-size: 20px;
+          font-size: 24px;
           font-weight: 700;
           color: #0f172a;
           letter-spacing: -0.2px;
-          margin-bottom: 3px;
+          margin-bottom: 5px;
         }
         .universal-login-otp-header small {
           display: block;
-          font-size: 11px;
+          font-size: 13px;
           font-weight: 600;
           letter-spacing: 0.8px;
           text-transform: uppercase;
           color: #64748b;
-          margin-bottom: 3px;
+          margin-bottom: 5px;
         }
         .universal-login-otp-header p {
-          font-size: 12px;
+          font-size: 14.5px;
           color: #64748b;
-          margin-bottom: 16px;
+          margin-bottom: 18px;
         }
 
         /* ===== FORM CONTROLS ===== */
@@ -684,35 +684,36 @@ function UniversalLogin() {
           flex-direction: column;
           animation: universalLoginFadeIn 0.35s ease-out forwards;
         }
-        .universal-login-otp-instructions {
-          font-size: 12px;
+      .universal-login-otp-instructions {
+          font-size: 14.5px;
           color: #475569;
-          margin-bottom: 14px;
-          line-height: 1.45;
+          margin-bottom: 16px;
+          line-height: 1.5;
           text-align: center;
         }
-        .universal-login-otp-instructions span { font-weight: 600; color: #0f172a; }
+        .universal-login-otp-instructions span { font-weight: 600; color: #0891b2; font-style: italic}
         .universal-login-otp-input-grid,
         .universal-login-admin-otp-grid {
           display: flex;
-          gap: 6px;
+          gap: 10px;
           justify-content: center;
-          margin-bottom: 12px;
+          margin-bottom: 16px;
         }
         .universal-login-otp-digit-input,
         .universal-login-admin-otp-digit-input {
-          width: 40px;
-          height: 44px;
+          width: 55px;
+          height: 59px;
           text-align: center;
-          font-size: 18px;
+          font-size: 22px;
           font-weight: 700;
-          border-radius: 7px;
+          border-radius: 8px;
           border: 1.5px solid #cbd5e1 !important;
           background-color: #ffffff;
           color: #0f172a;
           transition: all 0.2s ease;
           margin-bottom: 0 !important;
           padding: 0 !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
         .universal-login-otp-digit-input:focus,
         .universal-login-admin-otp-digit-input:focus {
@@ -905,7 +906,7 @@ function UniversalLogin() {
           .universal-login-agency-buttons { gap: 6px; }
           .universal-login-inter-buttons { padding: 6px 5px; font-size: 11.5px; }
           .universal-login-otp-input-grid, .universal-login-admin-otp-grid { gap: 5px; }
-          .universal-login-otp-digit-input, .universal-login-admin-otp-digit-input { width: 36px; height: 40px; font-size: 16px; }
+          .universal-login-otp-digit-input, .universal-login-admin-otp-digit-input { width: 36px; height: 40px; font-size: 16px;  }
           .universal-login-interagency-otp-grid { gap: 6px; }
           .universal-login-interagency-otp-digit-input { width: 42px; height: 48px; font-size: 18px; }
         }
@@ -1142,6 +1143,7 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
         }
 
         const data = await response.json();
+        localStorage.removeItem('user_name');
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
         localStorage.setItem('agency', personnelAgency);
@@ -1591,6 +1593,7 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
         }
 
         const data = await response.json();
+        localStorage.removeItem('user_name');
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
         localStorage.setItem('agency', 'superadmin');
@@ -1989,6 +1992,7 @@ function InteragencyAdminLoginForm({ navigate, onOtpStateChange }) {
       }
 
       const data = await response.json();
+      localStorage.removeItem('user_name');
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
       localStorage.setItem('agency', agency);
