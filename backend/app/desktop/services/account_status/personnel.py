@@ -8,6 +8,10 @@ from app.core.security import hash_password
 from app.core.audit import write_audit_log, get_user_region_code
 from .guards import assert_same_agency_and_region, get_target, action_for_role, assert_employee_id_available
 
+from app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
+from app.desktop.services.account_status.guards import agency_of
+
 
 PH_MOBILE_REGEX = re.compile(r"^09\d{9}$")
 OPTIONAL_FIELDS = {"middle_name"}  # every other editable field is required if present
@@ -58,6 +62,16 @@ def edit_personnel_info(db: Session, actor: User, target_id, updates: dict, requ
         old_value=old_value, new_value=updates,
         request=request, region_code=region_code,
     )
+    # DUAL-WRITE: co-admins in this personnel's region+agency get one row,
+    # AND the affected personnel gets their own separate targeted row -
+    # not a broadcast to other personnel. See notify_personnel_profile_updated.
+    notification_service.notify_personnel_profile_updated(
+        db=db, personnel=target,
+        agency_admin_role=actor.role, agency=agency_of(actor.role),
+        title="Personnel profile updated",
+        admin_workspace_message=f"{target_email}'s profile information was updated.",
+        personnel_message="Your profile information was updated by your agency administrator.",
+    )
 
     return target_id_val, target_email, full_name
 
@@ -85,5 +99,15 @@ def reset_personnel_password(db: Session, actor: User, target_id, request=None):
         target_table="users", target_id=target_id_val, target_reference=target_email,
         old_value=None, new_value={"force_password_change": True},  # never log the temp password itself
         request=request, region_code=region_code,
+    )
+    # Personnel already gets a direct email with the temp password
+    # (send_personnel_reset_password_email in the router) - this is just
+    # for the admin workspace to see the request was fulfilled.
+    notification_service.notify_account_event(
+        db=db, actor=actor, target_user_id=target_id_val,
+        target_role=target.role, target_region_id=target.region_id,
+        event_type=NotificationEventType.PASSWORD_RESET_COMPLETED,
+        title="Personnel password reset",
+        message=f"{target_email}'s password was reset by an administrator.",
     )
     return target_id_val, target_email, full_name, temp_password

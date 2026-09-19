@@ -37,6 +37,10 @@ const PAGE_SIZE = 20;
  * getAuthenticatedRole() in top-bar.jsx so both surfaces always agree on
  * which notification endpoint to call.
  */
+// CHANGED: was a 3-way check (superadmin/lea/fda) that couldn't tell an
+// fda_admin/lea_admin apart from fda_personnel/lea_personnel — both got
+// silently treated as personnel-tier, routing admin accounts to the wrong
+// notification endpoint. Now mirrors top-bar.jsx's 5-way detection.
 const getAuthenticatedRole = () => {
   const raw = (
     localStorage.getItem('agency') ||
@@ -44,7 +48,9 @@ const getAuthenticatedRole = () => {
     'fda'
   ).toString().trim().toLowerCase();
 
-  if (raw.includes('super')) return 'superadmin';
+  if (raw.includes('national') || raw.includes('super')) return 'superadmin';
+  if (raw.includes('admin') && raw.includes('fda')) return 'fda_admin';
+  if (raw.includes('admin') && (raw.includes('lea') || raw.includes('cidg'))) return 'lea_admin';
   if (raw === 'lea' || raw === 'cidg' || raw.includes('lea') || raw.includes('cidg')) return 'lea';
   return 'fda';
 };
@@ -93,25 +99,34 @@ const GROUP_METADATA = [
   { key: 'older', label: 'Older' }
 ];
 
-// ── Superadmin: event_type -> icon / category / color theme ─────────────
-// Covers every value in NotificationEventType (notification_enums.py).
-const SUPERADMIN_EVENT_META = {
+// ── Admin tiers (superadmin / fda_admin / lea_admin): event_type -> icon / category / color theme
+// CHANGED: renamed SUPERADMIN_EVENT_META -> ADMIN_EVENT_META (it covers all
+// 3 admin tiers, not just superadmin) and reconciled every key against the
+// real NotificationEventType enum in notification_enums.py:
+//   - superadmin_invited -> admin_invited (renamed backend-side)
+//   - superadmin_password_created -> account_pending_approval (renamed backend-side)
+//   - registration_accomplished REMOVED (not a real event_type anymore, was a dead key)
+//   - password_reset_requested / password_reset_completed ADDED (real event
+//     types that had no entry at all, were silently falling through to the
+//     generic gray fallback icon before this)
+const ADMIN_EVENT_META = {
+  admin_invited:              { icon: 'user',   category: 'Personnel',  theme: 'bg-blue' },
+  account_pending_approval:   { icon: 'key',    category: 'Personnel',  theme: 'bg-teal' },
+  resend_link_requested:      { icon: 'system', category: 'Invitation', theme: 'bg-amber' },
+  invite_not_activated:       { icon: 'system', category: 'Invitation', theme: 'bg-amber' },
+  invite_expired:             { icon: 'system', category: 'Invitation', theme: 'bg-red' },
+  password_changed:           { icon: 'key',    category: 'Account',    theme: 'bg-indigo' },
   account_locked:              { icon: 'lock',   category: 'Security',   theme: 'bg-red' },
   account_unlocked:            { icon: 'lock',   category: 'Security',   theme: 'bg-teal' },
   failed_login_warning:        { icon: 'audit',  category: 'Security',   theme: 'bg-red' },
-  superadmin_invited:          { icon: 'user',   category: 'Personnel',  theme: 'bg-blue' },
-  personnel_invited:           { icon: 'user',   category: 'Personnel',  theme: 'bg-blue' },
-  registration_accomplished:   { icon: 'user',   category: 'Personnel',  theme: 'bg-teal' },
-  superadmin_password_created: { icon: 'key',    category: 'Personnel',  theme: 'bg-teal' },
-  resend_link_requested:       { icon: 'system', category: 'Invitation', theme: 'bg-amber' },
-  password_changed:            { icon: 'key',    category: 'Account',    theme: 'bg-indigo' },
-  account_info_updated:        { icon: 'report', category: 'Account',    theme: 'bg-indigo' },
   account_suspended:           { icon: 'audit',  category: 'Account',    theme: 'bg-purple' },
   account_reactivated:         { icon: 'audit',  category: 'Account',    theme: 'bg-teal' },
   account_activated:           { icon: 'user',   category: 'Personnel',  theme: 'bg-teal' },
   account_deleted:             { icon: 'audit',  category: 'Account',    theme: 'bg-red' },
-  invite_not_activated:        { icon: 'system', category: 'Invitation', theme: 'bg-amber' },
-  invite_expired:              { icon: 'system', category: 'Invitation', theme: 'bg-red' },
+  account_info_updated:        { icon: 'report', category: 'Account',    theme: 'bg-indigo' },
+  password_reset_requested:    { icon: 'key',    category: 'Personnel',  theme: 'bg-amber' },
+  password_reset_completed:    { icon: 'key',    category: 'Personnel',  theme: 'bg-teal' },
+  personnel_invited:           { icon: 'user',   category: 'Personnel',  theme: 'bg-blue' },
 };
 
 // ── LEA/FDA personnel: rows carry no event_type field (see Notification
@@ -126,6 +141,13 @@ function getPersonnelMeta(title) {
   if (t.includes('case closed')) return { icon: 'complaint', category: 'Case', theme: 'bg-slate' };
   if (t.includes('takedown')) return { icon: 'takedown', category: 'Operation', theme: 'bg-amber' };
   if (t.includes('deadline') || t.includes('response needed')) return { icon: 'audit', category: 'SLA', theme: 'bg-red' };
+  // ADDED: personnel's own dual-write row for a profile edit by their
+  // admin carries the literal title "Personnel profile updated" (see
+  // personnel.py, edit_personnel_info) — had no match before this, was
+  // silently falling into the generic/gray fallback.
+  if (t.includes('profile updated')) {
+    return { icon: 'user', category: 'Account', theme: 'bg-indigo' };
+  }
   return { icon: 'system', category: 'General', theme: 'bg-slate' };
 }
 
@@ -160,9 +182,17 @@ function getCategoryTheme(themeKey) {
 }
 
 export default function AllNotifications() {
-  const currentRole = getAuthenticatedRole(); // 'fda' | 'lea' | 'superadmin'
-  const isSuperadmin = currentRole === 'superadmin';
-  const notificationsBasePath = isSuperadmin ? '/notifications' : '/personnel-notifications';
+  // CHANGED: currentRole can now be 5 values, not 3. isSuperadmin renamed
+  // to isAdminTier and widened to cover fda_admin/lea_admin too — these are
+  // the admin accounts that should hit /admin-notifications, same as
+  // national admin. cssRole is a NEW separate variable that stays 3-way
+  // (superadmin/fda/lea) specifically for layoutConfig/agencyClass below,
+  // so no CSS files need to change — fda_admin visually reuses the fda
+  // layout, lea_admin reuses lea, exactly as before.
+  const currentRole = getAuthenticatedRole(); // 'fda' | 'lea' | 'fda_admin' | 'lea_admin' | 'superadmin'
+  const isAdminTier = currentRole === 'superadmin' || currentRole === 'fda_admin' || currentRole === 'lea_admin';
+  const cssRole = currentRole === 'superadmin' ? 'superadmin' : (currentRole === 'lea' || currentRole === 'lea_admin') ? 'lea' : 'fda';
+  const notificationsBasePath = isAdminTier ? '/admin-notifications' : '/personnel-notifications';
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -175,8 +205,8 @@ export default function AllNotifications() {
   // Normalizes both backend shapes (superadmin rows carry event_type;
   // LEA/FDA rows don't) into one common shape the rest of the component uses.
   const normalizeNotification = useCallback((n) => {
-    if (isSuperadmin) {
-      const meta = SUPERADMIN_EVENT_META[n.event_type] || { icon: 'system', category: 'General', theme: 'bg-slate' };
+    if (isAdminTier) {
+      const meta = ADMIN_EVENT_META[n.event_type] || { icon: 'system', category: 'General', theme: 'bg-slate' };
       return {
         id: n.notification_id,
         title: n.title,
@@ -201,7 +231,7 @@ export default function AllNotifications() {
       category: meta.category,
       theme: meta.theme,
     };
-  }, [isSuperadmin]);
+  }, [isAdminTier]);
 
   const loadPage = useCallback((pageOffset, replace) => {
     const setBusy = replace ? setLoading : setLoadingMore;
@@ -213,7 +243,14 @@ export default function AllNotifications() {
         const mapped = data.notifications.map(normalizeNotification);
         setNotifications((prev) => (replace ? mapped : [...prev, ...mapped]));
         setUnreadCount(data.unread_count);
-        setHasMore(mapped.length === PAGE_SIZE);
+        // CHANGED: admin-notifications now returns an explicit has_more field
+        // (backend computes it via a limit+1 fetch, so it's correct even when
+        // computed entries like invite_not_activated/invite_expired push a
+        // page over PAGE_SIZE). personnel-notifications never had that bug —
+        // no computed entries on that side — so it keeps the old
+        // length-based inference rather than depending on a field its router
+        // doesn't return.
+        setHasMore(isAdminTier ? data.has_more : mapped.length === PAGE_SIZE);
         setOffset(pageOffset + mapped.length);
       })
       .catch((err) => console.error('Failed to load notifications:', err))
@@ -242,9 +279,9 @@ export default function AllNotifications() {
   };
 
   const handleMarkRead = (notif) => {
-    // Computed entries (superadmin invite_not_activated / invite_expired)
+    // Computed entries (admin-tier invite_not_activated / invite_expired)
     // have no real DB row — nothing to mark read, they resolve on their own.
-    if (isSuperadmin && COMPUTED_EVENT_TYPES.includes(notif.eventType)) return;
+    if (isAdminTier && COMPUTED_EVENT_TYPES.includes(notif.eventType)) return;
     if (notif.isRead) return;
 
     apiFetch(`${notificationsBasePath}/${notif.id}/read`, { method: 'PATCH' })
@@ -259,7 +296,7 @@ export default function AllNotifications() {
 
   // Workspace Layout configuration matching existing FDA / LEA / Superadmin dashboards
   const layoutConfig = useMemo(() => {
-    switch (currentRole) {
+    switch (cssRole) {
       case 'superadmin':
         return {
           sidebarType: 'SUPER_ADMIN',
@@ -283,7 +320,7 @@ export default function AllNotifications() {
           mainFeedClass: 'FdaMainFeed',
         };
     }
-  }, [currentRole]);
+  }, [cssRole]);
 
   // Filtered list — filters only what's currently loaded on the page.
   const filteredNotifications = useMemo(() => {
@@ -301,7 +338,7 @@ export default function AllNotifications() {
     return groups;
   }, [filteredNotifications]);
 
-  const agencyClass = `agency-${currentRole}`;
+  const agencyClass = `agency-${cssRole}`;
 
   return (
     <>

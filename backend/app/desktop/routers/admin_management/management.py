@@ -1,3 +1,4 @@
+# backend/app/desktop/routers/admin_management/management.py
 import uuid
 from fastapi import APIRouter, Depends, BackgroundTasks, Request, HTTPException
 from sqlalchemy.orm import Session
@@ -16,6 +17,10 @@ from app.desktop.services.account_status import (
     compute_display_status, suspend_account, reactivate_account, unlock_account,
     resend_invite_link, delete_invited_account,
 )
+
+from app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
+
 from app.desktop.services.account_status.guards import agency_of, assert_employee_id_available
 
 router = APIRouter(prefix="/admin-management", tags=["admin-management"])

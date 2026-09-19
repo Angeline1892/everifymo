@@ -23,8 +23,8 @@ from app.desktop.services.auth.email import (
     send_personnel_otp_email,
 )
 from app.core.security import hash_password
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+from app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 
 router = APIRouter(prefix="/auth/password", tags=["auth-password"])
 
