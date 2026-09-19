@@ -1092,50 +1092,81 @@
 }
 
 /* Audit Logs Tabs */
-.LEAAdminAuditTabsWrapper {
+.LEAAdminAuditTabsRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  border-bottom: 2px solid #e2e8f0;
-  margin-bottom: 16px;
+  margin-bottom: 6px;
+}
+
+.LEAAdminAuditTabsWrapper {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border-radius: 9999px;
+  padding: 5px;
+  gap: 4px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.LEAAdminAuditTabsWrapper::-webkit-scrollbar {
+  display: none;
 }
 
 .LEAAdminAuditTabBtn {
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #64748b;
+  padding: 8px 18px;
   background: transparent;
   border: none;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
+  border-radius: 9999px;
+  color: #51606f;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  line-height: 1.4;
+  user-select: none;
 }
 
-.LEAAdminAuditTabBtn:hover {
-  color: #2563eb;
+.LEAAdminAuditTabBtn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1d4ed8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .LEAAdminAuditTabBtn.active {
-  color: #2563eb;
-  border-bottom-color: #2563eb;
+  border-radius: 9999px;
+  background: #1d4ed8 !important;
+  color: #FDFDFD !important;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
 }
 
 .LEAAdminAuditTabBadge {
-  background: #f1f5f9;
+  font-size: 11px;
+  background: rgba(29, 78, 216, 0.08);
   color: #475569;
   padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: all 0.2s ease;
 }
 
 .LEAAdminAuditTabBtn.active .LEAAdminAuditTabBadge {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: rgba(255, 255, 255, 0.22);
+  color: #FDFDFD;
 }
 
 /* Audit Action Badges */
