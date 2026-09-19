@@ -17,6 +17,7 @@ COPY extensionBackend ./extensionBackend
 
 COPY backend/app/models/ ./backend/app/models/
 COPY backend/alembic ./backend/alembic
+COPY backend/alembic.ini ./backend/alembic.ini
 
 ENV PYTHONPATH=/everifymo/backend:/everifymo/extensionBackend
 
