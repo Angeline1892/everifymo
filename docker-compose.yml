@@ -4,6 +4,12 @@ services:
     build: .
     ports:
       - "8001:8001"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.everifymo-nlp.rule=Host(`everify.store`)"
+      - "traefik.http.routers.everifymo-nlp.entrypoints=websecure"
+      - "traefik.http.routers.everifymo-nlp.tls.certresolver=letsencrypt"
+      - "traefik.http.services.everifymo-nlp.loadbalancer.server.port=8001"
     volumes:
       - /etc/dokploy/data/everifymo/datasets:/everifymo/backend/nlp/datasets
       - /etc/dokploy/data/everifymo/assets:/everifymo/backend/nlp/assets
@@ -25,5 +31,8 @@ services:
     volumes:
       - /etc/dokploy/data/everifymo/postgres:/var/lib/postgresql/data
       
-
+networks:
+  dokploy-network:
+    external: true
+  default:
 
