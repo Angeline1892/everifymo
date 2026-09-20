@@ -83,7 +83,7 @@ function formatTimestamp(iso) {
 const ADMIN_TAB_ACTION_OPTIONS = REGIONAL_ADMIN_ACTIONS;
 const PERSONNEL_TAB_ACTION_OPTIONS = PERSONNEL_ACTIONS;
 const SYSTEM_TAB_ACTION_OPTIONS = [
-  'PENDING_NATIONAL_ADMIN_ACCOUNT', 'LOCK_PERSONNEL_ACCOUNT', 'LOCK_NATIONAL_ADMIN_ACCOUNT', 'LOCK_REGIONAL_ADMIN_ACCOUNT',
+  'LOCK_PERSONNEL_ACCOUNT', 'LOCK_REGIONAL_ADMIN_ACCOUNT', 'PENDING_REGIONAL_ADMIN_ACCOUNT',
 ];
 
 export default function LEAAdminAuditLogs() {
@@ -132,8 +132,11 @@ export default function LEAAdminAuditLogs() {
 
   const adminRows = leaRows.filter((row) => getRowTab(row) === 'admin');
   const personnelRows = leaRows.filter((row) => getRowTab(row) === 'personnel');
+  // Backend returns every system action code together, unscoped by agency —
+  // restrict to just the codes that belong on this page's System tab.
+  const scopedSystemRows = systemRows.filter((row) => SYSTEM_TAB_ACTION_OPTIONS.includes(row.action));
 
-  const rawLogs = activeTab === 'admin' ? adminRows : activeTab === 'personnel' ? personnelRows : systemRows;
+  const rawLogs = activeTab === 'admin' ? adminRows : activeTab === 'personnel' ? personnelRows : scopedSystemRows;
 
   const actionOptions =
     activeTab === 'admin' ? ADMIN_TAB_ACTION_OPTIONS
@@ -145,9 +148,9 @@ export default function LEAAdminAuditLogs() {
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
-      (log.user_name && log.user_name.toLowerCase().includes(q)) ||
       (log.user_email && log.user_email.toLowerCase().includes(q)) ||
-      (log.action && log.action.toLowerCase().includes(q)) ||
+      (log.user_name && log.user_name.toLowerCase().includes(q)) ||
+      (log.target_id && String(log.target_id).toLowerCase().includes(q)) ||
       (log.target_table && log.target_table.toLowerCase().includes(q)) ||
       (log.target_reference && log.target_reference.toLowerCase().includes(q));
 
@@ -217,7 +220,7 @@ export default function LEAAdminAuditLogs() {
                   onClick={() => switchTab('system')}
                 >
                   System Events
-                  <span className="LEAAdminAuditTabBadge">{systemRows.length}</span>
+                  <span className="LEAAdminAuditTabBadge">{scopedSystemRows.length}</span>
                 </button>
               </div>
             </div>
@@ -228,7 +231,7 @@ export default function LEAAdminAuditLogs() {
                 <input
                   type="text"
                   className="LEAAdminSearchInput"
-                  placeholder="Search officer, action, target table..."
+                  placeholder="Search by email, name, target ID, table, or reference..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -420,6 +423,12 @@ export default function LEAAdminAuditLogs() {
             <div className="LEAAdminModalBody">
               <div className="LEAAdminSummaryBox">
                 <div className="LEAAdminSummaryRow">
+                  <span className="LEAAdminSummaryLabel">Log ID:</span>
+                  <span className="LEAAdminSummaryValue" style={{ fontFamily: 'monospace' }}>
+                    {selectedLog.log_id}
+                  </span>
+                </div>
+                <div className="LEAAdminSummaryRow">
                   <span className="LEAAdminSummaryLabel">Timestamp:</span>
                   <span className="LEAAdminSummaryValue">{formatTimestamp(selectedLog.timestamp)}</span>
                 </div>
@@ -427,6 +436,18 @@ export default function LEAAdminAuditLogs() {
                   <span className="LEAAdminSummaryLabel">Actor:</span>
                   <span className="LEAAdminSummaryValue">
                     {selectedLog.user_name || selectedLog.user_email || 'Automated System Service'} ({humanizeRole(selectedLog.user_role)})
+                  </span>
+                </div>
+                <div className="LEAAdminSummaryRow">
+                  <span className="LEAAdminSummaryLabel">User ID:</span>
+                  <span className="LEAAdminSummaryValue" style={{ fontFamily: 'monospace' }}>
+                    {selectedLog.user_id || '—'}
+                  </span>
+                </div>
+                <div className="LEAAdminSummaryRow">
+                  <span className="LEAAdminSummaryLabel">Email:</span>
+                  <span className="LEAAdminSummaryValue">
+                    {selectedLog.user_email || '—'}
                   </span>
                 </div>
                 <div className="LEAAdminSummaryRow">
@@ -442,6 +463,10 @@ export default function LEAAdminAuditLogs() {
                 <div className="LEAAdminSummaryRow">
                   <span className="LEAAdminSummaryLabel">Target Reference:</span>
                   <span className="LEAAdminSummaryValue">{selectedLog.target_reference || '—'}</span>
+                </div>
+                <div className="LEAAdminSummaryRow">
+                  <span className="LEAAdminSummaryLabel">Record / Target ID:</span>
+                  <span className="LEAAdminSummaryValue" style={{ fontFamily: 'monospace' }}>{selectedLog.target_id || '—'}</span>
                 </div>
                 <div className="LEAAdminSummaryRow">
                   <span className="LEAAdminSummaryLabel">IP Address:</span>
