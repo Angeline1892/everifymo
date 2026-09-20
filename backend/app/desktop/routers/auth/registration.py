@@ -10,7 +10,7 @@ from app.models.account_invitation_tokens import AccountInvitationToken
 from app.models.regions import Region
 
 from app.desktop.schemas.auth.registration import (
-    ValidateTokenResponse, TokenStatus,
+    ValidateTokenResponse, TokenStatus, ValidateTokenRequest,
     RegistrationCompleteRequest, RegistrationCompleteResponse,
     ResendInviteRequest, ResendInviteResponse,
     RequestResendRequest, RequestResendResponse,
@@ -23,6 +23,7 @@ from app.desktop.services.auth.email import (
     send_personnel_invite_email,
     send_admin_invite_email,
     send_national_admin_invite_email,
+    send_personnel_activation_email, 
 )
 
 import secrets
@@ -36,12 +37,12 @@ from app.core.audit import write_audit_log, get_user_region_code
 router = APIRouter(prefix="/registration", tags=["Registration"])
 
 
-@router.get("/validate/{invite_token}", response_model=ValidateTokenResponse)
-def validate_token(invite_token: str, db: Session = Depends(get_db)):
+@router.post("/validate", response_model=ValidateTokenResponse)
+def validate_token(data: ValidateTokenRequest, db: Session = Depends(get_db)):
     set_bypass_rls(db, True)
 
     token_row = db.query(AccountInvitationToken).filter(
-        AccountInvitationToken.invite_token == invite_token
+        AccountInvitationToken.invite_token == data.invite_token
     ).first()
 
     if not token_row:
@@ -77,7 +78,7 @@ def validate_token(invite_token: str, db: Session = Depends(get_db)):
 
 
 @router.post("/complete", response_model=RegistrationCompleteResponse)
-def complete_registration(data: RegistrationCompleteRequest, http_request: Request, db: Session = Depends(get_db)):
+def complete_registration(data: RegistrationCompleteRequest, http_request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db),):
     set_bypass_rls(db, True)
 
     token_row = db.query(AccountInvitationToken).filter(
@@ -125,6 +126,13 @@ def complete_registration(data: RegistrationCompleteRequest, http_request: Reque
     region_code = get_user_region_code(db, user_row) if user_row.region_id else None
 
     if is_personnel:
+        full_name = f"{user_row.first_name} {user_row.last_name}".strip()
+        background_tasks.add_task(
+            send_personnel_activation_email,
+            user_email,
+            full_name,
+        )
+
         notification_service.notify_self_service_account_event(
             db=db, target=user_row,
             event_type=NotificationEventType.ACCOUNT_ACTIVATED,
