@@ -166,6 +166,7 @@ def get_national_admin_audit_logs(
 # not a generic "System" badge, even inside this tab).
 SYSTEM_ACTION_CODES = [
     "PENDING_NATIONAL_ADMIN_ACCOUNT",
+    "PENDING_REGIONAL_ADMIN_ACCOUNT",
     "LOCK_PERSONNEL_ACCOUNT",
     "LOCK_NATIONAL_ADMIN_ACCOUNT",
     "LOCK_REGIONAL_ADMIN_ACCOUNT",
