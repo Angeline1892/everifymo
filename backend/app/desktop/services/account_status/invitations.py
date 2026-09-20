@@ -1,3 +1,4 @@
+# backend/app/desktop/services/account_status/invitations.py
 import secrets
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session

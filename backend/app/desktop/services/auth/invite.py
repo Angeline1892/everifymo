@@ -156,16 +156,20 @@ def activate_account(db: Session, target_id, activated_by, request=None):
 def _invite_action_for_role(role: str) -> str:
     from app.core.constants import AuditAction
     if role == Role.NATIONAL_ADMIN:
-        return AuditAction.INVITE_SUPERADMIN  # national_admin reuses SUPERADMIN_* — no new constant added
+        return AuditAction.INVITE_NATIONAL_ADMIN
     if role in Role.ADMIN_ROLES:
-        return AuditAction.INVITE_ADMIN
+        return AuditAction.INVITE_REGIONAL_ADMIN
     return AuditAction.INVITE_PERSONNEL
 
 
 def _activate_action_for_role(role: str) -> str:
     from app.core.constants import AuditAction
     if role == Role.NATIONAL_ADMIN:
-        return AuditAction.APPROVE_SUPERADMIN_ACCOUNT  # same reuse as above
+        return AuditAction.APPROVE_NATIONAL_ADMIN_ACCOUNT
     if role in Role.ADMIN_ROLES:
-        return AuditAction.APPROVE_ADMIN_ACCOUNT
-    return AuditAction.APPROVE_PERSONNEL_ACCOUNT
+        return AuditAction.APPROVE_REGIONAL_ADMIN_ACCOUNT
+    # Personnel never reach pending_approval status (registration.py's
+    # complete_registration sends them straight to ACTIVE on self-
+    # registration), so activate_account() should never be called with a
+    # personnel target — this branch should be unreachable in practice.
+    raise ValueError(f"Unexpected role reached _activate_action_for_role: {role}")

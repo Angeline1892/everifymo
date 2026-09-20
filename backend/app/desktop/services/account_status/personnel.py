@@ -1,3 +1,4 @@
+# backend/app/desktop/services/account_status/personnel.py
 import re
 import secrets
 from sqlalchemy.orm import Session
