@@ -150,21 +150,6 @@ function TopBar({ topbarType, role, agency }) {
   }
 
 
-  // Maps the current workspace to the correct UniversalLogin tab on logout
-  const getLoginRedirectPath = () => {
-    switch (workspace) {
-      case 'NATIONAL_ADMIN':
-        return '/universal-login?tab=national-admin';
-      case 'FDA_ADMIN':
-      case 'LEA_ADMIN':
-        return '/universal-login?tab=interagency-admin';
-      case 'FDA':
-      case 'LEA':
-      default:
-        return '/universal-login?tab=personnel';
-    }
-  };
-
   const getWorkspace = () => {
     if (type) {
       const raw = type.toString().trim().toUpperCase().replace(/[-\s]/g, '_');
@@ -184,6 +169,21 @@ function TopBar({ topbarType, role, agency }) {
   };
 
   const workspace = getWorkspace();
+
+  // Maps the current workspace to the correct UniversalLogin tab on logout
+  const getLoginRedirectPath = () => {
+    switch (workspace) {
+      case 'NATIONAL_ADMIN':
+        return '/universal-login?tab=national-admin';
+      case 'FDA_ADMIN':
+      case 'LEA_ADMIN':
+        return '/universal-login?tab=interagency-admin';
+      case 'FDA':
+      case 'LEA':
+      default:
+        return '/universal-login?tab=personnel';
+    }
+  };
   // CHANGED: isSuperadmin only matched NATIONAL_ADMIN, so FDA_ADMIN/LEA_ADMIN
   // fell into the personnel-notifications branch — same bug as
   // all-notifications.jsx, fixed the same way: widen to all 3 admin tiers.
@@ -192,163 +192,20 @@ function TopBar({ topbarType, role, agency }) {
 
   const isMockWorkspace =
     (workspace === 'FDA_ADMIN' || workspace === 'LEA_ADMIN' || workspace === 'NATIONAL_ADMIN')
-        ? !localStorage.getItem('access_token')
-        : false;
+      ? !localStorage.getItem('access_token')
+      : false;
 
-    // New state — actual fetched user name (lazy-read from cache to prevent navigation flash)
-    const [userName, setUserName] = useState(() => localStorage.getItem('user_name') || null);
-    const [nameLoading, setNameLoading] = useState(!isMockWorkspace);
+  // New state — actual fetched user name (lazy-read from cache to prevent navigation flash)
+  const [userName, setUserName] = useState(() => localStorage.getItem('user_name') || null);
+  const [nameLoading, setNameLoading] = useState(!isMockWorkspace);
 
-    // ---- fetch the authenticated user's real name (skip for mock workspaces) ----
-    useEffect(() => {
-        if (isMockWorkspace) {
-            setUserName(null);
-            setNameLoading(false);
-            return;
-        }
-
-        let cancelled = false;
-        const fetchUserName = async () => {
-            setNameLoading(true);
-            try {
-                const res = await apiFetch('/profile');
-                if (!res.ok) return;
-                const data = await res.json();
-                const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ');
-                if (!cancelled && fullName) {
-                    setUserName(fullName);
-                    localStorage.setItem('user_name', fullName);
-                }
-            } catch (err) {
-                console.error('Failed to fetch user profile:', err);
-            } finally {
-                if (!cancelled) setNameLoading(false);
-            }
-        };
-
-        fetchUserName();
-        return () => { cancelled = true; };
-    }, [isMockWorkspace, workspace]);
-
-    // Keep TopBar user name in sync when profile is saved in ProfileSetting
-    useEffect(() => {
-        const handleProfileUpdated = (e) => {
-            const updated = e?.detail?.userName || localStorage.getItem('user_name');
-            if (updated) {
-                setUserName(updated);
-            }
-        };
-        window.addEventListener('profile-updated', handleProfileUpdated);
-        return () => window.removeEventListener('profile-updated', handleProfileUpdated);
-    }, []);
-
-    // dropdown open/close states
-    const [isNotifOpen, setIsNotifOpen] = useState(false);
-    const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-    // End Session confirmation modal states
-    const [isEndSessionModalOpen, setIsEndSessionModalOpen] = useState(false);
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-    // refs for detecting clicks outside dropdowns
-    const notifRef = useRef(null);
-    const profileRef = useRef(null);
-
-    // Notifications state — initialized with mock data if in mock workspace
-    const [notifications, setNotifications] = useState(() => {
-        if (isMockWorkspace) {
-            return getMockNotifications(workspace);
-        }
-        return [];
-    });
-    const [unreadCount, setUnreadCount] = useState(() => {
-        if (isMockWorkspace) {
-            return getMockNotifications(workspace).filter(n => !n.isRead).length;
-        }
-        return 0;
-    });
-    const [notifLoading, setNotifLoading] = useState(false);
-
-    // ---- fetch unread count on mount + poll every 30s (live personnel) ----
-    useEffect(() => {
-        if (isMockWorkspace) {
-            const mockList = getMockNotifications(workspace);
-            setNotifications(mockList);
-            setUnreadCount(mockList.filter(n => !n.isRead).length);
-            return;
-        }
-
-        const fetchUnreadCount = async () => {
-            try {
-                const res = await apiFetch(`${notificationsBasePath}/unread-count`);
-                if (!res.ok) return;
-                const data = await res.json();
-                setUnreadCount(data.unread_count);
-            } catch (err) {
-                console.error('Failed to fetch unread count:', err);
-            }
-        };
-
-        fetchUnreadCount();
-        const interval = setInterval(fetchUnreadCount, 30000);
-        return () => clearInterval(interval);
-    }, [isMockWorkspace, notificationsBasePath, workspace]);
-
-    // ---- fetch full list when dropdown opens (live personnel) ----
-    useEffect(() => {
-        if (!isNotifOpen) return;
-        if (isMockWorkspace) return;
-
-        const fetchNotifications = async () => {
-            setNotifLoading(true);
-            try {
-                const res = await apiFetch(`${notificationsBasePath}?limit=20&offset=0`);
-                if (!res.ok) return;
-                const data = await res.json();
-                setNotifications(
-                    data.notifications.map(n => ({
-                        id: n.notification_id,
-                        title: n.title,
-                        message: n.message,
-                        time: timeAgo(n.created_at),
-                        isRead: n.is_read,
-                        eventType: n.event_type,
-                    }))
-                );
-                setUnreadCount(data.unread_count);
-            } catch (err) {
-                console.error('Failed to fetch notifications:', err);
-            } finally {
-                setNotifLoading(false);
-            }
-        };
-
-        fetchNotifications();
-    }, [isNotifOpen, isMockWorkspace, notificationsBasePath]);
-
-    // close dropdowns when clicking outside
-    useEffect(() => {
-        function handleClickOutside(event) {
-            if (notifRef.current && !notifRef.current.contains(event.target)) {
-                setIsNotifOpen(false);
-            }
-            if (profileRef.current && !profileRef.current.contains(event.target)) {
-                setIsProfileOpen(false);
-            }
-        }
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    // Unread count
-    const displayUnreadCount = unreadCount;
-
-    const handleMarkAllAsRead = async () => {
-        if (isMockWorkspace) {
-            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-            setUnreadCount(0);
-            return;
-        }
+  // ---- fetch the authenticated user's real name (skip for mock workspaces) ----
+  useEffect(() => {
+    if (isMockWorkspace) {
+      setUserName(null);
+      setNameLoading(false);
+      return;
+    }
 
     let cancelled = false;
     const fetchUserName = async () => {
@@ -432,30 +289,38 @@ function TopBar({ topbarType, role, agency }) {
       }
     };
 
-    const handleLogoutClick = async () => {
-        setIsProfileOpen(false);
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [isMockWorkspace, notificationsBasePath, workspace]);
 
-        if (!isMockWorkspace) {
-            const refreshToken = localStorage.getItem('refresh_token');
-            try {
-                if (refreshToken) {
-                    await apiFetch('/auth/token/revoke', {
-                        method: 'POST',
-                        body: JSON.stringify({ refresh_token: refreshToken }),
-                    });
-                }
-            } catch (err) {
-                console.error('Logout failed:', err);
-            }
-        }
+  // ---- fetch full list when dropdown opens (live personnel) ----
+  useEffect(() => {
+    if (!isNotifOpen) return;
+    if (isMockWorkspace) return;
 
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('agency');
-        localStorage.removeItem('role');
-        localStorage.removeItem('user_name');
-
-        navigate(getLoginRedirectPath());
+    const fetchNotifications = async () => {
+      setNotifLoading(true);
+      try {
+        const res = await apiFetch(`${notificationsBasePath}?limit=20&offset=0`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setNotifications(
+          data.notifications.map(n => ({
+            id: n.notification_id,
+            title: n.title,
+            message: n.message,
+            time: timeAgo(n.created_at),
+            isRead: n.is_read,
+            eventType: n.event_type,
+          }))
+        );
+        setUnreadCount(data.unread_count);
+      } catch (err) {
+        console.error('Failed to fetch notifications:', err);
+      } finally {
+        setNotifLoading(false);
+      }
     };
 
     fetchNotifications();
@@ -569,12 +434,11 @@ function TopBar({ topbarType, role, agency }) {
   const handleConfirmEndSession = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
-    try {
-      await handleLogoutClick();
-    } finally {
-      setIsLoggingOut(false);
-      setIsEndSessionModalOpen(false);
-    }
+    // Reset modal state before navigating — avoids setState on unmounted component
+    setIsEndSessionModalOpen(false);
+    await handleLogoutClick();
+    // Safety reset in case navigate didn't unmount (e.g. logout failed silently)
+    setIsLoggingOut(false);
   };
 
   const getRoleLabel = () => {
