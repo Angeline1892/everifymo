@@ -1,6 +1,7 @@
 // desktopfrontend/src/pages/nationaladminfolder/national-admin-audit-logs.jsx
 import './national-admin-css.css';
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { apiFetch } from '../../utils/apiFetch';
 import {
   Search,
   ChevronLeft,
@@ -12,317 +13,65 @@ import {
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
 
-// ── Mock Audit Log Data (Frontend-Only Dataset) ──
-const MOCK_NATIONAL_ADMIN_AUDIT_LOGS = [
-  // National Admin Scope
-  {
-    log_id: 'nam-log-001',
-    timestamp: '2026-07-16 10:14:32',
-    user_name: 'Kristine National Admin',
-    user_role: 'National Admin',
-    agency: 'National Admin',
-    region: 'NCR',
-    action_type: 'create',
-    action_code: 'INVITE_INTERAGENCY_ADMIN',
-    target_table: 'invitations',
-    target_id: 'INV-2026-081',
-    ip_address: '192.168.1.50',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EverifyMoDesktop/2.0',
-    old_value: null,
-    new_value: {
-      recipient_name: 'Col. Roberto S. Morales',
-      recipient_email: 'roberto.morales@cidg.gov.ph',
-      agency: 'LEA-CIDG',
-      region: 'Region 7',
-      department: 'Special Operations Unit',
-      status: 'Invited',
-    },
-  },
-  {
-    log_id: 'nam-log-002',
-    timestamp: '2026-07-16 09:22:15',
-    user_name: 'Kristine National Admin',
-    user_role: 'National Admin',
-    agency: 'National Admin',
-    region: 'NCR',
-    action_type: 'update',
-    action_code: 'APPROVE_ADMIN_REGISTRATION',
-    target_table: 'users',
-    target_id: 'FDA-REG3-ADM-004',
-    ip_address: '192.168.1.50',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EverifyMoDesktop/2.0',
-    old_value: { status: 'Pending Approval', is_active: false },
-    new_value: { status: 'Active', is_active: true, approved_at: '2026-07-16 09:22:15' },
-  },
-  {
-    log_id: 'nam-log-003',
-    timestamp: '2026-07-15 17:40:10',
-    user_name: 'Kristine National Admin',
-    user_role: 'National Admin',
-    agency: 'National Admin',
-    region: 'NCR',
-    action_type: 'security',
-    action_code: 'ENFORCE_INTERAGENCY_MFA',
-    target_table: 'system_security_policies',
-    target_id: 'SEC-POL-MFA-002',
-    ip_address: '192.168.1.50',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EverifyMoDesktop/2.0',
-    old_value: { mfa_required_for_fda: false, mfa_required_for_lea: false },
-    new_value: { mfa_required_for_fda: true, mfa_required_for_lea: true, grace_period_days: 7 },
-  },
-  {
-    log_id: 'nam-log-004',
-    timestamp: '2026-07-15 16:05:44',
-    user_name: 'Kristine National Admin',
-    user_role: 'National Admin',
-    agency: 'National Admin',
-    region: 'NCR',
-    action_type: 'update',
-    action_code: 'LOCK_ADMIN_ACCOUNT',
-    target_table: 'users',
-    target_id: 'CIDG-REG3-ADM-002',
-    ip_address: '192.168.1.50',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EverifyMoDesktop/2.0',
-    old_value: { is_locked: false, status: 'Active' },
-    new_value: { is_locked: true, status: 'Locked', lock_reason: 'Consecutive failed MFA attempts' },
-  },
-  {
-    log_id: 'nam-log-005',
-    timestamp: '2026-07-15 08:30:00',
-    user_name: 'Kristine National Admin',
-    user_role: 'National Admin',
-    agency: 'National Admin',
-    region: 'NCR',
-    action_type: 'login',
-    action_code: 'USER_LOGIN_SUCCESS',
-    target_table: 'sessions',
-    target_id: 'SESS-NAT-0912',
-    ip_address: '192.168.1.50',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EverifyMoDesktop/2.0',
-    old_value: null,
-    new_value: { session_type: 'Desktop Electron Application', auth_method: 'Email + OTP' },
-  },
+// ── Action code lists, scoped per tab ──
+// Built directly from AuditAction (backend/app/core/constants.py) and each
+// tab's actual query scope in audit_logs_service.py, NOT categories — the
+// backend has no action_type field, only exact action codes.
 
-  // Inter-Agency FDA Operations
-  {
-    log_id: 'nam-log-006',
-    timestamp: '2026-07-15 15:32:10',
-    user_name: 'Maria Clara Santos Cruz',
-    user_role: 'FDA Personnel',
-    agency: 'FDA',
-    region: 'NCR',
-    action_type: 'create',
-    action_code: 'CREATE_PRODUCT_RECORD',
-    target_table: 'products',
-    target_id: 'PROD-2026-0941',
-    ip_address: '192.168.1.105',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EverifyMoDesktop/2.0',
-    old_value: null,
-    new_value: {
-      product_name: 'DermaGlow Restorative Cream',
-      registration_no: 'FR-400000941',
-      classification: 'Cosmetics',
-      status: 'Active',
-      manufacturer: 'BioDerma Labs Philippines Inc.',
-    },
-  },
-  {
-    log_id: 'nam-log-007',
-    timestamp: '2026-07-15 14:15:45',
-    user_name: 'Gabriel Jose Alvarez',
-    user_role: 'FDA Admin',
-    agency: 'FDA',
-    region: 'NCR',
-    action_type: 'update',
-    action_code: 'UPDATE_PERSONNEL_STATUS',
-    target_table: 'users',
-    target_id: 'FDA-REG3-2024-042',
-    ip_address: '192.168.1.14',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EverifyMoDesktop/2.0',
-    old_value: { status: 'Pending Approval' },
-    new_value: { status: 'Active' },
-  },
-  {
-    log_id: 'nam-log-008',
-    timestamp: '2026-07-15 11:20:00',
-    user_name: 'Juan Reyes Dela Cruz',
-    user_role: 'FDA Personnel',
-    agency: 'FDA',
-    region: 'Region 3',
-    action_type: 'update',
-    action_code: 'VERIFY_PRODUCT_APPLICATION',
-    target_table: 'verification_requests',
-    target_id: 'VR-2026-00881',
-    ip_address: '192.168.24.18',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    old_value: { verification_status: 'In Review' },
-    new_value: { verification_status: 'Verified Valid', reviewer_notes: 'Compliance documents certified' },
-  },
-  {
-    log_id: 'nam-log-009',
-    timestamp: '2026-07-14 16:45:12',
-    user_name: 'Gabriel Jose Alvarez',
-    user_role: 'FDA Admin',
-    agency: 'FDA',
-    region: 'NCR',
-    action_type: 'create',
-    action_code: 'PROVISION_PERSONNEL_ACCOUNT',
-    target_table: 'users',
-    target_id: 'FDA-NCR-2026-091',
-    ip_address: '192.168.1.14',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    old_value: null,
-    new_value: {
-      fullname: 'Danilo Perez Ramos',
-      email: 'danilo.ramos@fda.gov.ph',
-      agency: 'FDA',
-      status: 'Active',
-    },
-  },
-
-  // Inter-Agency LEA-CIDG Operations
-  {
-    log_id: 'nam-log-010',
-    timestamp: '2026-07-15 15:45:20',
-    user_name: 'Cardo Santos Dalisay',
-    user_role: 'LEA Personnel',
-    agency: 'LEA-CIDG',
-    region: 'NCR',
-    action_type: 'create',
-    action_code: 'LOG_WALKIN_COMPLAINT',
-    target_table: 'walkin_complaints',
-    target_id: 'COMP-2026-0044',
-    ip_address: '192.168.35.10',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EverifyMoDesktop/2.0',
-    old_value: null,
-    new_value: {
-      complainant: 'Rodrigo B. Santos',
-      product_reported: 'Counterfeit Antibiotic Ointment',
-      batch_id: 'BATCH-FAKE-091',
-      status: 'Open for Investigation',
-    },
-  },
-  {
-    log_id: 'nam-log-011',
-    timestamp: '2026-07-15 13:20:10',
-    user_name: 'Dominic Cruz Valdez',
-    user_role: 'LEA Admin',
-    agency: 'LEA-CIDG',
-    region: 'Region 3',
-    action_type: 'update',
-    action_code: 'DISPATCH_VERIFICATION_REQUEST',
-    target_table: 'verification_requests',
-    target_id: 'VR-2026-00045',
-    ip_address: '192.168.22.45',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EverifyMoDesktop/2.0',
-    old_value: { status: 'Draft', priority: 'standard' },
-    new_value: { status: 'Sent to FDA', priority: 'high', notes: 'Cross-regional inspection underway' },
-  },
-  {
-    log_id: 'nam-log-012',
-    timestamp: '2026-07-15 11:05:32',
-    user_name: 'Ramon Alvarez Magsaysay',
-    user_role: 'LEA Personnel',
-    agency: 'LEA-CIDG',
-    region: 'Region 7',
-    action_type: 'create',
-    action_code: 'CREATE_INTAKE_REPORT',
-    target_table: 'intake_reports',
-    target_id: 'INTK-2026-019',
-    ip_address: '192.168.77.104',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    old_value: null,
-    new_value: {
-      location: 'Cebu Seaport Terminal 2',
-      alleged_violation: 'Smuggled Unregistered Supplements',
-      seizure_quantity: '45 cartons',
-    },
-  },
-  {
-    log_id: 'nam-log-013',
-    timestamp: '2026-07-14 14:18:00',
-    user_name: 'Dominic Cruz Valdez',
-    user_role: 'LEA Admin',
-    agency: 'LEA-CIDG',
-    region: 'Region 3',
-    action_type: 'update',
-    action_code: 'UPDATE_OFFICER_STATUS',
-    target_table: 'users',
-    target_id: 'CIDG-REG6-2024-051',
-    ip_address: '192.168.22.45',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    old_value: { status: 'Pending Approval' },
-    new_value: { status: 'Active' },
-  },
-
-  // System & Automated Operations
-  {
-    log_id: 'nam-log-014',
-    timestamp: '2026-07-15 16:30:00',
-    user_name: null,
-    user_role: 'system',
-    agency: 'System',
-    region: 'All Regions',
-    action_type: 'update',
-    action_code: 'SYSTEM_INTAKE_INDEXING',
-    target_table: 'case_indices',
-    target_id: 'IDX-TASK-902',
-    ip_address: '10.0.4.1',
-    user_agent: 'EverifyMo-InternalScheduler/1.0',
-    old_value: { indexed_cases: 890 },
-    new_value: { indexed_cases: 896, newly_indexed: 6, execution_time_ms: 240 },
-  },
-  {
-    log_id: 'nam-log-015',
-    timestamp: '2026-07-15 04:00:00',
-    user_name: null,
-    user_role: 'system',
-    agency: 'System',
-    region: 'All Regions',
-    action_type: 'delete',
-    action_code: 'EXPIRE_STALE_INVITATIONS',
-    target_table: 'invitations',
-    target_id: 'BATCH-EXP-02',
-    ip_address: '10.0.4.1',
-    user_agent: 'EverifyMo-InternalScheduler/1.0',
-    old_value: { active_invitations: 14, expired: 2 },
-    new_value: { tokens_invalidated: 2, notified_admins: 2 },
-  },
-  {
-    log_id: 'nam-log-016',
-    timestamp: '2026-07-14 23:59:59',
-    user_name: null,
-    user_role: 'system',
-    agency: 'System',
-    region: 'All Regions',
-    action_type: 'update',
-    action_code: 'DATABASE_BACKUP_SNAPSHOT',
-    target_table: 'database_snapshots',
-    target_id: 'SNAP-NAT-20260714',
-    ip_address: '10.0.4.2',
-    user_agent: 'PostgreSQL-Backup-Service',
-    old_value: null,
-    new_value: { snapshot_size: '2.6GB', checksum: 'sha256-f8a1299c...', verification: 'Valid' },
-  },
-  {
-    log_id: 'nam-log-017',
-    timestamp: '2026-07-13 14:22:00',
-    user_name: null,
-    user_role: 'system',
-    agency: 'System',
-    region: 'Region 3',
-    action_type: 'update',
-    action_code: 'AUTO_DISMISS_INCOMPLETE_VERIFICATION',
-    target_table: 'verification_requests',
-    target_id: 'VR-2026-00041',
-    ip_address: '10.0.4.18',
-    user_agent: 'VerificationTimeoutWorker',
-    old_value: { status: 'Pending Intake Verification' },
-    new_value: { status: 'Auto-Dismissed', reason: 'SLA Exceeded (> 30 business days)' },
-  },
+const NATIONAL_TAB_ACTIONS = [
+  'LOGIN', 'LOGOUT', 'LOGIN_FAILED',
+  'INVITE_NATIONAL_ADMIN', 'INVITE_NATIONAL_ADMIN_RESENT', 'NATIONAL_ADMIN_REQUEST_INVITE',
+  'APPROVE_NATIONAL_ADMIN_ACCOUNT', 'SUSPEND_NATIONAL_ADMIN_ACCOUNT', 'REACTIVATE_NATIONAL_ADMIN_ACCOUNT',
+  'DELETE_NATIONAL_ADMIN_ACCOUNT', 'UNLOCK_NATIONAL_ADMIN_ACCOUNT',
+  'UPDATE_NATIONAL_ADMIN_PASSWORD', 'UPDATE_NATIONAL_ADMIN_INFORMATION',
+  // Shown on this tab too — a National Admin can perform these on Regional Admins
+  'APPROVE_REGIONAL_ADMIN_ACCOUNT', 'SUSPEND_REGIONAL_ADMIN_ACCOUNT', 'REACTIVATE_REGIONAL_ADMIN_ACCOUNT',
 ];
 
-function ActionBadge({ actionType, actionCode }) {
+// get_fda_audit_logs returns fda_admin + fda_personnel together (no split),
+// so this tab's filter needs both roles' action codes.
+// National Admin's FDA tab is oversight-scoped: it only shows Regional Admin
+// account status changes, not FDA's day-to-day business activity (that's
+// what FDA Admin's own audit-logs page is for).
+const FDA_TAB_ACTIONS = [
+  'APPROVE_REGIONAL_ADMIN_ACCOUNT', 'SUSPEND_REGIONAL_ADMIN_ACCOUNT', 'REACTIVATE_REGIONAL_ADMIN_ACCOUNT',
+];
+
+// get_lea_audit_logs likewise returns lea_admin + lea_personnel together.
+const LEA_TAB_ACTIONS = [
+  'APPROVE_REGIONAL_ADMIN_ACCOUNT', 'SUSPEND_REGIONAL_ADMIN_ACCOUNT', 'REACTIVATE_REGIONAL_ADMIN_ACCOUNT',
+];
+
+// National Admin's own System tab is scoped to National-Admin events only —
+// personnel/regional-admin lockouts and pending-approvals show on FDA/LEA
+// Admin's own System tabs instead.
+const SYSTEM_TAB_ACTIONS = [
+  'LOCK_NATIONAL_ADMIN_ACCOUNT', 'PENDING_NATIONAL_ADMIN_ACCOUNT',
+];
+
+const SHARED_LOGIN_ACTIONS = ['LOGIN', 'LOGOUT', 'LOGIN_FAILED'];
+
+// Same derivation logic as the LEA Admin audit-logs page — the backend has
+// no action_type field, only exact action codes, so category is inferred
+// from the code's prefix purely for badge coloring.
+function deriveActionType(action) {
+  if (!action) return 'neutral';
+  if (action.startsWith('DELETE') || action.startsWith('SUSPEND') || action.startsWith('LOCK')) return 'delete';
+  if (action.startsWith('CREATE') || action.startsWith('INVITE') || action.startsWith('APPROVE') || action.startsWith('REACTIVATE') || action.startsWith('UNLOCK') || action.startsWith('PERSONNEL_SELF_ACTIVATE')) return 'create';
+  if (action.startsWith('UPDATE') || action.startsWith('CONVERT')) return 'update';
+  if (SHARED_LOGIN_ACTIONS.includes(action)) return 'login';
+  return 'neutral';
+}
+
+function formatTimestamp(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString('en-PH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function ActionBadge({ action }) {
+  const actionType = deriveActionType(action);
   const badgeClass =
     actionType === 'create'
       ? 'badge-action-create'
@@ -334,7 +83,7 @@ function ActionBadge({ actionType, actionCode }) {
       ? 'badge-action-security'
       : 'badge-action-neutral';
 
-  return <span className={badgeClass}>{actionCode || actionType}</span>;
+  return <span className={badgeClass}>{action}</span>;
 }
 
 function AgencyBadge({ agency }) {
@@ -369,55 +118,105 @@ export default function NationalAdminAuditLogs() {
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(8);
 
-  // Tab counts based on unfiltered mock logs
-  const tabCounts = useMemo(() => {
-    return {
-      National: MOCK_NATIONAL_ADMIN_AUDIT_LOGS.filter((l) => l.agency === 'National Admin').length,
-      FDA: MOCK_NATIONAL_ADMIN_AUDIT_LOGS.filter((l) => l.agency === 'FDA').length,
-      LEA: MOCK_NATIONAL_ADMIN_AUDIT_LOGS.filter((l) => l.agency === 'LEA-CIDG').length,
-      System: MOCK_NATIONAL_ADMIN_AUDIT_LOGS.filter((l) => l.agency === 'System').length,
-    };
+  const [nationalRows, setNationalRows] = useState([]);
+  const [fdaRows, setFdaRows] = useState([]);
+  const [leaRows, setLeaRows] = useState([]);
+  const [systemRows, setSystemRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+
+  const fetchLogs = useCallback(async () => {
+    setLoading(true);
+    setFetchError('');
+    try {
+      const [nationalRes, fdaRes, leaRes, systemRes] = await Promise.all([
+        apiFetch('/admin/audit-logs/national-admin?limit=500'),
+        apiFetch('/admin/audit-logs/fda?limit=500'),
+        apiFetch('/admin/audit-logs/lea?limit=500'),
+        apiFetch('/admin/audit-logs/system?limit=500'),
+      ]);
+
+      if (!nationalRes.ok) throw new Error('Failed to load National Admin audit logs.');
+      if (!fdaRes.ok) throw new Error('Failed to load FDA audit logs.');
+      if (!leaRes.ok) throw new Error('Failed to load LEA-CIDG audit logs.');
+      if (!systemRes.ok) throw new Error('Failed to load system audit logs.');
+
+      const nationalData = await nationalRes.json();
+      const fdaData = await fdaRes.json();
+      const leaData = await leaRes.json();
+      const systemData = await systemRes.json();
+
+      setNationalRows(nationalData.items || []);
+      setFdaRows(fdaData.items || []);
+      setLeaRows(leaData.items || []);
+      setSystemRows(systemData.items || []);
+    } catch (err) {
+      setFetchError(err.message || 'Something went wrong.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Filter logs according to tab, search query, dropdown filters, and date range
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+
+  // FDA/LEA/System endpoints return everything in scope, unfiltered — these
+  // three tabs only show the subset relevant to National Admin's own
+  // oversight, so scope the fetched rows down to match the tab's own
+  // action list before counting or rendering.
+  const scopedFdaRows = fdaRows.filter((row) => FDA_TAB_ACTIONS.includes(row.action));
+  const scopedLeaRows = leaRows.filter((row) => LEA_TAB_ACTIONS.includes(row.action));
+  const scopedSystemRows = systemRows.filter((row) => SYSTEM_TAB_ACTIONS.includes(row.action));
+
+  const tabCounts = {
+    National: nationalRows.length,
+    FDA: scopedFdaRows.length,
+    LEA: scopedLeaRows.length,
+    System: scopedSystemRows.length,
+  };
+
+  const rawLogs =
+    activeTab === 'National' ? nationalRows
+    : activeTab === 'FDA' ? scopedFdaRows
+    : activeTab === 'LEA' ? scopedLeaRows
+    : scopedSystemRows;
+
+  const actionOptions =
+    activeTab === 'National' ? NATIONAL_TAB_ACTIONS
+    : activeTab === 'FDA' ? FDA_TAB_ACTIONS
+    : activeTab === 'LEA' ? LEA_TAB_ACTIONS
+    : SYSTEM_TAB_ACTIONS;
+
+  // Filter logs according to search, action, region, and date range.
+  // Tab scope is already applied above via rawLogs (each tab's own endpoint).
   const filteredLogs = useMemo(() => {
-    return MOCK_NATIONAL_ADMIN_AUDIT_LOGS.filter((log) => {
-      // 1. Tab Scope
-      if (activeTab === 'National' && log.agency !== 'National Admin') return false;
-      if (activeTab === 'FDA' && log.agency !== 'FDA') return false;
-      if (activeTab === 'LEA' && log.agency !== 'LEA-CIDG') return false;
-      if (activeTab === 'System' && log.agency !== 'System') return false;
+    return rawLogs.filter((log) => {
+      if (actionFilter !== 'All' && log.action !== actionFilter) return false;
 
-      // 2. Action Filter
-      if (actionFilter !== 'All' && log.action_type !== actionFilter) return false;
-
-      // 3. Region Filter (FDA Admin and LEA Admin tabs only)
-      if ((activeTab === 'FDA' || activeTab === 'LEA') && regionFilter !== 'All' && log.region !== regionFilter) {
+      if ((activeTab === 'FDA' || activeTab === 'LEA') && regionFilter !== 'All' && log.region_code !== regionFilter) {
         return false;
       }
 
-      // 4. Search Query
       const q = searchQuery.toLowerCase().trim();
       if (q) {
         const matchesSearch =
+          (log.user_email && log.user_email.toLowerCase().includes(q)) ||
           (log.user_name && log.user_name.toLowerCase().includes(q)) ||
-          (log.action_code && log.action_code.toLowerCase().includes(q)) ||
+          (log.target_id && String(log.target_id).toLowerCase().includes(q)) ||
           (log.target_table && log.target_table.toLowerCase().includes(q)) ||
-          (log.target_id && log.target_id.toLowerCase().includes(q)) ||
-          (log.region && log.region.toLowerCase().includes(q));
+          (log.target_reference && log.target_reference.toLowerCase().includes(q));
         if (!matchesSearch) return false;
       }
 
-      // 5. Date Range
-      const logDate = log.timestamp.split(' ')[0];
+      const logDate = log.timestamp ? log.timestamp.split('T')[0] : '';
       if (dateFrom && logDate < dateFrom) return false;
       if (dateTo && logDate > dateTo) return false;
 
       return true;
     });
-  }, [activeTab, searchQuery, actionFilter, regionFilter, dateFrom, dateTo]);
+  }, [rawLogs, activeTab, searchQuery, actionFilter, regionFilter, dateFrom, dateTo]);
 
-  // Pagination calculation
   const totalItems = filteredLogs.length;
   const totalPages = Math.ceil(totalItems / limit) || 1;
   const activePage = Math.min(Math.max(1, currentPage), totalPages);
@@ -431,6 +230,13 @@ export default function NationalAdminAuditLogs() {
     ((activeTab === 'FDA' || activeTab === 'LEA') && regionFilter !== 'All') ||
     dateFrom !== '' ||
     dateTo !== '';
+
+  function switchTab(tab) {
+    setActiveTab(tab);
+    setRegionFilter('All');
+    setActionFilter('All');
+    setCurrentPage(1);
+  }
 
   function handleResetFilters() {
     setSearchQuery('');
@@ -461,49 +267,39 @@ export default function NationalAdminAuditLogs() {
               </div>
             </div>
 
+            {fetchError && (
+              <div className="NAMFieldError" style={{ marginBottom: '12px' }}>
+                {fetchError}
+              </div>
+            )}
+
             {/* Scope Tabs */}
             <div className="NAMAuditTabsRow">
               <div className="NAMAuditTabsWrapper">
                 <button
                   className={`NAMAuditTabBtn ${activeTab === 'National' ? 'active' : ''}`}
-                  onClick={() => {
-                    setActiveTab('National');
-                    setRegionFilter('All');
-                    setCurrentPage(1);
-                  }}
+                  onClick={() => switchTab('National')}
                 >
                   National Admin
                   <span className="NAMAuditTabBadge">{tabCounts.National}</span>
                 </button>
                 <button
                   className={`NAMAuditTabBtn ${activeTab === 'FDA' ? 'active' : ''}`}
-                  onClick={() => {
-                    setActiveTab('FDA');
-                    setRegionFilter('All');
-                    setCurrentPage(1);
-                  }}
+                  onClick={() => switchTab('FDA')}
                 >
                   FDA Admin
                   <span className="NAMAuditTabBadge">{tabCounts.FDA}</span>
                 </button>
                 <button
                   className={`NAMAuditTabBtn ${activeTab === 'LEA' ? 'active' : ''}`}
-                  onClick={() => {
-                    setActiveTab('LEA');
-                    setRegionFilter('All');
-                    setCurrentPage(1);
-                  }}
+                  onClick={() => switchTab('LEA')}
                 >
                   LEA Admin
                   <span className="NAMAuditTabBadge">{tabCounts.LEA}</span>
                 </button>
                 <button
                   className={`NAMAuditTabBtn ${activeTab === 'System' ? 'active' : ''}`}
-                  onClick={() => {
-                    setActiveTab('System');
-                    setRegionFilter('All');
-                    setCurrentPage(1);
-                  }}
+                  onClick={() => switchTab('System')}
                 >
                   System Events
                   <span className="NAMAuditTabBadge">{tabCounts.System}</span>
@@ -518,7 +314,7 @@ export default function NationalAdminAuditLogs() {
                 <input
                   type="text"
                   className="NAMSearchInput"
-                  placeholder="Search by actor, action code, table, or ID..."
+                  placeholder="Search by email, name, target ID, table, or reference..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -550,11 +346,9 @@ export default function NationalAdminAuditLogs() {
                     }}
                   >
                     <option value="All">All Actions</option>
-                    <option value="create">Create</option>
-                    <option value="update">Update</option>
-                    <option value="delete">Delete</option>
-                    <option value="security">Security / Config</option>
-                    <option value="login">Login / Session</option>
+                    {actionOptions.map((code) => (
+                      <option key={code} value={code}>{code}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -634,15 +428,21 @@ export default function NationalAdminAuditLogs() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayedLogs.length > 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={activeTab === 'National' ? 7 : 8} className="NAMNoResults">
+                        Loading audit logs…
+                      </td>
+                    </tr>
+                  ) : displayedLogs.length > 0 ? (
                     displayedLogs.map((log, idx) => (
                       <tr key={log.log_id}>
                         <td className="NAMTdCenter">{startIndex + idx + 1}</td>
                         <td style={{ whiteSpace: 'nowrap', fontSize: '12.5px', fontFamily: 'monospace' }}>
-                          {log.timestamp}
+                          {formatTimestamp(log.timestamp)}
                         </td>
                         <td>
-                          <strong>{log.user_name || 'System Worker'}</strong>
+                          <strong>{log.user_name || log.user_email || 'System Worker'}</strong>
                           {log.user_role && (
                             <div style={{ fontSize: '11px', color: '#64748b' }}>{log.user_role}</div>
                           )}
@@ -650,15 +450,15 @@ export default function NationalAdminAuditLogs() {
                         <td>
                           <AgencyBadge agency={log.agency} />
                         </td>
-                        {activeTab !== 'National' && <td>{log.region || '—'}</td>}
+                        {activeTab !== 'National' && <td>{log.region_code || '—'}</td>}
                         <td>
-                          <ActionBadge actionType={log.action_type} actionCode={log.action_code} />
+                          <ActionBadge action={log.action} />
                         </td>
                         <td style={{ fontFamily: 'monospace', fontSize: '12.5px' }}>
                           {log.target_table}
-                          {log.target_id && (
+                          {log.target_reference && (
                             <span style={{ color: '#0D9488', marginLeft: '6px', fontWeight: 600 }}>
-                              ({log.target_id})
+                              ({log.target_reference})
                             </span>
                           )}
                         </td>
@@ -684,7 +484,7 @@ export default function NationalAdminAuditLogs() {
               </table>
 
               {/* Table Pagination */}
-              {totalItems > 0 && (
+              {!loading && totalItems > 0 && (
                 <div className="NAMPaginationWrapper">
                   <span className="NAMPaginationInfo">
                     Showing {startIndex + 1}–{endIndex} of {totalItems} audit logs
@@ -749,40 +549,61 @@ export default function NationalAdminAuditLogs() {
             <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div className="NAMAuditSummaryBox">
                 <div className="NAMAuditSummaryRow">
+                  <span className="NAMAuditSummaryLabel">Log ID:</span>
+                  <span className="NAMAuditSummaryValue" style={{ fontFamily: 'monospace' }}>
+                    {selectedLog.log_id}
+                  </span>
+                </div>
+                <div className="NAMAuditSummaryRow">
                   <span className="NAMAuditSummaryLabel">Timestamp:</span>
-                  <span className="NAMAuditSummaryValue">{selectedLog.timestamp}</span>
+                  <span className="NAMAuditSummaryValue">{formatTimestamp(selectedLog.timestamp)}</span>
                 </div>
                 <div className="NAMAuditSummaryRow">
                   <span className="NAMAuditSummaryLabel">Actor / Role:</span>
                   <span className="NAMAuditSummaryValue">
-                    {selectedLog.user_name || 'Automated System Service'} ({selectedLog.user_role})
+                    {selectedLog.user_name || selectedLog.user_email || 'Automated System Service'} ({selectedLog.user_role || 'system'})
+                  </span>
+                </div>
+                <div className="NAMAuditSummaryRow">
+                  <span className="NAMAuditSummaryLabel">User ID:</span>
+                  <span className="NAMAuditSummaryValue" style={{ fontFamily: 'monospace' }}>
+                    {selectedLog.user_id || '—'}
+                  </span>
+                </div>
+                <div className="NAMAuditSummaryRow">
+                  <span className="NAMAuditSummaryLabel">Email:</span>
+                  <span className="NAMAuditSummaryValue">
+                    {selectedLog.user_email || '—'}
                   </span>
                 </div>
                 <div className="NAMAuditSummaryRow">
                   <span className="NAMAuditSummaryLabel">Agency / Region:</span>
                   <span className="NAMAuditSummaryValue">
                     <AgencyBadge agency={selectedLog.agency} />
-                    <span style={{ marginLeft: '8px', color: '#64748b' }}>({selectedLog.region || 'National'})</span>
+                    <span style={{ marginLeft: '8px', color: '#64748b' }}>({selectedLog.region_code || 'National'})</span>
                   </span>
                 </div>
                 <div className="NAMAuditSummaryRow">
                   <span className="NAMAuditSummaryLabel">Action Code:</span>
                   <span className="NAMAuditSummaryValue">
-                    <ActionBadge
-                      actionType={selectedLog.action_type}
-                      actionCode={selectedLog.action_code}
-                    />
+                    <ActionBadge action={selectedLog.action} />
                   </span>
                 </div>
                 <div className="NAMAuditSummaryRow">
                   <span className="NAMAuditSummaryLabel">Target Table:</span>
                   <span className="NAMAuditSummaryValue" style={{ fontFamily: 'monospace' }}>
-                    {selectedLog.target_table}
+                    {selectedLog.target_table || '—'}
                   </span>
                 </div>
                 <div className="NAMAuditSummaryRow">
-                  <span className="NAMAuditSummaryLabel">Target Record ID:</span>
+                  <span className="NAMAuditSummaryLabel">Target Reference:</span>
                   <span className="NAMAuditSummaryValue" style={{ fontFamily: 'monospace', fontWeight: 600, color: '#0D9488' }}>
+                    {selectedLog.target_reference || '—'}
+                  </span>
+                </div>
+                <div className="NAMAuditSummaryRow">
+                  <span className="NAMAuditSummaryLabel">Record / Target ID:</span>
+                  <span className="NAMAuditSummaryValue" style={{ fontFamily: 'monospace' }}>
                     {selectedLog.target_id || '—'}
                   </span>
                 </div>

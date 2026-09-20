@@ -22,7 +22,7 @@ def edit_personnel_info(db: Session, actor: User, target_id, updates: dict, requ
     target = get_target(db, target_id)
     if target.role not in Role.PERSONNEL_ROLES:
         raise HTTPException(status_code=400, detail="Edit Info is only available for personnel accounts.")
-    assert_same_agency_and_region(actor, target)
+    assert_same_agency_and_region(db, actor, target)
 
     # Enforce blank/null rules: only middle_name may be cleared. Every other
     # field, if included in the payload at all, must have a real value.
@@ -81,7 +81,7 @@ def reset_personnel_password(db: Session, actor: User, target_id, request=None):
     target = get_target(db, target_id)
     if target.role not in Role.PERSONNEL_ROLES:
         raise HTTPException(status_code=400, detail="Reset Password is only available for personnel accounts.")
-    assert_same_agency_and_region(actor, target)
+    assert_same_agency_and_region(db, actor, target)
     if target.status != "active" or not target.is_active:
         raise HTTPException(status_code=400, detail="This account has no existing password to reset.")
 
