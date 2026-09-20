@@ -34,7 +34,8 @@
     "https://*.shopee.ph/*",
     "https://*.lazada.com.ph/*",
     "https://*.tiktok.com/*",
-    "https://*.facebook.com/marketplace/*"
+    "https://*.facebook.com/marketplace/*",
+    "https://everify.store/*"
   ],
 
   "content_scripts": [

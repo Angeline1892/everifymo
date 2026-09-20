@@ -5,5 +5,5 @@ const isDev = import.meta.env.DEV;
 
 export const API_BASE_URL = isDev
   ? 'http://127.0.0.1:8000'
-  : 'https://your-real-backend.com'; // ← replace with your actual production URL
+  : 'http://164.68.112.129:8000'; // ← replace with your actual production URL
 
