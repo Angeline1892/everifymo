@@ -1,3 +1,4 @@
+# backend/app/desktop/services/account_status/guards.py
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
@@ -36,24 +37,20 @@ def get_target(db: Session, user_id) -> User:
 # Maps (role, verb) -> the correct AuditAction constant, so every action
 # function can log correctly for personnel/admin/national_admin without
 # repeating a role-check ladder in each one.
-#
-# National Admin reuses the old SUPERADMIN_* constants — national_admin is
-# a 1:1 successor to superadmin, so no new NATIONAL_ADMIN_* constants were
-# added (same call made in registration.py's audit helpers).
 _ACTION_TABLE = {
     Role.NATIONAL_ADMIN: {
-        "SUSPEND": AuditAction.SUSPEND_SUPERADMIN_ACCOUNT,
-        "REACTIVATE": AuditAction.REACTIVATE_SUPERADMIN_ACCOUNT,
-        "UNLOCK": AuditAction.UNLOCK_SUPERADMIN_ACCOUNT,
-        "DELETE": AuditAction.DELETE_SUPERADMIN_ACCOUNT,
-        "INVITE_RESENT": AuditAction.INVITE_SUPERADMIN_RESENT,
+        "SUSPEND": AuditAction.SUSPEND_NATIONAL_ADMIN_ACCOUNT,
+        "REACTIVATE": AuditAction.REACTIVATE_NATIONAL_ADMIN_ACCOUNT,
+        "UNLOCK": AuditAction.UNLOCK_NATIONAL_ADMIN_ACCOUNT,
+        "DELETE": AuditAction.DELETE_NATIONAL_ADMIN_ACCOUNT,
+        "INVITE_RESENT": AuditAction.INVITE_NATIONAL_ADMIN_RESENT,
     },
     "ADMIN": {
-        "SUSPEND": AuditAction.SUSPEND_ADMIN_ACCOUNT,
-        "REACTIVATE": AuditAction.REACTIVATE_ADMIN_ACCOUNT,
-        "UNLOCK": AuditAction.UNLOCK_ADMIN_ACCOUNT,
-        "DELETE": AuditAction.DELETE_ADMIN_ACCOUNT,
-        "INVITE_RESENT": AuditAction.INVITE_ADMIN_RESENT,
+        "SUSPEND": AuditAction.SUSPEND_REGIONAL_ADMIN_ACCOUNT,
+        "REACTIVATE": AuditAction.REACTIVATE_REGIONAL_ADMIN_ACCOUNT,
+        "UNLOCK": AuditAction.UNLOCK_REGIONAL_ADMIN_ACCOUNT,
+        "DELETE": AuditAction.DELETE_REGIONAL_ADMIN_ACCOUNT,
+        "INVITE_RESENT": AuditAction.INVITE_REGIONAL_ADMIN_RESENT,
     },
     "PERSONNEL": {
         "SUSPEND": AuditAction.SUSPEND_PERSONNEL_ACCOUNT,
@@ -61,8 +58,8 @@ _ACTION_TABLE = {
         "UNLOCK": AuditAction.UNLOCK_PERSONNEL_ACCOUNT,
         "DELETE": AuditAction.DELETE_PERSONNEL_ACCOUNT,
         "INVITE_RESENT": AuditAction.INVITE_PERSONNEL_RESENT,
-        "EDIT_INFO": AuditAction.EDIT_PERSONNEL_INFO,
-        "RESET_PASSWORD": AuditAction.RESET_PERSONNEL_PASSWORD,
+        "EDIT_INFO": AuditAction.UPDATE_PERSONNEL_INFORMATION,
+        "RESET_PASSWORD": AuditAction.UPDATE_PERSONNEL_PASSWORD,
     },
 }
 
