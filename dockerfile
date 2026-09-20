@@ -13,13 +13,12 @@ COPY backend/main.py ./backend/main.py
 COPY backend/nlp ./backend/nlp
 COPY backend/app ./backend/app
 
-COPY extensionBackend ./extensionBackend
 
 COPY backend/app/models/ ./backend/app/models/
 COPY backend/alembic ./backend/alembic
 COPY backend/alembic.ini ./backend/alembic.ini
 
-ENV PYTHONPATH=/everifymo/backend:/everifymo/extensionBackend
+ENV PYTHONPATH=/everifymo/backend
 
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
