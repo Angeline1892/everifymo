@@ -350,12 +350,18 @@ function AgencyBadge({ agency }) {
   return <span className={`NAMAgencyBadge ${agencyClass}`}>{agency}</span>;
 }
 
+const REGION_OPTIONS = [
+  'NCR', 'CAR', 'Region 1', 'Region 2', 'Region 3', 'Region 4A', 'Region 4B',
+  'Region 5', 'Region 6', 'Region 7', 'Region 8', 'Region 9', 'Region 10',
+  'Region 11', 'Region 12', 'Region 13', 'BARMM',
+];
+
 export default function NationalAdminAuditLogs() {
-  // Tabs: 'National' | 'Interagency' | 'System'
+  // Tabs: 'National' | 'FDA' | 'LEA' | 'System'
   const [activeTab, setActiveTab] = useState('National');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionFilter, setActionFilter] = useState('All');
-  const [agencyFilter, setAgencyFilter] = useState('All');
+  const [regionFilter, setRegionFilter] = useState('All');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedLog, setSelectedLog] = useState(null);
@@ -367,7 +373,8 @@ export default function NationalAdminAuditLogs() {
   const tabCounts = useMemo(() => {
     return {
       National: MOCK_NATIONAL_ADMIN_AUDIT_LOGS.filter((l) => l.agency === 'National Admin').length,
-      Interagency: MOCK_NATIONAL_ADMIN_AUDIT_LOGS.filter((l) => l.agency === 'FDA' || l.agency === 'LEA-CIDG').length,
+      FDA: MOCK_NATIONAL_ADMIN_AUDIT_LOGS.filter((l) => l.agency === 'FDA').length,
+      LEA: MOCK_NATIONAL_ADMIN_AUDIT_LOGS.filter((l) => l.agency === 'LEA-CIDG').length,
       System: MOCK_NATIONAL_ADMIN_AUDIT_LOGS.filter((l) => l.agency === 'System').length,
     };
   }, []);
@@ -377,14 +384,17 @@ export default function NationalAdminAuditLogs() {
     return MOCK_NATIONAL_ADMIN_AUDIT_LOGS.filter((log) => {
       // 1. Tab Scope
       if (activeTab === 'National' && log.agency !== 'National Admin') return false;
-      if (activeTab === 'Interagency' && log.agency !== 'FDA' && log.agency !== 'LEA-CIDG') return false;
+      if (activeTab === 'FDA' && log.agency !== 'FDA') return false;
+      if (activeTab === 'LEA' && log.agency !== 'LEA-CIDG') return false;
       if (activeTab === 'System' && log.agency !== 'System') return false;
 
       // 2. Action Filter
       if (actionFilter !== 'All' && log.action_type !== actionFilter) return false;
 
-      // 3. Agency Filter
-      if (agencyFilter !== 'All' && log.agency !== agencyFilter) return false;
+      // 3. Region Filter (FDA Admin and LEA Admin tabs only)
+      if ((activeTab === 'FDA' || activeTab === 'LEA') && regionFilter !== 'All' && log.region !== regionFilter) {
+        return false;
+      }
 
       // 4. Search Query
       const q = searchQuery.toLowerCase().trim();
@@ -405,7 +415,7 @@ export default function NationalAdminAuditLogs() {
 
       return true;
     });
-  }, [activeTab, searchQuery, actionFilter, agencyFilter, dateFrom, dateTo]);
+  }, [activeTab, searchQuery, actionFilter, regionFilter, dateFrom, dateTo]);
 
   // Pagination calculation
   const totalItems = filteredLogs.length;
@@ -418,14 +428,14 @@ export default function NationalAdminAuditLogs() {
   const isFiltered =
     searchQuery !== '' ||
     actionFilter !== 'All' ||
-    agencyFilter !== 'All' ||
+    ((activeTab === 'FDA' || activeTab === 'LEA') && regionFilter !== 'All') ||
     dateFrom !== '' ||
     dateTo !== '';
 
   function handleResetFilters() {
     setSearchQuery('');
     setActionFilter('All');
-    setAgencyFilter('All');
+    setRegionFilter('All');
     setDateFrom('');
     setDateTo('');
     setCurrentPage(1);
@@ -458,6 +468,7 @@ export default function NationalAdminAuditLogs() {
                   className={`NAMAuditTabBtn ${activeTab === 'National' ? 'active' : ''}`}
                   onClick={() => {
                     setActiveTab('National');
+                    setRegionFilter('All');
                     setCurrentPage(1);
                   }}
                 >
@@ -465,19 +476,32 @@ export default function NationalAdminAuditLogs() {
                   <span className="NAMAuditTabBadge">{tabCounts.National}</span>
                 </button>
                 <button
-                  className={`NAMAuditTabBtn ${activeTab === 'Interagency' ? 'active' : ''}`}
+                  className={`NAMAuditTabBtn ${activeTab === 'FDA' ? 'active' : ''}`}
                   onClick={() => {
-                    setActiveTab('Interagency');
+                    setActiveTab('FDA');
+                    setRegionFilter('All');
                     setCurrentPage(1);
                   }}
                 >
-                  Inter-Agency (FDA / LEA)
-                  <span className="NAMAuditTabBadge">{tabCounts.Interagency}</span>
+                  FDA Admin
+                  <span className="NAMAuditTabBadge">{tabCounts.FDA}</span>
+                </button>
+                <button
+                  className={`NAMAuditTabBtn ${activeTab === 'LEA' ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveTab('LEA');
+                    setRegionFilter('All');
+                    setCurrentPage(1);
+                  }}
+                >
+                  LEA Admin
+                  <span className="NAMAuditTabBadge">{tabCounts.LEA}</span>
                 </button>
                 <button
                   className={`NAMAuditTabBtn ${activeTab === 'System' ? 'active' : ''}`}
                   onClick={() => {
                     setActiveTab('System');
+                    setRegionFilter('All');
                     setCurrentPage(1);
                   }}
                 >
@@ -534,23 +558,26 @@ export default function NationalAdminAuditLogs() {
                   </select>
                 </div>
 
-                <div className="NAMFilterItem">
-                  <span className="NAMFilterLabel">AGENCY</span>
-                  <select
-                    className="NAMSelectFilter"
-                    value={agencyFilter}
-                    onChange={(e) => {
-                      setAgencyFilter(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                  >
-                    <option value="All">All Agencies</option>
-                    <option value="National Admin">National Admin</option>
-                    <option value="FDA">FDA</option>
-                    <option value="LEA-CIDG">LEA-CIDG</option>
-                    <option value="System">System</option>
-                  </select>
-                </div>
+                {(activeTab === 'FDA' || activeTab === 'LEA') && (
+                  <div className="NAMFilterItem">
+                    <span className="NAMFilterLabel">REGION</span>
+                    <select
+                      className="NAMSelectFilter"
+                      value={regionFilter}
+                      onChange={(e) => {
+                        setRegionFilter(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <option value="All">All Regions</option>
+                      {REGION_OPTIONS.map((reg) => (
+                        <option key={reg} value={reg}>
+                          {reg}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="NAMFilterItem">
                   <span className="NAMFilterLabel">FROM</span>
@@ -600,7 +627,7 @@ export default function NationalAdminAuditLogs() {
                     <th style={{ width: '170px' }}>Timestamp</th>
                     <th>User / Actor</th>
                     <th>Agency</th>
-                    <th>Region</th>
+                    {activeTab !== 'National' && <th>Region</th>}
                     <th>Action</th>
                     <th>Target Table & Record</th>
                     <th style={{ width: '90px', textAlign: 'center' }}>Details</th>
@@ -623,7 +650,7 @@ export default function NationalAdminAuditLogs() {
                         <td>
                           <AgencyBadge agency={log.agency} />
                         </td>
-                        <td>{log.region || '—'}</td>
+                        {activeTab !== 'National' && <td>{log.region || '—'}</td>}
                         <td>
                           <ActionBadge actionType={log.action_type} actionCode={log.action_code} />
                         </td>
@@ -648,7 +675,7 @@ export default function NationalAdminAuditLogs() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="NAMNoResults">
+                      <td colSpan={activeTab === 'National' ? 7 : 8} className="NAMNoResults">
                         No audit logs recorded for the selected scope or filter criteria.
                       </td>
                     </tr>
