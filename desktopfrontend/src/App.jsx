@@ -69,12 +69,16 @@ function DeepLinkListener() {
     const unsubscribe = window.electronAPI.onDeepLinkToken((token) => {
       console.log('Token received:', token);
 
-      fetch(`${API_BASE_URL}/registration/validate/${token}`)
+      fetch(`${API_BASE_URL}/registration/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invite_token: token }),
+      })
         .then((res) => res.json())
         .then((data) => {
           console.log('Validate response:', data);
 
-           // All roles now go through the same flow: valid token -> set password,
+          // All roles now go through the same flow: valid token -> set password,
           // anything else (expired/invalid/used) -> the status page.
           if (data.status === 'valid') {
             navigate('/create-new-password', { state: { ...data, token } });

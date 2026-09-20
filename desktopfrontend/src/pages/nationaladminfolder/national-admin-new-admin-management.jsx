@@ -36,82 +36,35 @@ function extractErrorMessage(errorData, fallback) {
     return fallback;
 }
 
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr; // fallback if unparseable
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+const KNOWN_ADMIN_STATUSES = [
+  'Pending Approval',
+  'Locked',
+  'Suspended',
+  'Active',
+  'Invited',
+  'Resend Requested',
+  'Link Expired',
+];
+
 export function computeAdminStatus(admin) {
   if (!admin) return '';
-  const rawStatus = (admin.status || '').toString().trim().toLowerCase();
-
-  // 1. Pending Approval check (must be recognized before generic active/inactive logic)
-  if (rawStatus === 'pending_approval' || rawStatus === 'pending approval') {
-    return 'Pending Approval';
-  }
-
-  // 2. Locked must take precedence over Active
-  // Condition: status == active && is_active == true && is_locked == true
-  if (
-    (rawStatus === 'active' && admin.is_active === true && admin.is_locked === true) ||
-    rawStatus === 'locked' ||
-    (admin.is_locked === true && rawStatus === 'active' && admin.is_active !== false)
-  ) {
-    return 'Locked';
-  }
-
-  // 3. Suspended: status == active && is_active == false
-  if (
-    (rawStatus === 'active' && admin.is_active === false) ||
-    rawStatus === 'suspended' ||
-    rawStatus === 'suspend'
-  ) {
-    return 'Suspended';
-  }
-
-  // 4. Active: status == active && is_active == true && is_locked != true
-  if (
-    rawStatus === 'active' ||
-    (!rawStatus && admin.is_active === true && !admin.is_locked)
-  ) {
-    return 'Active';
-  }
-
-  // 5. Invited / Resend Requested / Link Expired
-  if (
-    rawStatus === 'invited' ||
-    rawStatus === 'resend requested' ||
-    rawStatus === 'resend_requested' ||
-    rawStatus === 'link expired' ||
-    rawStatus === 'link_expired'
-  ) {
-    let isExpired = false;
-    if (typeof admin.is_token_expired === 'boolean') {
-      isExpired = admin.is_token_expired;
-    } else if (typeof admin.token_expired === 'boolean') {
-      isExpired = admin.token_expired;
-    } else if (admin.expiration_date || admin.expires_at) {
-      const expDate = new Date(admin.expiration_date || admin.expires_at);
-      if (!isNaN(expDate.getTime())) {
-        isExpired = expDate.getTime() < Date.now();
-      }
-    } else if (
-      rawStatus === 'link expired' ||
-      rawStatus === 'link_expired' ||
-      rawStatus === 'resend requested' ||
-      rawStatus === 'resend_requested'
-    ) {
-      isExpired = true;
-    }
-
-    const hasResendRequest =
-      admin.resend_requested_at !== null && admin.resend_requested_at !== undefined;
-
-    if (hasResendRequest && isExpired) {
-      return 'Resend Requested';
-    }
-    if (!hasResendRequest && isExpired) {
-      return 'Link Expired';
-    }
-    return 'Invited';
-  }
-
-  return admin.status || 'Active';
+  const raw = (admin.status || '').toString().trim();
+  const match = KNOWN_ADMIN_STATUSES.find((s) => s.toLowerCase() === raw.toLowerCase());
+  return match || admin.status || '';
 }
 
 const NATIONAL_ADMIN_STATUS_META = {
@@ -666,12 +619,16 @@ function NationalAdminViewModal({ open, nationalAdmin, onClose }) {
 
               <div className="NAMVDField">
                 <span className="NAMVDLabel">Invitation Date</span>
-                <span className="NAMVDValue">{nationalAdmin.invitation_date || '-'}</span>
+                <span className="NAMVDValue">
+                  {nationalAdmin.invitation_date
+                    ? formatDate(nationalAdmin.invitation_date)
+                    : <span className="NAMSystemCreatedTag">System Created</span>}
+                </span>
               </div>
               {showExpiration && (
                 <div className="NAMVDField">
                   <span className="NAMVDLabel">Expiration Date</span>
-                  <span className="NAMVDValue">{nationalAdmin.expiration_date || '-'}</span>
+                  <span className="NAMVDValue">{formatDate(nationalAdmin.expiration_date)}</span>
                 </div>
               )}
             </div>
@@ -693,7 +650,13 @@ export default function NationalAdminNewAdminManagement() {
   const [nationalAdmins, setNationalAdmins] = useState([]);
   const [nationalAdminLoading, setNationalAdminLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
   const [myUserId, setMyUserId] = useState(null); 
+
+  function showToast(msg) {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 4000);
+  }
   const [nationalAdminStatusFilter, setNationalAdminStatusFilter] = useState('All');
   const [nationalAdminSearchQuery, setNationalAdminSearchQuery] = useState('');
   const [nationalAdminViewAdmin, setNationalAdminViewAdmin] = useState(null);
@@ -716,21 +679,26 @@ export default function NationalAdminNewAdminManagement() {
       const res = await apiFetch('/national-admin-management');
       if (!res.ok) throw new Error('Failed to load national admins.');
       const data = await res.json();
-      setNationalAdmins(
-        data.map((a) => ({
-          id: a.user_id,
-          first_name: a.first_name,
-          middle_name: a.middle_name,
-          last_name: a.last_name,
-          fullname: [a.first_name, a.middle_name, a.last_name].filter(Boolean).join(' '),
-          email: a.email,
-          invitation_date: a.invitation_date,
-          expiration_date: a.expiration_date,
-          status: a.status,
-          is_locked: a.is_locked,
-          role: 'National Administrator',
-        }))
-      );
+      setNationalAdmins((current = []) => {
+        const currentMap = new Map((Array.isArray(current) ? current : []).map((item) => [item.id, item]));
+        return data.map((a) => {
+          const prev = currentMap.get(a.user_id);
+          return {
+            id: a.user_id,
+            first_name: a.first_name,
+            middle_name: a.middle_name,
+            last_name: a.last_name,
+            fullname: [a.first_name, a.middle_name, a.last_name].filter(Boolean).join(' '),
+            email: a.email,
+            invitation_date: a.invitation_date,
+            expiration_date: a.expiration_date,
+            status: a.status,
+            is_locked: a.is_locked,
+            is_active: a.is_active !== undefined ? a.is_active : prev?.is_active,
+            role: 'National Administrator',
+          };
+        });
+      });
     } catch (err) {
       setFetchError(err.message || 'Something went wrong.');
     } finally {
@@ -775,6 +743,7 @@ useEffect(() => {
   }
 
   function handleAddSuccess() {
+    showToast('Administrator invited successfully.');
     fetchNationalAdmins(true);
   }
 
@@ -783,38 +752,55 @@ useEffect(() => {
   }
 
   async function handleConfirmAction() {
-  const { actionType, targetId } = nationalAdminConfirmModal;
-  const actionPathMap = {
-    suspend: 'suspend',
-    reactivate: 'reactivate',
-    activate: 'activate',
-    unlock: 'unlock',
-    resend: 'resend-link',
-  };
+    const { actionType, targetId } = nationalAdminConfirmModal;
+    const actionPathMap = {
+      suspend: 'suspend',
+      reactivate: 'reactivate',
+      activate: 'activate',
+      unlock: 'unlock',
+      resend: 'resend-link',
+    };
 
-  setNationalAdminConfirmModal({ open: false, actionType: '', targetId: null });
+    setNationalAdminConfirmModal({ open: false, actionType: '', targetId: null });
 
-  try {
-    if (actionType === 'delete') {
-      const res = await apiFetch(`/national-admin-management/${targetId}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(extractErrorMessage(errData, 'Delete failed.'));
+    try {
+      if (actionType === 'delete') {
+        const res = await apiFetch(`/national-admin-management/${targetId}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(extractErrorMessage(errData, 'Delete failed.'));
+        }
+        setNationalAdmins((prev) => prev.filter((a) => a.id !== targetId));
+        showToast('Admin entry deleted.');
+      } else {
+        const path = actionPathMap[actionType];
+        if (!path) return;
+        const res = await apiFetch(`/national-admin-management/${targetId}/${path}`, { method: 'POST' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(extractErrorMessage(errData, 'Action failed.'));
+        }
+        setNationalAdmins((prev) =>
+          prev.map((a) => {
+            if (a.id !== targetId) return a;
+            if (actionType === 'suspend') {
+              return { ...a, status: 'Suspended', is_active: false };
+            }
+            if (actionType === 'reactivate' || actionType === 'activate') {
+              return { ...a, status: 'Active', is_active: true };
+            }
+            if (actionType === 'unlock') {
+              return { ...a, status: 'Active', is_locked: false };
+            }
+            return a;
+          })
+        );
+        showToast(actionType === 'resend' ? 'Invitation link resent.' : 'Account updated.');
       }
-    } else {
-      const path = actionPathMap[actionType];
-      if (!path) return;
-      const res = await apiFetch(`/national-admin-management/${targetId}/${path}`, { method: 'POST' });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(extractErrorMessage(errData, 'Action failed.'));
-      }
+    } catch (err) {
+      showToast(err.message || 'Something went wrong.');
     }
-    await fetchNationalAdmins(true);
-  } catch (err) {
-    setFetchError(err.message || 'Something went wrong.');
   }
-}
   function handleCancelConfirm() {
     setNationalAdminConfirmModal({ open: false, actionType: '', targetId: null });
   }
@@ -980,7 +966,11 @@ useEffect(() => {
                         <td className="NAMTdCenter">{startIndex + idx + 1}</td>
                         <td>{admin.fullname || <span className="NAMEmpty">-</span>}</td>
                         <td className="NAMEmailCell">{admin.email}</td>
-                        <td>{admin.invitation_date || <span className="NAMEmpty">-</span>}</td>
+                        <td>
+                          {admin.invitation_date
+                            ? formatDate(admin.invitation_date)
+                            : <span className="NAMSystemCreatedTag">System Created</span>}
+                        </td>
                         <td>
                           <NationalAdminStatusBadge status={admin} />
                         </td>
@@ -1074,6 +1064,31 @@ useEffect(() => {
         nationalAdmin={nationalAdminViewAdmin}
         onClose={() => setNationalAdminViewAdmin(null)}
       />
+
+      {toastMessage && (
+        <div
+          className="NAMToast"
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            background: '#0D9488',
+            color: '#ffffff',
+            padding: '12px 20px',
+            borderRadius: '10px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontSize: '13.5px',
+            fontWeight: 500,
+            zIndex: 100000,
+          }}
+        >
+          <CircleCheckBig size={18} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }
