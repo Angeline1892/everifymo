@@ -25,7 +25,7 @@ def derive_agency(user_role: str) -> str:
 @router.get("/fda", response_model=AuditLogListResponse)
 def list_fda_audit_logs(
     page: int = Query(1, ge=1),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(10, ge=1, le=500),
     action: str | None = None,
     region_code: str | None = None,
     date_from: date | None = None,
@@ -74,7 +74,7 @@ def list_fda_audit_logs(
 @router.get("/lea", response_model=AuditLogListResponse)
 def list_lea_audit_logs(
     page: int = Query(1, ge=1),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(10, ge=1, le=500),
     action: str | None = None,
     region_code: str | None = None,
     date_from: date | None = None,
@@ -120,7 +120,7 @@ def list_lea_audit_logs(
 @router.get("/national-admin", response_model=AuditLogListResponse)
 def list_national_admin_audit_logs(
     page: int = Query(1, ge=1),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(10, ge=1, le=500),
     action: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
@@ -161,16 +161,24 @@ def list_national_admin_audit_logs(
 @router.get("/system", response_model=AuditLogListResponse)
 def list_system_audit_logs(
     page: int = Query(1, ge=1),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(10, ge=1, le=500),
     action: str | None = None,
     region_code: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
     search: str | None = None,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_national_admin),
+    current_user=Depends(get_current_admin_or_national_admin),
 ):
-    rows, total = get_system_audit_logs(db, page, limit, action, region_code, date_from, date_to, search)
+    agency_roles = None
+    if current_user.role == Role.FDA_ADMIN:
+        region_code = get_user_region_code(db, current_user)
+        agency_roles = ["fda_personnel", "fda_admin"]
+    elif current_user.role == Role.LEA_ADMIN:
+        region_code = get_user_region_code(db, current_user)
+        agency_roles = ["lea_personnel", "lea_admin"]
+
+    rows, total = get_system_audit_logs(db, page, limit, action, region_code, agency_roles, date_from, date_to, search)
 
     items = [
         AuditLogItem(
