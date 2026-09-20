@@ -36,82 +36,35 @@ function extractErrorMessage(errorData, fallback) {
     return fallback;
 }
 
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr; // fallback if unparseable
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+const KNOWN_ADMIN_STATUSES = [
+  'Pending Approval',
+  'Locked',
+  'Suspended',
+  'Active',
+  'Invited',
+  'Resend Requested',
+  'Link Expired',
+];
+
 export function computeAdminStatus(admin) {
   if (!admin) return '';
-  const rawStatus = (admin.status || '').toString().trim().toLowerCase();
-
-  // 1. Pending Approval check (must be recognized before generic active/inactive logic)
-  if (rawStatus === 'pending_approval' || rawStatus === 'pending approval') {
-    return 'Pending Approval';
-  }
-
-  // 2. Locked must take precedence over Active
-  // Condition: status == active && is_active == true && is_locked == true
-  if (
-    (rawStatus === 'active' && admin.is_active === true && admin.is_locked === true) ||
-    rawStatus === 'locked' ||
-    (admin.is_locked === true && rawStatus === 'active' && admin.is_active !== false)
-  ) {
-    return 'Locked';
-  }
-
-  // 3. Suspended: status == active && is_active == false
-  if (
-    (rawStatus === 'active' && admin.is_active === false) ||
-    rawStatus === 'suspended' ||
-    rawStatus === 'suspend'
-  ) {
-    return 'Suspended';
-  }
-
-  // 4. Active: status == active && is_active == true && is_locked != true
-  if (
-    rawStatus === 'active' ||
-    (!rawStatus && admin.is_active === true && !admin.is_locked)
-  ) {
-    return 'Active';
-  }
-
-  // 5. Invited / Resend Requested / Link Expired
-  if (
-    rawStatus === 'invited' ||
-    rawStatus === 'resend requested' ||
-    rawStatus === 'resend_requested' ||
-    rawStatus === 'link expired' ||
-    rawStatus === 'link_expired'
-  ) {
-    let isExpired = false;
-    if (typeof admin.is_token_expired === 'boolean') {
-      isExpired = admin.is_token_expired;
-    } else if (typeof admin.token_expired === 'boolean') {
-      isExpired = admin.token_expired;
-    } else if (admin.expiration_date || admin.expires_at) {
-      const expDate = new Date(admin.expiration_date || admin.expires_at);
-      if (!isNaN(expDate.getTime())) {
-        isExpired = expDate.getTime() < Date.now();
-      }
-    } else if (
-      rawStatus === 'link expired' ||
-      rawStatus === 'link_expired' ||
-      rawStatus === 'resend requested' ||
-      rawStatus === 'resend_requested'
-    ) {
-      isExpired = true;
-    }
-
-    const hasResendRequest =
-      admin.resend_requested_at !== null && admin.resend_requested_at !== undefined;
-
-    if (hasResendRequest && isExpired) {
-      return 'Resend Requested';
-    }
-    if (!hasResendRequest && isExpired) {
-      return 'Link Expired';
-    }
-    return 'Invited';
-  }
-
-  return admin.status || 'Active';
+  const raw = (admin.status || '').toString().trim();
+  const match = KNOWN_ADMIN_STATUSES.find((s) => s.toLowerCase() === raw.toLowerCase());
+  return match || admin.status || '';
 }
 
 const NATIONAL_ADMIN_STATUS_META = {
@@ -666,12 +619,16 @@ function NationalAdminViewModal({ open, nationalAdmin, onClose }) {
 
               <div className="NAMVDField">
                 <span className="NAMVDLabel">Invitation Date</span>
-                <span className="NAMVDValue">{nationalAdmin.invitation_date || '-'}</span>
+                <span className="NAMVDValue">
+                  {nationalAdmin.invitation_date
+                    ? formatDate(nationalAdmin.invitation_date)
+                    : <span className="NAMSystemCreatedTag">System Created</span>}
+                </span>
               </div>
               {showExpiration && (
                 <div className="NAMVDField">
                   <span className="NAMVDLabel">Expiration Date</span>
-                  <span className="NAMVDValue">{nationalAdmin.expiration_date || '-'}</span>
+                  <span className="NAMVDValue">{formatDate(nationalAdmin.expiration_date)}</span>
                 </div>
               )}
             </div>
@@ -980,7 +937,11 @@ useEffect(() => {
                         <td className="NAMTdCenter">{startIndex + idx + 1}</td>
                         <td>{admin.fullname || <span className="NAMEmpty">-</span>}</td>
                         <td className="NAMEmailCell">{admin.email}</td>
-                        <td>{admin.invitation_date || <span className="NAMEmpty">-</span>}</td>
+                        <td>
+                          {admin.invitation_date
+                            ? formatDate(admin.invitation_date)
+                            : <span className="NAMSystemCreatedTag">System Created</span>}
+                        </td>
                         <td>
                           <NationalAdminStatusBadge status={admin} />
                         </td>
