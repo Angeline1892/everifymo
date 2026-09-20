@@ -12,8 +12,8 @@ from app.core.constants import AuditAction
 
 from app.models.users import User
 from app.models.account_invitation_tokens import AccountInvitationToken
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+from app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 
 
 def create_invited_superadmin(db: Session, email: str, first_name: str, last_name: str, created_by, request=None):
@@ -57,7 +57,7 @@ def create_invited_superadmin(db: Session, email: str, first_name: str, last_nam
     write_audit_log(
         db,
         user=None,
-        action=AuditAction.INVITE_SUPERADMIN,
+        action=AuditAction.INVITE_NATIONAL_ADMIN,
         target_table="users",
         target_id=user_id,
         target_reference=user_email,
@@ -127,7 +127,7 @@ def complete_superadmin_registration(db: Session, token: str, new_password: str,
     write_audit_log(
         db,
         user=None,
-        action=AuditAction.SUPERADMIN_PENDING_APPROVAL,
+        action=AuditAction.PENDING_NATIONAL_ADMIN_ACCOUNT,
         target_table="users",
         target_id=user_id,
         target_reference=user_email,
@@ -173,7 +173,7 @@ def activate_superadmin(db: Session, admin_id, activated_by=None, request=None):
     write_audit_log(
         db,
         user=None,
-        action=AuditAction.APPROVE_SUPERADMIN_ACCOUNT,
+        action=AuditAction.APPROVE_NATIONAL_ADMIN_ACCOUNT,
         target_table="users",
         target_id=admin_id_val,
         target_reference=admin_email,

@@ -1,7 +1,8 @@
 // desktopfrontend/src/pages/leaadminfolder/lea-admin-user-management.jsx
 import './lea-admin-css.css';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { apiFetch } from '../../utils/apiFetch';
 import {
   Send,
   UserCheck,
@@ -31,10 +32,28 @@ import {
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
 
-// Personnel accounts strictly use: Active, Suspended, Locked
+
+function extractErrorMessage(errorData, fallback) {
+    const detail = errorData?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+        return detail.map(d => d?.msg || JSON.stringify(d)).join(' ');
+    }
+    if (detail && typeof detail === 'object') {
+        return detail.msg || detail.message || JSON.stringify(detail);
+    }
+    return fallback;
+}
+
+// Personnel never reach "Pending Approval" — that state only applies to
+// admin-management. Personnel go Invited -> Active (or Invited ->
+// Resend Requested / Link Expired if they don't act in time).
 const STATUS_META = {
+  Invited: { label: 'Invited', className: 'badge-pending' },
   Active: { label: 'Active', className: 'badge-active' },
   Suspended: { label: 'Suspended', className: 'badge-suspended' },
+  'Resend Requested': { label: 'Resend Requested', className: 'badge-pending' },
+  'Link Expired': { label: 'Link Expired', className: 'badge-expired' },
   Locked: { label: 'Locked', className: 'badge-locked' },
 };
 
@@ -43,171 +62,64 @@ function StatusBadge({ status }) {
   return <span className={`LEAAdminStatusBadge ${meta.className}`}>{meta.label}</span>;
 }
 
-// Realistic mock LEA-CIDG personnel accounts (Active, Suspended, Locked only)
-const INITIAL_LEA_PERSONNEL = [
-  {
-    id: 'lea-u-001',
-    first_name: 'Cardo',
-    middle_name: 'Santos',
-    last_name: 'Dalisay',
-    fullname: 'Cardo Santos Dalisay',
-    employee_id: 'CIDG-NCR-2024-001',
-    email: 'cardo.dalisay@cidg.pnp.gov.ph',
-    contact_number: '09171112233',
-    agency: 'LEA Personnel',
-    region: 'National Capital Region (NCR)',
-    department: 'Anti-Fraud and Commercial Crimes Division',
-    position: 'Special Senior Investigator',
-    status: 'Active',
-  },
-  {
-    id: 'lea-u-002',
-    first_name: 'Ramon',
-    middle_name: 'Alvarez',
-    last_name: 'Magsaysay',
-    fullname: 'Ramon Alvarez Magsaysay',
-    employee_id: 'CIDG-REG7-2024-032',
-    email: 'ramon.magsaysay@cidg.pnp.gov.ph',
-    contact_number: '09183334455',
-    agency: 'LEA Personnel',
-    region: 'Region VII - Central Visayas',
-    department: 'Special Operations Group',
-    position: 'Lead Field Operative',
-    status: 'Active',
-  },
-  {
-    id: 'lea-u-003',
-    first_name: 'Marc',
-    middle_name: 'Villanueva',
-    last_name: 'Tan',
-    fullname: 'Marc Villanueva Tan',
-    employee_id: 'CIDG-REG6-2024-051',
-    email: 'marc.tan@cidg.pnp.gov.ph',
-    contact_number: '09201122334',
-    agency: 'LEA Personnel',
-    region: 'Region VI - Western Visayas',
-    department: 'Criminal Investigation Branch',
-    position: 'Investigative Case Officer',
-    status: 'Active',
-  },
-  {
-    id: 'lea-u-004',
-    first_name: 'Rodrigo',
-    middle_name: 'Bernardo',
-    last_name: 'Custodio',
-    fullname: 'Rodrigo Bernardo Custodio',
-    employee_id: 'CIDG-REG3-2023-019',
-    email: 'rodrigo.custodio@cidg.pnp.gov.ph',
-    contact_number: '09195556677',
-    agency: 'LEA Personnel',
-    region: 'Region III - Central Luzon',
-    department: 'Surveillance and Interdiction Unit',
-    position: 'Field Detective',
-    status: 'Suspended',
-  },
-  {
-    id: 'lea-u-005',
-    first_name: 'Benjamin',
-    middle_name: 'De Vera',
-    last_name: 'Aguirre',
-    fullname: 'Benjamin De Vera Aguirre',
-    employee_id: 'CIDG-REG4A-2024-088',
-    email: 'benjamin.aguirre@cidg.pnp.gov.ph',
-    contact_number: '09228889900',
-    agency: 'LEA Personnel',
-    region: 'Region IV-A - CALABARZON',
-    department: 'Intelligence & Verification Branch',
-    position: 'Forensic Case Analyst',
-    status: 'Locked',
-  },
-  {
-    id: 'lea-u-006',
-    first_name: 'Gregorio',
-    middle_name: 'Castor',
-    last_name: 'Del Pilar',
-    fullname: 'Gregorio Castor Del Pilar',
-    employee_id: 'CIDG-REG1-2024-004',
-    email: 'gregorio.delpilar@cidg.pnp.gov.ph',
-    contact_number: '09279998877',
-    agency: 'LEA Personnel',
-    region: 'Region I - Ilocos Region',
-    department: 'Counterfeit Products Division',
-    position: 'Assistant Case Investigator',
-    status: 'Active',
-  },
-  {
-    id: 'lea-u-007',
-    first_name: 'Danilo',
-    middle_name: 'Aquino',
-    last_name: 'Silang',
-    fullname: 'Danilo Aquino Silang',
-    employee_id: 'CIDG-REG11-2024-012',
-    email: 'danilo.silang@cidg.pnp.gov.ph',
-    contact_number: '09391234509',
-    agency: 'LEA Personnel',
-    region: 'Region XI - Davao Region',
-    department: 'Special Operations Task Force',
-    position: 'Field Intelligence Officer',
-    status: 'Active',
-  },
-  {
-    id: 'lea-u-008',
-    first_name: 'Vicente',
-    middle_name: 'Perez',
-    last_name: 'Enriquez',
-    fullname: 'Vicente Perez Enriquez',
-    employee_id: 'CIDG-NCR-2023-099',
-    email: 'vicente.enriquez@cidg.pnp.gov.ph',
-    contact_number: '09459876543',
-    agency: 'LEA Personnel',
-    region: 'National Capital Region (NCR)',
-    department: 'Commercial Fraud Unit',
-    position: 'Legal and Case Reviewer',
-    status: 'Suspended',
-  },
-];
-
-const PHILIPPINE_REGIONS = [
-  'National Capital Region (NCR)',
-  'Cordillera Administrative Region (CAR)',
-  'Region I - Ilocos Region',
-  'Region II - Cagayan Valley',
-  'Region III - Central Luzon',
-  'Region IV-A - CALABARZON',
-  'MIMAROPA Region',
-  'Region V - Bicol Region',
-  'Region VI - Western Visayas',
-  'Region VII - Central Visayas',
-  'Region VIII - Eastern Visayas',
-  'Region IX - Zamboanga Peninsula',
-  'Region X - Northern Mindanao',
-  'Region XI - Davao Region',
-  'Region XII - SOCCSKSARGEN',
-  'Region XIII - Caraga',
-  'Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)',
-];
-
 function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPassword }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [openUpward, setOpenUpward] = useState(false);
+  const [menuStyle, setMenuStyle] = useState({});
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
   const displayStatus = user.status;
 
-  function openMenu() {
+  const updateMenuPosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
-    const upward = spaceBelow < 200;
-    setMenuPos({
-      top: upward ? Math.max(8, rect.top - 180) : rect.bottom + 6,
-      left: Math.max(8, rect.right - 185),
-    });
-    setIsOpen(true);
-  }
+    const spaceAbove = rect.top;
+    const upward = spaceBelow < 220 && spaceAbove > spaceBelow;
+    const right = Math.max(8, window.innerWidth - rect.right);
+
+    if (upward) {
+      setMenuStyle({
+        position: 'fixed',
+        bottom: `${Math.max(8, window.innerHeight - rect.top + 4)}px`,
+        top: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '175px',
+        maxHeight: `${Math.max(120, rect.top - 16)}px`,
+        overflowY: 'auto',
+      });
+    } else {
+      setMenuStyle({
+        position: 'fixed',
+        top: `${rect.bottom + 4}px`,
+        bottom: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '175px',
+        maxHeight: `${Math.max(120, spaceBelow - 16)}px`,
+        overflowY: 'auto',
+      });
+    }
+    setOpenUpward(upward);
+  }, []);
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (!isOpen) {
+      updateMenuPosition();
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
+    updateMenuPosition();
+
     function handleOutsideClick(event) {
       if (
         menuRef.current && !menuRef.current.contains(event.target) &&
@@ -216,9 +128,22 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
         setIsOpen(false);
       }
     }
-    document.addEventListener('click', handleOutsideClick);
-    return () => document.removeEventListener('click', handleOutsideClick);
-  }, [isOpen]);
+
+    function handleScrollOrResize(event) {
+      if (menuRef.current && menuRef.current.contains(event.target)) return;
+      setIsOpen(false);
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [isOpen, updateMenuPosition]);
 
   return (
     <div className={`LEAAdminDropdownWrapper ${isOpen ? 'active-open' : ''}`}>
@@ -227,10 +152,7 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
         className="LEAAdminDropdownTrigger"
         data-tooltip="Actions"
         title="More Actions"
-        onClick={(e) => {
-          e.stopPropagation();
-          isOpen ? setIsOpen(false) : openMenu();
-        }}
+        onClick={handleToggle}
       >
         <MoreVertical size={16} />
       </button>
@@ -238,9 +160,9 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
       {isOpen &&
         createPortal(
           <div
-            className="LEAAdminDropdownMenu"
+            className={`LEAAdminDropdownMenu ${openUpward ? 'open-upward' : ''}`}
             ref={menuRef}
-            style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }}
+            style={menuStyle}
           >
             <button
               className="LEAAdminDropdownItem"
@@ -252,7 +174,9 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
               <Eye size={14} /> View Details
             </button>
 
-            {/* Active Accounts: Edit Profile, Reset Password (ONLY for Active), Suspend */}
+            {/* Active -> Edit Profile, Reset Password, Suspend.
+                Personnel have no self-edit/self-reset rights (see profile.py),
+                so both actions live here, performed by their agency admin. */}
             {displayStatus === 'Active' && (
               <>
                 <button
@@ -286,18 +210,32 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
               </>
             )}
 
-            {/* Suspended -> Reactivate, Delete */}
             {displayStatus === 'Suspended' && (
+              <button
+                className="LEAAdminDropdownItem primary-action"
+                onClick={() => {
+                  onAction('reactivate');
+                  setIsOpen(false);
+                }}
+              >
+                <RotateCcw size={14} /> Reactivate Account
+              </button>
+            )}
+
+            {['Resend Requested', 'Link Expired'].includes(displayStatus) && (
+              <button
+                className="LEAAdminDropdownItem"
+                onClick={() => {
+                  onAction('resend');
+                  setIsOpen(false);
+                }}
+              >
+                <Send size={14} /> Resend Link
+              </button>
+            )}
+
+            {displayStatus === 'Link Expired' && (
               <>
-                <button
-                  className="LEAAdminDropdownItem primary-action"
-                  onClick={() => {
-                    onAction('reactivate');
-                    setIsOpen(false);
-                  }}
-                >
-                  <RotateCcw size={14} /> Reactivate Account
-                </button>
                 <div className="LEAAdminDropdownDivider" />
                 <button
                   className="LEAAdminDropdownItem danger"
@@ -311,7 +249,6 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
               </>
             )}
 
-            {/* Locked -> Unlock */}
             {displayStatus === 'Locked' && (
               <button
                 className="LEAAdminDropdownItem primary-action"
@@ -351,9 +288,14 @@ const CONFIRM_MESSAGES = {
     message: 'Are you sure you want to unlock this personnel account? Access will be restored.',
     confirmLabel: 'Unlock Account',
   },
+  resend: {
+    title: 'Resend Invitation Link',
+    message: 'Are you sure you want to resend the registration link to this personnel account?',
+    confirmLabel: 'Resend Link',
+  },
   resetPassword: {
     title: 'Reset Account Password',
-    message: 'Are you sure you want to reset the password for this active personnel account? A temporary password notification will be issued.',
+    message: 'Are you sure you want to reset the password for this active personnel account? A temporary password will be emailed to them.',
     confirmLabel: 'Reset Password',
   },
 };
@@ -396,8 +338,11 @@ function ConfirmModal({ open, actionType, onConfirm, onCancel }) {
   );
 }
 
-// 2-Step Add Personnel Flow: Form -> Verification/Confirmation Summary Modal -> Confirmed as Active
-function AddPersonnelFlow({ open, onClose, onCreated }) {
+// 2-step Add Personnel flow — wired to POST /personnel-management.
+// Region + agency are derived server-side from the logged-in admin, but we
+// now also fetch and DISPLAY the real values here (via GET /profile), passed
+// down as the `myProfile` prop, instead of hardcoded placeholder text.
+function AddPersonnelFlow({ open, onClose, onCreated, myProfile }) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -406,13 +351,12 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
     employeeId: '',
     contactNumber: '',
     email: '',
-    agency: 'LEA Personnel', // Read-only
-    region: '',
     department: '',
     position: '',
   });
-
   const [errors, setErrors] = useState({});
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -424,16 +368,21 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
         employeeId: '',
         contactNumber: '',
         email: '',
-        agency: 'LEA Personnel',
-        region: '',
         department: '',
         position: '',
       });
       setErrors({});
+      setSubmitError('');
+      setSending(false);
     }
   }, [open]);
 
   if (!open) return null;
+
+  // Real agency/region of the current logged-in admin, fetched via /profile
+  // by the parent component. Falls back to "Loading…" until it resolves.
+  const agencyDisplay = myProfile ? `${myProfile.agency} Personnel` : 'Loading…';
+  const regionDisplay = myProfile?.region || 'Loading…';
 
   function validate() {
     const errs = {};
@@ -458,10 +407,6 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
       }
     }
 
-    if (!formData.region) {
-      errs.region = 'Region is required. Please select an agency region.';
-    }
-
     return errs;
   }
 
@@ -476,26 +421,37 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
     setStep(2);
   }
 
-  function handleFinalConfirm() {
-    const fullName = [formData.firstName, formData.middleName, formData.lastName].filter(Boolean).join(' ');
-    const newAccount = {
-      id: `lea-u-${Date.now()}`,
-      first_name: formData.firstName.trim(),
-      middle_name: formData.middleName.trim(),
-      last_name: formData.lastName.trim(),
-      fullname: fullName,
-      employee_id: formData.employeeId.trim(),
-      email: formData.email.trim().toLowerCase(),
-      contact_number: formData.contactNumber.trim(),
-      agency: 'LEA Personnel',
-      region: formData.region,
-      department: formData.department.trim(),
-      position: formData.position.trim(),
-      status: 'Active', // Automatically Active upon confirmation
-    };
+  async function handleFinalConfirm() {
+    setSending(true);
+    setSubmitError('');
+    try {
+      const res = await apiFetch('/personnel-management', {
+        method: 'POST',
+        body: JSON.stringify({
+          first_name: formData.firstName.trim(),
+          middle_name: formData.middleName.trim() || null,
+          last_name: formData.lastName.trim(),
+          email: formData.email.trim(),
+          contact_number: formData.contactNumber.trim() || null,
+          employee_id: formData.employeeId.trim() || null,
+          position: formData.position.trim() || null,
+          department: formData.department.trim() || null,
+        }),
+      });
 
-    onCreated(newAccount);
-    onClose();
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(errData, 'Failed to send invitation.'));
+      }
+
+      onCreated(formData.email.trim());
+      onClose();
+    } catch (err) {
+      setSubmitError(err.message || 'Something went wrong.');
+      setStep(1);
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -505,7 +461,7 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
           <div className="LEAAdminModalHeader">
             <h3 className="LEAAdminModalTitle">Add Personnel Account</h3>
             <p className="LEAAdminModalSubtitle">
-              Register a new LEA-CIDG Personnel account. Confirmed accounts are immediately activated.
+              Register a new LEA-CIDG Personnel account under your current agency and region.
             </p>
             <button className="LEAAdminModalCloseBtn" onClick={onClose}>
               <X size={18} />
@@ -514,7 +470,6 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
 
           <form onSubmit={handleFormSubmit}>
             <div className="LEAAdminModalBody">
-              {/* Row 1: First Name, Middle Name, Last Name */}
               <div className="LEAAdminFormRow3">
                 <div className="LEAAdminFormGroup">
                   <label className="LEAAdminLabel">
@@ -573,7 +528,6 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                 </div>
               </div>
 
-              {/* Row 2: Employee ID, Contact Number */}
               <div className="LEAAdminFormRow">
                 <div className="LEAAdminFormGroup">
                   <label className="LEAAdminLabel">Employee ID</label>
@@ -582,7 +536,7 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                     <input
                       type="text"
                       className="LEAAdminInput"
-                      placeholder="e.g. 2026-001 (Optional)"
+                      placeholder="e.g. CIDG-2026-091 (Optional)"
                       value={formData.employeeId}
                       onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
                     />
@@ -615,7 +569,6 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                 </div>
               </div>
 
-              {/* Row 3: Email Address */}
               <div className="LEAAdminFormGroup">
                 <label className="LEAAdminLabel">
                   Email Address <span className="LEAAdminRequired">*</span>
@@ -625,7 +578,7 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                   <input
                     type="email"
                     className={`LEAAdminInput ${errors.email ? 'input-error' : ''}`}
-                    placeholder="e.g. cardo.dalisay@cidg.gov.ph"
+                    placeholder="e.g. cardo.dalisay@cidg.pnp.gov.ph"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
@@ -637,48 +590,23 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                 )}
               </div>
 
-              {/* Row 4: Agency, Region */}
               <div className="LEAAdminFormRow">
                 <div className="LEAAdminFormGroup">
-                  <label className="LEAAdminLabel">Agency (Read-only)</label>
+                  <label className="LEAAdminLabel">Agency</label>
                   <div className="LEAAdminInputWrapper">
                     <Building2 className="LEAAdminInputIcon" size={17} />
-                    <input
-                      type="text"
-                      className="LEAAdminInput readonly-input"
-                      value={formData.agency}
-                      readOnly
-                      disabled
-                    />
+                    <input type="text" className="LEAAdminInput readonly-input" value={agencyDisplay} readOnly disabled />
                   </div>
                 </div>
-
                 <div className="LEAAdminFormGroup">
-                  <label className="LEAAdminLabel">
-                    Region <span className="LEAAdminRequired">*</span>
-                  </label>
+                  <label className="LEAAdminLabel">Region</label>
                   <div className="LEAAdminInputWrapper">
                     <MapPin className="LEAAdminInputIcon" size={17} />
-                    <select
-                      className={`LEAAdminSelect ${errors.region ? 'input-error' : ''}`}
-                      value={formData.region}
-                      onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                    >
-                      <option value="">Select Region</option>
-                      {PHILIPPINE_REGIONS.map((reg) => (
-                        <option key={reg} value={reg}>{reg}</option>
-                      ))}
-                    </select>
+                    <input type="text" className="LEAAdminInput readonly-input" value={regionDisplay} readOnly disabled />
                   </div>
-                  {errors.region && (
-                    <span className="LEAAdminFieldError">
-                      <AlertCircle size={12} /> {errors.region}
-                    </span>
-                  )}
                 </div>
               </div>
 
-              {/* Row 5: Department, Position */}
               <div className="LEAAdminFormRow">
                 <div className="LEAAdminFormGroup">
                   <label className="LEAAdminLabel">Department</label>
@@ -693,7 +621,6 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                     />
                   </div>
                 </div>
-
                 <div className="LEAAdminFormGroup">
                   <label className="LEAAdminLabel">Position</label>
                   <div className="LEAAdminInputWrapper">
@@ -708,6 +635,12 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                   </div>
                 </div>
               </div>
+
+              {submitError && (
+                <span className="LEAAdminFieldError">
+                  <AlertCircle size={12} /> {submitError}
+                </span>
+              )}
             </div>
 
             <div className="LEAAdminModalFooter">
@@ -721,19 +654,18 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
           </form>
         </div>
       ) : (
-        /* STEP 2: Summary Confirmation */
         <div className="LEAAdminModal" style={{ maxWidth: '480px' }}>
           <div className="LEAAdminModalHeader">
             <h3 className="LEAAdminModalTitle">Confirm Personnel Registration</h3>
             <p className="LEAAdminModalSubtitle">
-              Review details before creating and activating this personnel account.
+              Verify the details below before sending the invitation.
             </p>
           </div>
 
           <div className="LEAAdminModalBody">
             <div className="LEAAdminSummaryNotice">
-              <CircleCheckBig size={18} />
-              <span>This account will be created directly with <strong>Active</strong> status.</span>
+              <Mail size={18} />
+              <span>An invitation link will be emailed to this address. The account stays <strong>Invited</strong> until it's accepted.</span>
             </div>
 
             <div className="LEAAdminSummaryBox">
@@ -742,18 +674,6 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                 <span className="LEAAdminSummaryValue">
                   {[formData.firstName, formData.middleName, formData.lastName].filter(Boolean).join(' ') || '-'}
                 </span>
-              </div>
-              <div className="LEAAdminSummaryRow">
-                <span className="LEAAdminSummaryLabel">First Name:</span>
-                <span className="LEAAdminSummaryValue">{formData.firstName || '-'}</span>
-              </div>
-              <div className="LEAAdminSummaryRow">
-                <span className="LEAAdminSummaryLabel">Middle Name:</span>
-                <span className="LEAAdminSummaryValue">{formData.middleName || '-'}</span>
-              </div>
-              <div className="LEAAdminSummaryRow">
-                <span className="LEAAdminSummaryLabel">Last Name:</span>
-                <span className="LEAAdminSummaryValue">{formData.lastName || '-'}</span>
               </div>
               <div className="LEAAdminSummaryRow">
                 <span className="LEAAdminSummaryLabel">Employee ID:</span>
@@ -770,12 +690,12 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
               <div className="LEAAdminSummaryRow">
                 <span className="LEAAdminSummaryLabel">Agency:</span>
                 <span className="LEAAdminSummaryValue">
-                  <span className="LEAAdminAgencyTag">LEA Personnel</span>
+                  <span className="LEAAdminAgencyTag">{agencyDisplay}</span>
                 </span>
               </div>
               <div className="LEAAdminSummaryRow">
                 <span className="LEAAdminSummaryLabel">Region:</span>
-                <span className="LEAAdminSummaryValue">{formData.region || '-'}</span>
+                <span className="LEAAdminSummaryValue">{regionDisplay}</span>
               </div>
               <div className="LEAAdminSummaryRow">
                 <span className="LEAAdminSummaryLabel">Department:</span>
@@ -786,14 +706,20 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                 <span className="LEAAdminSummaryValue">{formData.position || '-'}</span>
               </div>
             </div>
+
+            {submitError && (
+              <span className="LEAAdminFieldError">
+                <AlertCircle size={12} /> {submitError}
+              </span>
+            )}
           </div>
 
           <div className="LEAAdminModalFooter">
-            <button type="button" className="LEAAdminCancelBtn" onClick={() => setStep(1)}>
+            <button type="button" className="LEAAdminCancelBtn" onClick={() => setStep(1)} disabled={sending}>
               Go Back
             </button>
-            <button type="button" className="LEAAdminConfirmBtn primary" onClick={handleFinalConfirm}>
-              Confirm / Add Personnel Account
+            <button type="button" className="LEAAdminConfirmBtn primary" onClick={handleFinalConfirm} disabled={sending}>
+              {sending ? 'Sending Invitation…' : 'Confirm / Send Invitation'}
             </button>
           </div>
         </div>
@@ -802,20 +728,15 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
   );
 }
 
-// Edit Profile Modal
-function EditProfileModal({ open, user, onClose, onSave }) {
+
+function EditProfileModal({ open, user, onClose, onSaved }) {
   const [form, setForm] = useState({
-    firstName: '',
-    middleName: '',
-    lastName: '',
-    employeeId: '',
-    contactNumber: '',
-    email: '',
-    agency: 'LEA Personnel',
-    region: '',
-    department: '',
-    position: '',
+    firstName: '', middleName: '', lastName: '',
+    employeeId: '', contactNumber: '', department: '', position: '',
   });
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -825,35 +746,70 @@ function EditProfileModal({ open, user, onClose, onSave }) {
         lastName: user.last_name || '',
         employeeId: user.employee_id || '',
         contactNumber: user.contact_number || '',
-        email: user.email || '',
-        agency: 'LEA Personnel',
-        region: user.region || 'National Capital Region (NCR)',
         department: user.department || '',
         position: user.position || '',
       });
+      setErrors({});
+      setSubmitError('');
     }
   }, [user]);
 
   if (!open || !user) return null;
 
-  function handleSave(e) {
+  function validate() {
+    const errs = {};
+    if (!form.firstName.trim()) errs.firstName = 'First Name is required.';
+    if (!form.lastName.trim()) errs.lastName = 'Last Name is required.';
+    if (!form.contactNumber.trim()) {
+      errs.contactNumber = 'Contact Number is required.';
+    } else {
+      const digits = form.contactNumber.replace(/\D/g, '');
+      if (digits.length !== 11 || !digits.startsWith('09')) {
+        errs.contactNumber = 'Enter a valid 11-digit Philippine mobile number starting with 09.';
+      }
+    }
+    return errs;
+  }
+
+  async function handleSave(e) {
     e.preventDefault();
-    const updated = {
-      ...user,
-      first_name: form.firstName.trim(),
-      middle_name: form.middleName.trim(),
-      last_name: form.lastName.trim(),
-      fullname: [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' '),
-      employee_id: form.employeeId.trim(),
-      contact_number: form.contactNumber.trim(),
-      email: form.email.trim(),
-      agency: 'LEA Personnel',
-      region: form.region,
-      department: form.department.trim(),
-      position: form.position.trim(),
-    };
-    onSave(updated);
-    onClose();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    setSaving(true);
+    setSubmitError('');
+    try {
+      const body = {
+        first_name: form.firstName.trim(),
+        middle_name: form.middleName.trim() || null, // middle_name is the ONLY field allowed to be blanked
+        last_name: form.lastName.trim(),
+        contact_number: form.contactNumber.trim() || null,
+      };
+
+      // These three are optional-at-creation but NOT blankable on edit —
+      // only include them if they actually have a value, otherwise the
+      // backend rejects the whole request with "X is required and cannot be blank."
+      if (form.employeeId.trim()) body.employee_id = form.employeeId.trim();
+      if (form.department.trim()) body.department = form.department.trim();
+      if (form.position.trim()) body.position = form.position.trim();
+
+      const res = await apiFetch(`/personnel-management/${user.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(errData, 'Failed to update profile.'));
+      }
+      onSaved();
+      onClose();
+    } catch (err) {
+      setSubmitError(err.message || 'Something went wrong.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -866,7 +822,6 @@ function EditProfileModal({ open, user, onClose, onSave }) {
         </div>
         <form onSubmit={handleSave}>
           <div className="LEAAdminModalBody">
-            {/* Row 1: First Name, Middle Name, Last Name */}
             <div className="LEAAdminFormRow3">
               <div className="LEAAdminFormGroup">
                 <label className="LEAAdminLabel">
@@ -876,13 +831,18 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                   <User className="LEAAdminInputIcon" size={17} />
                   <input
                     type="text"
-                    className="LEAAdminInput"
+                    className={`LEAAdminInput ${errors.firstName ? 'input-error' : ''}`}
                     value={form.firstName}
                     onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                    required
                   />
                 </div>
+                {errors.firstName && (
+                  <span className="LEAAdminFieldError">
+                    <AlertCircle size={12} /> {errors.firstName}
+                  </span>
+                )}
               </div>
+
               <div className="LEAAdminFormGroup">
                 <label className="LEAAdminLabel">Middle Name</label>
                 <div className="LEAAdminInputWrapper">
@@ -896,6 +856,7 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                   />
                 </div>
               </div>
+
               <div className="LEAAdminFormGroup">
                 <label className="LEAAdminLabel">
                   Last Name <span className="LEAAdminRequired">*</span>
@@ -904,16 +865,19 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                   <User className="LEAAdminInputIcon" size={17} />
                   <input
                     type="text"
-                    className="LEAAdminInput"
+                    className={`LEAAdminInput ${errors.lastName ? 'input-error' : ''}`}
                     value={form.lastName}
                     onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                    required
                   />
                 </div>
+                {errors.lastName && (
+                  <span className="LEAAdminFieldError">
+                    <AlertCircle size={12} /> {errors.lastName}
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Row 2: Employee ID, Contact Number */}
             <div className="LEAAdminFormRow">
               <div className="LEAAdminFormGroup">
                 <label className="LEAAdminLabel">Employee ID</label>
@@ -928,6 +892,7 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                   />
                 </div>
               </div>
+
               <div className="LEAAdminFormGroup">
                 <label className="LEAAdminLabel">
                   Contact Number <span className="LEAAdminRequired">*</span>
@@ -937,68 +902,44 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                   <input
                     type="tel"
                     maxLength={11}
-                    className="LEAAdminInput"
+                    className={`LEAAdminInput ${errors.contactNumber ? 'input-error' : ''}`}
                     value={form.contactNumber}
-                    onChange={(e) => setForm({ ...form, contactNumber: e.target.value })}
-                    required
+                    onChange={(e) => setForm({ ...form, contactNumber: e.target.value.replace(/\D/g, '').slice(0, 11) })}
                   />
                 </div>
+                {errors.contactNumber && (
+                  <span className="LEAAdminFieldError">
+                    <AlertCircle size={12} /> {errors.contactNumber}
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Row 3: Email Address */}
             <div className="LEAAdminFormGroup">
-              <label className="LEAAdminLabel">
-                Email Address <span className="LEAAdminRequired">*</span>
-              </label>
+              <label className="LEAAdminLabel">Email (read-only)</label>
               <div className="LEAAdminInputWrapper">
                 <Mail className="LEAAdminInputIcon" size={17} />
-                <input
-                  type="email"
-                  className="LEAAdminInput"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  required
-                />
+                <input type="email" className="LEAAdminInput readonly-input" value={user.email} readOnly disabled />
               </div>
             </div>
 
-            {/* Row 4: Agency, Region */}
             <div className="LEAAdminFormRow">
               <div className="LEAAdminFormGroup">
-                <label className="LEAAdminLabel">Agency (Read-only)</label>
+                <label className="LEAAdminLabel">Agency (read-only)</label>
                 <div className="LEAAdminInputWrapper">
                   <Building2 className="LEAAdminInputIcon" size={17} />
-                  <input
-                    type="text"
-                    className="LEAAdminInput readonly-input"
-                    value={form.agency}
-                    readOnly
-                    disabled
-                  />
+                  <input type="text" className="LEAAdminInput readonly-input" value={user.agency || 'LEA Personnel'} readOnly disabled />
                 </div>
               </div>
               <div className="LEAAdminFormGroup">
-                <label className="LEAAdminLabel">
-                  Region <span className="LEAAdminRequired">*</span>
-                </label>
+                <label className="LEAAdminLabel">Region (read-only)</label>
                 <div className="LEAAdminInputWrapper">
                   <MapPin className="LEAAdminInputIcon" size={17} />
-                  <select
-                    className="LEAAdminSelect"
-                    style={{ width: '100%' }}
-                    value={form.region}
-                    onChange={(e) => setForm({ ...form, region: e.target.value })}
-                  >
-                    {PHILIPPINE_REGIONS.map((reg) => (
-                      <option key={reg} value={reg}>{reg}</option>
-                    ))}
-                  </select>
+                  <input type="text" className="LEAAdminInput readonly-input" value={user.region || '-'} readOnly disabled />
                 </div>
               </div>
             </div>
 
-            {/* Row 5: Department, Position */}
             <div className="LEAAdminFormRow">
               <div className="LEAAdminFormGroup">
                 <label className="LEAAdminLabel">Department</label>
@@ -1007,7 +948,6 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                   <input
                     type="text"
                     className="LEAAdminInput"
-                    placeholder="(Optional)"
                     value={form.department}
                     onChange={(e) => setForm({ ...form, department: e.target.value })}
                   />
@@ -1020,17 +960,24 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                   <input
                     type="text"
                     className="LEAAdminInput"
-                    placeholder="(Optional)"
                     value={form.position}
                     onChange={(e) => setForm({ ...form, position: e.target.value })}
                   />
                 </div>
               </div>
             </div>
+
+            {submitError && (
+              <span className="LEAAdminFieldError">
+                <AlertCircle size={12} /> {submitError}
+              </span>
+            )}
           </div>
           <div className="LEAAdminModalFooter">
-            <button type="button" className="LEAAdminCancelBtn" onClick={onClose}>Cancel</button>
-            <button type="submit" className="LEAAdminConfirmBtn primary">Save Changes</button>
+            <button type="button" className="LEAAdminCancelBtn" onClick={onClose} disabled={saving}>Cancel</button>
+            <button type="submit" className="LEAAdminConfirmBtn primary" disabled={saving}>
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
           </div>
         </form>
       </div>
@@ -1038,15 +985,8 @@ function EditProfileModal({ open, user, onClose, onSave }) {
   );
 }
 
-// View Details Modal
 function ViewPersonnelModal({ open, user, onClose }) {
   if (!open || !user) return null;
-
-  const resolvedFullName =
-    user.fullname ||
-    [user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ') ||
-    '-';
-
   return (
     <div className="LEAAdminModalOverlay">
       <div className="LEAAdminModal LEAAdminViewModal">
@@ -1073,7 +1013,7 @@ function ViewPersonnelModal({ open, user, onClose }) {
 
               <div className="LEAAdminVDField full-span">
                 <span className="LEAAdminVDLabel">Full Name</span>
-                <span className="LEAAdminVDValue">{resolvedFullName}</span>
+                <span className="LEAAdminVDValue">{user.fullname || '-'}</span>
               </div>
 
               <div className="LEAAdminVDField">
@@ -1129,9 +1069,16 @@ function ViewPersonnelModal({ open, user, onClose }) {
   );
 }
 
-
 export default function LEAAdminUserManagement() {
-  const [users, setUsers] = useState(INITIAL_LEA_PERSONNEL);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+
+  // Real region/agency of the LOGGED-IN admin, fetched once from GET /profile.
+  // Passed into AddPersonnelFlow so the "Add Personnel Account" form shows
+  // real data instead of the old hardcoded "Same as your region" text.
+  const [myProfile, setMyProfile] = useState(null);
+
   const [statusFilter, setStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewUser, setViewUser] = useState(null);
@@ -1153,54 +1100,109 @@ export default function LEAAdminUserManagement() {
     setTimeout(() => setToastMessage(''), 4000);
   }
 
-  function handleAddPersonnelSuccess(newAccount) {
-    setUsers((prev) => [newAccount, ...prev]);
-    showToast(`Account for ${newAccount.fullname} has been successfully created and activated.`);
+  // `silent`: when true, skips toggling the table-wide `loading` state.
+  // Used for refetches triggered by an action (activate/suspend/reset
+  // password/etc.) so the whole table doesn't flash back to "Loading
+  // personnel records…" — only the initial mount-time fetch shows that.
+  const fetchPersonnel = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    setFetchError('');
+    try {
+      const res = await apiFetch('/personnel-management');
+      if (!res.ok) throw new Error('Failed to load personnel records.');
+      const data = await res.json();
+      setUsers(
+        data.map((u) => ({
+          id: u.user_id,
+          first_name: u.first_name,
+          middle_name: u.middle_name,
+          last_name: u.last_name,
+          fullname: [u.first_name, u.middle_name, u.last_name].filter(Boolean).join(' '),
+          email: u.email,
+          agency: u.agency,
+          region: u.region,
+          department: u.department,
+          position: u.position,
+          employee_id: u.employee_id,
+          contact_number: u.contact_number,
+          status: u.status,
+          is_locked: u.is_locked,
+        }))
+      );
+    } catch (err) {
+      setFetchError(err.message || 'Something went wrong.');
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, []);
+
+  const fetchMyProfile = useCallback(async () => {
+    try {
+      const res = await apiFetch('/profile');
+      if (!res.ok) return;
+      const data = await res.json();
+      setMyProfile(data); // { region, agency, first_name, ... }
+    } catch (err) {
+      console.error('Failed to fetch current admin profile:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPersonnel();
+    fetchMyProfile();
+  }, [fetchPersonnel, fetchMyProfile]);
+
+  function handleAddPersonnelSuccess(email) {
+    showToast(`Invitation sent to ${email}.`);
+    fetchPersonnel(true); // silent — table already has data, just refresh it quietly
   }
 
   function openConfirm(actionType, userId) {
     setConfirmModal({ open: true, actionType, targetId: userId });
   }
 
-  function handleConfirmAction() {
+  async function handleConfirmAction() {
     const { actionType, targetId } = confirmModal;
-    setUsers((prev) =>
-      prev.flatMap((u) => {
-        if (u.id !== targetId) return [u];
-        if (actionType === 'suspend') {
-          showToast(`Account ${u.fullname} suspended.`);
-          return [{ ...u, status: 'Suspended' }];
-        }
-        if (actionType === 'reactivate') {
-          showToast(`Account ${u.fullname} reactivated.`);
-          return [{ ...u, status: 'Active' }];
-        }
-        if (actionType === 'unlock') {
-          showToast(`Account ${u.fullname} unlocked.`);
-          return [{ ...u, status: 'Active' }];
-        }
-        if (actionType === 'resetPassword') {
-          showToast(`Password reset notification dispatched for ${u.email}.`);
-          return [u];
-        }
-        if (actionType === 'delete') {
-          showToast(`Account record for ${u.fullname} removed.`);
-          return [];
-        }
-        return [u];
-      })
-    );
+    const actionPathMap = {
+      suspend: 'suspend',
+      reactivate: 'reactivate',
+      unlock: 'unlock',
+      resend: 'resend-link',
+      resetPassword: 'reset-password',
+    };
+
     setConfirmModal({ open: false, actionType: '', targetId: null });
+
+    try {
+      if (actionType === 'delete') {
+        const res = await apiFetch(`/personnel-management/${targetId}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(extractErrorMessage(errData, 'Delete failed.'));
+        }
+        showToast('Personnel entry deleted.');
+      } else {
+        const path = actionPathMap[actionType];
+        if (!path) return;
+        const res = await apiFetch(`/personnel-management/${targetId}/${path}`, { method: 'POST' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(extractErrorMessage(errData, 'Action failed.'));
+        }
+        showToast(
+          actionType === 'resetPassword'
+            ? 'Temporary password emailed to the user.'
+            : 'Account updated.'
+        );
+      }
+      await fetchPersonnel(true); // silent — no full-table "Loading…" flash after an action
+    } catch (err) {
+      showToast(err.message || 'Something went wrong.');
+    }
   }
 
-  function handleSaveEdit(updatedUser) {
-    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
-    showToast(`Profile information for ${updatedUser.fullname} updated.`);
-  }
-
-  // Frontend search and filter
   const filteredUsers = users.filter((u) => {
-    const matchesStatus = statusFilter === 'All' ? true : u.status === statusFilter;
+    const matchesStatus = statusFilter === 'All' || u.status === statusFilter;
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
@@ -1226,7 +1228,6 @@ export default function LEAAdminUserManagement() {
         <TopBar topbarType="LEA_ADMIN" />
         <div className="LEAAdminMainfeed">
           <div className="LEAAdminPageContainer">
-            {/* Header */}
             <div className="LEAAdminPageHeader">
               <div className="LEAAdminPageTitleBlock">
                 <h1 className="LEAAdminPageTitle">
@@ -1246,24 +1247,17 @@ export default function LEAAdminUserManagement() {
               </button>
             </div>
 
-            {/* Stats Row - Active, Suspended, Locked */}
+            {fetchError && (
+              <div className="LEAAdminFieldError" style={{ marginBottom: '12px' }}>
+                <AlertCircle size={12} /> {fetchError}
+              </div>
+            )}
+
             <div className="LEAAdminStatsRow">
               {[
-                {
-                  label: 'Active',
-                  value: users.filter((u) => u.status === 'Active').length,
-                  className: 'stat-active',
-                },
-                {
-                  label: 'Suspended',
-                  value: users.filter((u) => u.status === 'Suspended').length,
-                  className: 'stat-suspended',
-                },
-                {
-                  label: 'Locked',
-                  value: users.filter((u) => u.status === 'Locked').length,
-                  className: 'stat-locked',
-                },
+                { label: 'Active', value: users.filter((u) => u.status === 'Active').length, className: 'stat-active' },
+                { label: 'Suspended', value: users.filter((u) => u.status === 'Suspended').length, className: 'stat-suspended' },
+                { label: 'Locked', value: users.filter((u) => u.status === 'Locked').length, className: 'stat-locked' },
               ].map((s) => (
                 <div key={s.label} className={`LEAAdminStatCard ${s.className}`}>
                   <span className="LEAAdminStatValue">{s.value}</span>
@@ -1272,7 +1266,6 @@ export default function LEAAdminUserManagement() {
               ))}
             </div>
 
-            {/* Filter & Search Bar */}
             <div className="LEAAdminFiltersContainer">
               <div className="LEAAdminSearchGroup">
                 <Search size={16} className="LEAAdminSearchIcon" />
@@ -1303,6 +1296,9 @@ export default function LEAAdminUserManagement() {
                     <option value="Active">Active</option>
                     <option value="Suspended">Suspended</option>
                     <option value="Locked">Locked</option>
+                    <option value="Invited">Invited</option>
+                    <option value="Resend Requested">Resend Requested</option>
+                    <option value="Link Expired">Link Expired</option>
                   </select>
                 </div>
 
@@ -1322,7 +1318,6 @@ export default function LEAAdminUserManagement() {
               </div>
             </div>
 
-            {/* Table */}
             <div className="LEAAdminTableWrapper">
               <table className="LEAAdminTable">
                 <thead>
@@ -1338,7 +1333,13 @@ export default function LEAAdminUserManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayedUsers.length > 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="LEAAdminEmpty">
+                        Loading personnel records…
+                      </td>
+                    </tr>
+                  ) : displayedUsers.length > 0 ? (
                     displayedUsers.map((user, idx) => (
                       <tr key={user.id}>
                         <td className="LEAAdminTdCenter">{startIndex + idx + 1}</td>
@@ -1373,7 +1374,7 @@ export default function LEAAdminUserManagement() {
                 </tbody>
               </table>
 
-              {totalItems > 0 && (
+              {!loading && totalItems > 0 && (
                 <div className="LEAAdminPaginationWrapper">
                   <span className="LEAAdminPaginationInfo">
                     Showing {startIndex + 1}–{endIndex} of {totalItems} personnel entries
@@ -1410,14 +1411,13 @@ export default function LEAAdminUserManagement() {
         </div>
       </div>
 
-      {/* Add Personnel 2-Step Flow */}
       <AddPersonnelFlow
         open={addFlowOpen}
         onClose={() => setAddFlowOpen(false)}
         onCreated={handleAddPersonnelSuccess}
+        myProfile={myProfile}
       />
 
-      {/* Confirmation Modal */}
       <ConfirmModal
         open={confirmModal.open}
         actionType={confirmModal.actionType}
@@ -1425,22 +1425,19 @@ export default function LEAAdminUserManagement() {
         onCancel={() => setConfirmModal({ open: false, actionType: '', targetId: null })}
       />
 
-      {/* View Personnel Modal */}
       <ViewPersonnelModal
         open={!!viewUser}
         user={viewUser}
         onClose={() => setViewUser(null)}
       />
 
-      {/* Edit Profile Modal */}
       <EditProfileModal
         open={!!editUser}
         user={editUser}
         onClose={() => setEditUser(null)}
-        onSave={handleSaveEdit}
+        onSaved={() => { showToast('Profile updated.'); fetchPersonnel(true); }}
       />
 
-      {/* Success Toast */}
       {toastMessage && (
         <div className="LEAAdminToast">
           <CheckCircle2 size={18} />

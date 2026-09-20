@@ -51,6 +51,18 @@ function normalizeWorkspace(str) {
   return 'FDA';
 }
 
+function extractErrorMessage(errorData, fallback) {
+    const detail = errorData?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+        return detail.map(d => d?.msg || JSON.stringify(d)).join(' ');
+    }
+    if (detail && typeof detail === 'object') {
+        return detail.msg || detail.message || JSON.stringify(detail);
+    }
+    return fallback;
+}
+
 /**
  * Standard missing-value display helper:
  * Displays '-' for null, undefined, or empty/whitespace-only values.
@@ -165,20 +177,19 @@ const DEFAULT_MOCK_PROFILES = {
   },
 };
 
-// Maps backend ProfileResponse (snake_case) -> frontend form shape (camelCase)
-function mapProfileToForm(data, workspace) {
-  const fallback = DEFAULT_MOCK_PROFILES[workspace] || DEFAULT_MOCK_PROFILES.NATIONAL_ADMIN;
+
+function mapProfileToForm(data) {
   return {
-    firstName: data.first_name ?? fallback.firstName ?? '',
-    middleName: data.middle_name ?? fallback.middleName ?? '',
-    lastName: data.last_name ?? fallback.lastName ?? '',
-    employeeId: data.employee_id ?? fallback.employeeId ?? '',
-    email: data.email ?? fallback.email ?? '',
-    agency: data.agency ?? fallback.agency ?? '',
-    region: data.region ?? fallback.region ?? '',
-    contactNumber: data.contact_number ?? fallback.contactNumber ?? '',
-    department: data.department ?? fallback.department ?? '',
-    position: data.position ?? fallback.position ?? '',
+    firstName: data.first_name ?? '',
+    middleName: data.middle_name ?? '',
+    lastName: data.last_name ?? '',
+    employeeId: data.employee_id ?? '',
+    email: data.email ?? '',
+    agency: data.agency ?? '',
+    region: data.region ?? '',
+    contactNumber: data.contact_number ?? '',
+    department: data.department ?? '',
+    position: data.position ?? '',
   };
 }
 
@@ -204,6 +215,7 @@ function ProfileSetting() {
   const isNationalAdmin = currentWorkspace === 'NATIONAL_ADMIN';
 
   const defaultMock = DEFAULT_MOCK_PROFILES[currentWorkspace] || DEFAULT_MOCK_PROFILES.NATIONAL_ADMIN;
+  const [savedProfile, setSavedProfile] = useState(defaultMock);
   const [form, setForm] = useState(defaultMock);
   const [loading, setLoading] = useState(false);
 
@@ -220,6 +232,7 @@ function ProfileSetting() {
 
   const [errors, setErrors] = useState({});
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [justSavedProfile, setJustSavedProfile] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [profileStatus, setProfileStatus] = useState(null);
   const [passwordStatus, setPasswordStatus] = useState(null);
@@ -229,6 +242,7 @@ function ProfileSetting() {
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [requestSentSuccess, setRequestSentSuccess] = useState(false);
   const [requestTimestamp, setRequestTimestamp] = useState(null);
+  
 
   // Workspace configuration: maps layout classes, sidebar/topbar types, and theme palette
   const layoutConfig = {
@@ -317,17 +331,23 @@ function ProfileSetting() {
   async function fetchProfile() {
     try {
       setLoading(true);
-      const response = await apiFetch('/profile');
+      const response = await apiFetch('/profile', { cache: 'no-store' });
       if (response && response.ok) {
         const data = await response.json();
-        setForm(mapProfileToForm(data, currentWorkspace));
+        const mapped = mapProfileToForm(data);
+        setSavedProfile(mapped);
+        setForm(mapped);
       } else {
         // Graceful fallback to default role mockup if offline/unauthenticated
-        setForm(DEFAULT_MOCK_PROFILES[currentWorkspace] || DEFAULT_MOCK_PROFILES.NATIONAL_ADMIN);
+        const fallback = DEFAULT_MOCK_PROFILES[currentWorkspace] || DEFAULT_MOCK_PROFILES.NATIONAL_ADMIN;
+        setSavedProfile(fallback);
+        setForm(fallback);
       }
     } catch (err) {
       // Offline fallback
-      setForm(DEFAULT_MOCK_PROFILES[currentWorkspace] || DEFAULT_MOCK_PROFILES.NATIONAL_ADMIN);
+      const fallback = DEFAULT_MOCK_PROFILES[currentWorkspace] || DEFAULT_MOCK_PROFILES.NATIONAL_ADMIN;
+      setSavedProfile(fallback);
+      setForm(fallback);
     } finally {
       setLoading(false);
     }
@@ -335,6 +355,7 @@ function ProfileSetting() {
 
   const handleProfileChange = (e) => {
     if (isPersonnel) return; // Personnel cannot edit profile
+    setJustSavedProfile(false);
     const { name, value } = e.target;
     // Agency is strictly read-only for FDA Admin & LEA Admin
     if (name === 'agency' && (currentWorkspace === 'FDA_ADMIN' || currentWorkspace === 'LEA_ADMIN')) return;
@@ -347,6 +368,7 @@ function ProfileSetting() {
   // Digits-only, max 11 chars for contact number
   const handleContactNumberChange = (e) => {
     if (isPersonnel) return;
+    setJustSavedProfile(false);
     const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 11);
     setForm((prev) => ({ ...prev, contactNumber: digitsOnly }));
     if (errors.contactNumber) {
@@ -374,10 +396,13 @@ function ProfileSetting() {
     }
 
     if (isNationalAdmin) {
-      return newErrors;
+      return newErrors; // National Admin only has first/middle/last name to begin with
     }
 
-    // Interagency, FDA, and LEA Admins require Contact Number; Employee ID, Department, Position are optional
+    if (!form.employeeId || !form.employeeId.trim()) {
+      newErrors.employeeId = 'Employee ID is required.';
+    }
+
     if (!form.contactNumber || !form.contactNumber.trim()) {
       newErrors.contactNumber = 'Contact Number is required.';
     } else {
@@ -385,6 +410,14 @@ function ProfileSetting() {
       if (digits.length !== 11 || !digits.startsWith('09')) {
         newErrors.contactNumber = 'Contact number must be exactly 11 digits starting with 09.';
       }
+    }
+
+    if (!form.department || !form.department.trim()) {
+      newErrors.department = 'Department is required.';
+    }
+
+    if (!form.position || !form.position.trim()) {
+      newErrors.position = 'Position is required.';
     }
 
     return newErrors;
@@ -459,18 +492,41 @@ function ProfileSetting() {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.detail || 'Failed to save profile changes.');
+        setProfileStatus({
+          type: 'error',
+          message: extractErrorMessage(errData, 'Failed to save profile changes.'),
+        });
+        return;
       }
+
+      const updatedData = await response.json().catch(() => null);
+      const updatedProfile = updatedData
+        ? mapProfileToForm(updatedData)
+        : {
+            ...savedProfile,
+            ...form,
+            firstName: form.firstName.trim(),
+            middleName: form.middleName ? form.middleName.trim() : '',
+            lastName: form.lastName.trim(),
+          };
+
+      setSavedProfile(updatedProfile);
+      setForm(updatedProfile);
 
       setProfileStatus({
         type: 'success',
         message: 'Your profile details have been successfully updated.',
       });
+      setJustSavedProfile(true);
+      const newFullName = [updatedProfile.firstName, updatedProfile.lastName].filter(Boolean).join(' ');
+      if (newFullName) {
+        localStorage.setItem('user_name', newFullName);
+        window.dispatchEvent(new CustomEvent('profile-updated', { detail: { userName: newFullName } }));
+      }
     } catch (err) {
-      // In frontend mockup mode, simulate successful update if offline
       setProfileStatus({
-        type: 'success',
-        message: 'Your profile details have been successfully updated.',
+        type: 'error',
+        message: 'Could not reach the server. Please check your connection and try again.',
       });
     } finally {
       setIsSavingProfile(false);
@@ -506,21 +562,33 @@ function ProfileSetting() {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.detail || 'Failed to update password.');
+        setPasswordStatus({
+          type: 'error',
+          message: extractErrorMessage(errData, 'Failed to update password.'),
+        });
+        return;
       }
 
       setPasswordStatus({
         type: 'success',
-        message: 'Password updated successfully.',
+        message: 'Password updated successfully. Redirecting to login...',
       });
       setSecurity({ currentPassword: '', newPassword: '', confirmPassword: '' });
+
+      setTimeout(() => {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('agency');
+        const loginTab = currentWorkspace === 'NATIONAL_ADMIN'
+        ? 'national-admin'
+        : 'interagency-admin'; // INTERAGENCY_ADMIN, FDA_ADMIN, LEA_ADMIN all use this tab
+        window.location.href = `/universal-login?tab=${loginTab}`;
+      }, 1200);
     } catch (err) {
-      // In frontend mockup mode, simulate successful password change
       setPasswordStatus({
-        type: 'success',
-        message: 'Password updated successfully (Mock Prototype).',
+        type: 'error',
+        message: err.message || 'Could not reach the server. Please check your connection and try again.',
       });
-      setSecurity({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } finally {
       setIsSavingPassword(false);
     }
@@ -533,7 +601,8 @@ function ProfileSetting() {
       return next;
     });
     setProfileStatus(null);
-    fetchProfile();
+    setJustSavedProfile(false);
+    setForm(savedProfile);
   };
 
   const handlePasswordCancel = () => {
@@ -579,30 +648,29 @@ function ProfileSetting() {
                 <div className="ProfileHeaderInfo">
                   <div className="ProfileHeaderTopLine">
                     <h1 className="ProfileHeaderTitle">
-                      {[form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || '-'}
+                      {[savedProfile.firstName, savedProfile.middleName, savedProfile.lastName].filter(Boolean).join(' ') || '-'}
                     </h1>
                     <span className="ProfileRoleBadge">{layoutConfig.roleBadge}</span>
-                    <span className="ProfileAgencyBadge">{layoutConfig.agencyDisplay}</span>
                   </div>
 
                   <div className="ProfileHeaderMeta">
                     <div className="ProfileMetaItem">
                       <Mail size={14} />
-                      <span>{displayValue(form.email)}</span>
+                      <span>{displayValue(savedProfile.email)}</span>
                     </div>
                     {!isNationalAdmin && (
                       <>
                         <div className="ProfileMetaItem">
                           <Building2 size={14} />
-                          <span>{displayValue(form.department)}</span>
+                          <span>{displayValue(savedProfile.department)}</span>
                         </div>
                         <div className="ProfileMetaItem">
                           <MapPin size={14} />
-                          <span>{displayValue(form.region)}</span>
+                          <span>{displayValue(savedProfile.region)}</span>
                         </div>
                         <div className="ProfileMetaItem">
                           <Fingerprint size={14} />
-                          <span>ID: {displayValue(form.employeeId)}</span>
+                          <span>ID: {displayValue(savedProfile.employeeId)}</span>
                         </div>
                       </>
                     )}
@@ -648,7 +716,7 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Email Address</label>
                             <div className="ProfileDisplayBox">
                               <Mail className="ProfileDisplayIcon" size={16} />
-                              <span className="ProfileDisplayText">{displayValue(form.email)}</span>
+                              <span className="ProfileDisplayText">{displayValue(savedProfile.email)}</span>
                             </div>
                           </div>
                           <div className="ProfileDisplayGroup">
@@ -662,7 +730,7 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Assigned Region</label>
                             <div className="ProfileDisplayBox">
                               <MapPin className="ProfileDisplayIcon" size={16} />
-                              <span className="ProfileDisplayText">{displayValue(form.region)}</span>
+                              <span className="ProfileDisplayText">{displayValue(savedProfile.region)}</span>
                             </div>
                           </div>
                         </div>
@@ -676,15 +744,15 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">First Name</label>
                             <div className="ProfileDisplayBox">
                               <User className="ProfileDisplayIcon" size={16} />
-                              <span className="ProfileDisplayText">{displayValue(form.firstName)}</span>
+                              <span className="ProfileDisplayText">{displayValue(savedProfile.firstName)}</span>
                             </div>
                           </div>
                           <div className="ProfileDisplayGroup">
                             <label className="ProfileDisplayLabel">Middle Name</label>
                             <div className="ProfileDisplayBox">
                               <User className="ProfileDisplayIcon" size={16} />
-                              <span className={form.middleName ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
-                                {displayValue(form.middleName)}
+                              <span className={savedProfile.middleName ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
+                                {displayValue(savedProfile.middleName)}
                               </span>
                             </div>
                           </div>
@@ -692,7 +760,7 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Last Name</label>
                             <div className="ProfileDisplayBox">
                               <User className="ProfileDisplayIcon" size={16} />
-                              <span className="ProfileDisplayText">{displayValue(form.lastName)}</span>
+                              <span className="ProfileDisplayText">{displayValue(savedProfile.lastName)}</span>
                             </div>
                           </div>
                         </div>
@@ -703,8 +771,8 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Employee ID</label>
                             <div className="ProfileDisplayBox">
                               <Fingerprint className="ProfileDisplayIcon" size={16} />
-                              <span className={form.employeeId ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
-                                {displayValue(form.employeeId)}
+                              <span className={savedProfile.employeeId ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
+                                {displayValue(savedProfile.employeeId)}
                               </span>
                             </div>
                           </div>
@@ -712,7 +780,7 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Contact Number</label>
                             <div className="ProfileDisplayBox">
                               <Phone className="ProfileDisplayIcon" size={16} />
-                              <span className="ProfileDisplayText">{displayValue(form.contactNumber)}</span>
+                              <span className="ProfileDisplayText">{displayValue(savedProfile.contactNumber)}</span>
                             </div>
                           </div>
                         </div>
@@ -723,8 +791,8 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Department</label>
                             <div className="ProfileDisplayBox">
                               <Building2 className="ProfileDisplayIcon" size={16} />
-                              <span className={form.department ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
-                                {displayValue(form.department)}
+                              <span className={savedProfile.department ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
+                                {displayValue(savedProfile.department)}
                               </span>
                             </div>
                           </div>
@@ -732,8 +800,8 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Position / Title</label>
                             <div className="ProfileDisplayBox">
                               <Briefcase className="ProfileDisplayIcon" size={16} />
-                              <span className={form.position ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
-                                {displayValue(form.position)}
+                              <span className={savedProfile.position ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
+                                {displayValue(savedProfile.position)}
                               </span>
                             </div>
                           </div>
@@ -759,7 +827,7 @@ function ProfileSetting() {
                               <input
                                 className="ProfileInput ProfileInputReadonly"
                                 type="email"
-                                value={displayValue(form.email)}
+                                value={displayValue(savedProfile.email)}
                                 readOnly
                                 tabIndex={-1}
                               />
@@ -794,7 +862,7 @@ function ProfileSetting() {
                                 <input
                                   className="ProfileInput ProfileInputReadonly"
                                   type="text"
-                                  value={displayValue(form.region)}
+                                  value={displayValue(savedProfile.region)}
                                   readOnly
                                   tabIndex={-1}
                                 />
@@ -871,7 +939,7 @@ function ProfileSetting() {
                             <div className="ProfileFormRow ProfileFormRow2">
                               <div className="ProfileFormGroup">
                                 <label className="ProfileLabel">
-                                  Employee ID
+                                  Employee ID <span className="ProfileRequired">*</span>
                                 </label>
                                 <div className="ProfileInputWrapper">
                                   <Fingerprint className="ProfileInputIcon" size={16} />
@@ -881,7 +949,7 @@ function ProfileSetting() {
                                     name="employeeId"
                                     value={form.employeeId}
                                     onChange={handleProfileChange}
-                                    placeholder="Optional"
+                                    placeholder="e.g. CIDG-ADM-0892"
                                   />
                                 </div>
                               </div>
@@ -913,7 +981,7 @@ function ProfileSetting() {
                             <div className="ProfileFormRow ProfileFormRow2">
                               <div className="ProfileFormGroup">
                                 <label className="ProfileLabel">
-                                  Department
+                                  Department <span className="ProfileRequired">*</span>
                                 </label>
                                 <div className="ProfileInputWrapper">
                                   <Building2 className="ProfileInputIcon" size={16} />
@@ -923,14 +991,14 @@ function ProfileSetting() {
                                     name="department"
                                     value={form.department}
                                     onChange={handleProfileChange}
-                                    placeholder="Optional"
+                                    placeholder="e.g. Regional Administration"
                                   />
                                 </div>
                               </div>
 
                               <div className="ProfileFormGroup">
                                 <label className="ProfileLabel">
-                                  Position / Title
+                                  Position / Title <span className="ProfileRequired">*</span>
                                 </label>
                                 <div className="ProfileInputWrapper">
                                   <Briefcase className="ProfileInputIcon" size={16} />
@@ -940,7 +1008,7 @@ function ProfileSetting() {
                                     name="position"
                                     value={form.position}
                                     onChange={handleProfileChange}
-                                    placeholder="Optional"
+                                    placeholder="e.g. Regional Administrator"
                                   />
                                 </div>
                               </div>
@@ -967,7 +1035,7 @@ function ProfileSetting() {
                           type="button"
                           className="ProfileBtn ProfileBtnSecondary"
                           onClick={handleProfileCancel}
-                          disabled={isSavingProfile}
+                          disabled={isSavingProfile || justSavedProfile}
                         >
                           <X size={16} />
                           Cancel Changes
@@ -977,18 +1045,10 @@ function ProfileSetting() {
                           type="submit"
                           className="ProfileBtn ProfileBtnPrimary"
                           disabled={isSavingProfile}
+                          aria-busy={isSavingProfile}
                         >
-                          {isSavingProfile ? (
-                            <>
-                              <span className="ProfileSpinner"></span>
-                              Saving Profile...
-                            </>
-                          ) : (
-                            <>
-                              <Save size={16} />
-                              Save Changes
-                            </>
-                          )}
+                          <Save size={16} />
+                          Save Changes
                         </button>
                       </div>
                     </form>
@@ -1175,18 +1235,10 @@ function ProfileSetting() {
                           type="submit"
                           className="ProfileBtn ProfileBtnPrimary"
                           disabled={isSavingPassword}
+                          aria-busy={isSavingPassword}
                         >
-                          {isSavingPassword ? (
-                            <>
-                              <span className="ProfileSpinner"></span>
-                              Updating...
-                            </>
-                          ) : (
-                            <>
-                              <Save size={16} />
-                              Update Password
-                            </>
-                          )}
+                          <Save size={16} />
+                          Update Password
                         </button>
                       </div>
                     </form>
@@ -1216,7 +1268,7 @@ function ProfileSetting() {
 
             <div className="ProfileModalBody">
               <p className="ProfileModalText">
-                A formal request will be submitted to the <strong>{layoutConfig.agencyDisplay}</strong> administration team under your account (<strong>{form.email}</strong>). An administrator will issue an official reset link upon verification.
+                A formal request will be submitted to the <strong>{layoutConfig.agencyDisplay}</strong> administration team under your account (<strong>{savedProfile.email}</strong>). An administrator will issue an official reset link upon verification.
               </p>
             </div>
 
@@ -1751,6 +1803,8 @@ const styles = `
     color: #ffffff;
     border: 1.5px solid var(--primary-border);
     box-shadow: 0 4px 12px var(--primary-shadow);
+    /* Prevent the button width from changing with its loading label. */
+    min-width: 158px;
   }
 
   .ProfileBtnPrimary:hover:not(:disabled) {
@@ -1761,9 +1815,11 @@ const styles = `
   }
 
   .ProfileBtnPrimary:disabled {
-    opacity: 0.65;
-    cursor: not-allowed;
-    transform: none;
+    /* Keep the visual state stable when a hovered button starts saving. */
+    opacity: 1;
+    cursor: wait;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px var(--primary-shadow);
   }
 
   .ProfileBtnSecondary {

@@ -1,19 +1,19 @@
-# app/routers/auth/password_change.py
+# backend/app/desktop/routers/auth/password_change.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from fastapi import Request
 from app.core.audit import write_audit_log, get_user_region_code
-from app.core.constants import AuditAction
+from app.core.constants import AuditAction, Role
 
 from app.database.sessions import get_db
 from app.core.dependencies import get_current_user
 from app.core.security import verify_password, hash_password
 from app.models.users import User
 from app.desktop.schemas.auth.password_change import ChangePasswordRequest
-from app.desktop.services.superadmin_notifications import superadmin_notification_service as notification_service
-from app.desktop.schemas.superadmin_notifications.notification_enums import NotificationEventType
+from app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 
 router = APIRouter(prefix="/auth/password", tags=["auth-password"])
 
@@ -41,11 +41,12 @@ def change_password(
         related_user_id=current_user.user_id,
     )
 
-    password_action = (
-        AuditAction.UPDATE_SUPERADMIN_PASSWORD
-        if current_user.role == "superadmin"
-        else AuditAction.UPDATE_USER_PASSWORD
-    )
+    if current_user.role == Role.NATIONAL_ADMIN:
+        password_action = AuditAction.UPDATE_NATIONAL_ADMIN_PASSWORD
+    elif current_user.role in Role.ADMIN_ROLES:
+        password_action = AuditAction.UPDATE_REGIONAL_ADMIN_PASSWORD
+    else:
+        password_action = AuditAction.UPDATE_PERSONNEL_PASSWORD
 
     write_audit_log(
         db,

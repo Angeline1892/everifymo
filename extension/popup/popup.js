@@ -9,51 +9,76 @@ document.addEventListener("DOMContentLoaded", () => {
 
   whenSessionReady(() => {
 
+    const verifyToggle = document.getElementById('verify-toggle');
+
+    // load saved state (default true if never set)
+    chrome.storage.local.get(['verifyButtonEnabled'], (result) => {
+      verifyToggle.checked = result.verifyButtonEnabled !== false;
+    });
+
+    // save on change
+    verifyToggle.addEventListener('change', () => {
+      chrome.storage.local.set({ verifyButtonEnabled: verifyToggle.checked });
+    });
+
+    // popup always open home page first instead result page
+    lastProductTitle = '';
+    lastProductUrl = '';
+    lastVerificationStatus = 'home';
+
+    chrome.storage.local.set({
+      productTitle: '',
+      productUrl: '',
+      productStatus: 'home'
+    });
+
+    showState('home');
+
     //babalikan 3
-    chrome.storage.local.get(
-      ['productTitle', 'productPlatform', 'productUrl', 'productStatus'],
-      (data) => {
+    // chrome.storage.local.get(
+    //   ['productTitle', 'productPlatform', 'productUrl', 'productStatus'],
+    //   (data) => {
 
-        const title = data.productTitle;
-        const url = data.productUrl;
-        const status = data.productStatus || 'idle'; // here are the states: 'registered', 'unregistered', 'suspicious', 'home', 'idle', 'scanning'
+    //     const title = data.productTitle;
+    //     const url = data.productUrl;
+    //     const status = data.productStatus || 'idle'; // here are the states: 'registered', 'unregistered', 'suspicious', 'home', 'idle', 'scanning'
 
-        lastProductTitle = title || '';
-        lastProductUrl = url || '';
-        lastVerificationStatus = status;
+    //     lastProductTitle = title || '';
+    //     lastProductUrl = url || '';
+    //     lastVerificationStatus = status;
 
-        chrome.storage.local.set({
-          productTitle: title,
-          productUrl: url,
-          productStatus: 'home'
-        });
+    //     chrome.storage.local.set({
+    //       productTitle: title,
+    //       productUrl: url,
+    //       productStatus: 'home'
+    //     });
 
-        if (status === 'registered') {
-          const el = document.getElementById('product-name-registered');
-          if (el) el.value = title;
-          showState('registered');
+    //     if (status === 'registered') {
+    //       const el = document.getElementById('product-name-registered');
+    //       if (el) el.value = title;
+    //       showState('registered');
 
-        } else if (status === 'unregistered') {
-          const el = document.getElementById('product-name-unregistered');
-          if (el) el.value = title;
-          showState('unregistered');
+    //     } else if (status === 'unregistered') {
+    //       const el = document.getElementById('product-name-unregistered');
+    //       if (el) el.value = title;
+    //       showState('unregistered');
 
-        } else if (status === 'suspicious') {
-          const el = document.getElementById('product-name-suspicious');
-          if (el) el.value = title;
-          showState('suspicious');
+    //     } else if (status === 'suspicious') {
+    //       const el = document.getElementById('product-name-suspicious');
+    //       if (el) el.value = title;
+    //       showState('suspicious');
 
-        } else if (status === 'home') {
-          showState('home');
+    //     } else if (status === 'home') {
+    //       showState('home');
 
-        } else if (status === 'scanning') {
-          showState('scanning');
+    //     } else if (status === 'scanning') {
+    //       showState('scanning');
 
-        } else {
-          showState('idle');
-        }
-      }
-    );
+    //     } else {
+    //       showState('idle');
+    //     }
+    //   }
+    // );
 
     applyAuthView();
 
@@ -259,6 +284,12 @@ function showState(state) {
   if (target) target.classList.remove('hidden');
 }
 
+function matchTier(pct) {
+  if (pct >= 90) return 'best';
+  if (pct >= 70) return 'high';
+  return 'partial';
+}
+
 function populateMatches(stateId, results) {
   const suffix = stateId === 'unregistered' ? '-red' : '';
   const cards = document.querySelectorAll(`#state-${stateId} .match-card${suffix}`);
@@ -271,13 +302,27 @@ function populateMatches(stateId, results) {
     const titleEl = card.querySelector(`.match-title${suffix}`);
     const percentEl = card.querySelector(`.match-percent${suffix}`);
     const fillEl = card.querySelector(`.progress-fill${suffix}`);
+    const scoreEl = card.querySelector(`.match-score${suffix}`);
 
     if (titleEl) titleEl.textContent = match.title;
     const pct = Math.round((match.score ?? match.cosine_similarity ?? 0) * 100);
+    const tier = matchTier(pct);
+
     if (percentEl) percentEl.textContent = `${pct}%`;
-    if (fillEl) fillEl.style.width = `${pct}%`;
+
+    if (fillEl) {
+      fillEl.style.width = `${pct}%`;
+      fillEl.classList.remove(`fill-best${suffix}`, `fill-high${suffix}`, `fill-partial${suffix}`);
+      fillEl.classList.add(`fill-${tier}${suffix}`);
+    }
+
+    if (scoreEl) {
+      scoreEl.classList.remove(`match-score-best${suffix}`, `match-score-high${suffix}`, `match-score-partial${suffix}`);
+      scoreEl.classList.add(`match-score-${tier}${suffix}`);
+    }
   });
 }
+
 
 function applyAuthView() {
   const loggedIn = typeof isUserLoggedIn === 'function' ? isUserLoggedIn() : false;

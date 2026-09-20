@@ -262,29 +262,31 @@ export default function FDAAdminAuditLogs() {
             </div>
 
             {/* Exactly FDA | System Tabs (NO LEA) */}
-            <div className="FDAAdminAuditTabsWrapper">
-              <button
-                className={`FDAAdminAuditTabBtn ${activeTab === 'FDA' ? 'active' : ''}`}
-                onClick={() => {
-                  setActiveTab('FDA');
-                  setCurrentPage(1);
-                  setActionFilter('All');
-                }}
-              >
-                FDA Activity
-                <span className="FDAAdminAuditTabBadge">{MOCK_FDA_AUDIT_LOGS.length}</span>
-              </button>
-              <button
-                className={`FDAAdminAuditTabBtn ${activeTab === 'System' ? 'active' : ''}`}
-                onClick={() => {
-                  setActiveTab('System');
-                  setCurrentPage(1);
-                  setActionFilter('All');
-                }}
-              >
-                System Events
-                <span className="FDAAdminAuditTabBadge">{MOCK_SYSTEM_AUDIT_LOGS.length}</span>
-              </button>
+            <div className="FDAAdminAuditTabsRow">
+              <div className="FDAAdminAuditTabsWrapper">
+                <button
+                  className={`FDAAdminAuditTabBtn ${activeTab === 'FDA' ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveTab('FDA');
+                    setCurrentPage(1);
+                    setActionFilter('All');
+                  }}
+                >
+                  FDA Activity
+                  <span className="FDAAdminAuditTabBadge">{MOCK_FDA_AUDIT_LOGS.length}</span>
+                </button>
+                <button
+                  className={`FDAAdminAuditTabBtn ${activeTab === 'System' ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveTab('System');
+                    setCurrentPage(1);
+                    setActionFilter('All');
+                  }}
+                >
+                  System Events
+                  <span className="FDAAdminAuditTabBadge">{MOCK_SYSTEM_AUDIT_LOGS.length}</span>
+                </button>
+              </div>
             </div>
 
             {/* Filter Bar */}

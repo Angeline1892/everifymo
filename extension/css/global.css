@@ -173,7 +173,7 @@ body {
 }
 
 .navigation-button.active {
-  background: #91a9ca;
+  background: #66BB6A;
   color: #1f2937;
   border-radius: 12px;
 }
@@ -424,7 +424,7 @@ body {
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
   font-size: 30px;
-  color: #1f2937;
+  color: #2E7D32;
   margin: 0;
 }
 
@@ -701,7 +701,7 @@ body {
 }
 
 .badge-open { background: rgba(217, 119, 6, 0.1); color: #D97706; border-radius: 15px; }
-.badge-under-review { background: rgba(19, 33, 60, 0.1); color: #13213c; border-radius: 15px; }
+.badge-under-review { background: rgba(71, 85, 105, 0.12); color: #475569; border-radius: 15px; }
 .badge-takedown-requested { background: rgba(185, 28, 28, 0.1); color: #B91C1C; border-radius: 15px; }
 
 .progress-track {
@@ -790,7 +790,7 @@ body {
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
   font-size: 22px;
-  color: #030303;
+  color: #2E7D32;
   white-space: nowrap;
 }
 
@@ -801,8 +801,8 @@ body {
   transform: translateY(-50%);
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
-  font-size: 14px;
-  color: #1F2937;
+  font-size: 15px;
+  color: #2E7D32;
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
@@ -937,7 +937,7 @@ body {
 .status-dismissed .history-item-status, .status-unregistered .history-item-status { color: #DC2626; }
 
 .see-details-link {
-  color: #1F2937;
+  color: #2E7D32;
   font-weight: 700;
   text-decoration: underline;
 }
@@ -1001,8 +1001,8 @@ body {
   margin-top: 20px;
   margin-bottom: 20px;
   padding: 12px 14px;
-  background-color: #EEF0F3;
-  border: 1px solid #1F2937;
+  background-color: #F0FFF0;
+  border: 1px solid #2E7D32;
   border-radius: 10px;
 }
 
@@ -1057,7 +1057,7 @@ body {
 .tab-button.active {
   background-color: #FDFDFD;
   color: #030303;
-  border-bottom: 2px solid #1F2937;
+  border-bottom: 2px solid #2E7D32;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
@@ -1095,7 +1095,7 @@ body {
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
   font-size: 12px;
-  color: #1F2937;
+  color: #2E7D32;
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
@@ -1175,8 +1175,8 @@ body {
 }
 
 .auth-input:focus {
-  border-color: #1F2937;
-  box-shadow: 0 0 0 2px rgba(31, 41, 55, 0.15);
+  border-color: #2E7D32;
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
 }
 
 .auth-input.is-invalid {
@@ -1231,8 +1231,8 @@ body {
 }
 
 .otp-digit-input:focus {
-  border-color: #1F2937;
-  box-shadow: 0 0 0 2px rgba(31, 41, 55, 0.15);
+  border-color: #2E7D32;
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
 }
 
 .otp-digit-input.is-invalid {
@@ -1285,7 +1285,7 @@ body {
   border-radius: 10px;
   padding: 12px;
   cursor: pointer;
-  background-color: #1F2937;
+  background-color: #2E7D32;
   color: #FDFDFD;
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
@@ -1294,7 +1294,7 @@ body {
 }
 
 .btn-username-fix:hover {
-  background-color: #37455a;
+  background-color: #256428;
 }
 
 .btn-username-fix:disabled {
@@ -1322,13 +1322,13 @@ body {
 }
 
 .btn-primary-green:hover {
-  background-color: #37455a;
+  background-color: #256428;
 }
 
 .btn-primary-green {
   margin-bottom: 16px;
   border: none;
-  background-color: #1F2937;
+  background-color: #2E7D32;
   color: #FDFDFD;
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
@@ -1365,7 +1365,7 @@ body {
 .btn-submit-report {
   flex: 2;
   border: none;
-  background-color: #1F2937;
+  background-color: #2E7D32;
   color: #FDFDFD;
 }
 
@@ -1374,7 +1374,7 @@ body {
 }
 
 .btn-submit-report:hover {
-  background-color: #37455a;
+  background-color: #256428;
 }
 
 
@@ -1450,7 +1450,7 @@ body {
 }
 
 .guest-notice-link {
-  color: #1F2937;
+  color: #2E7D32;
   cursor: pointer;
   font-weight: 700;
 }
@@ -1474,8 +1474,8 @@ body {
 }
 
 .complaint-textarea:focus {
-  border-color: #1F2937;
-  box-shadow: 0 0 0 2px rgba(31, 41, 55, 0.15);
+  border-color: #2E7D32;
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
 }
 
 .attach-box {
@@ -1532,8 +1532,8 @@ body {
 }
 
 .complaint-input:focus {
-  border-color: #1F2937;
-  box-shadow: 0 0 0 2px rgba(31, 41, 55, 0.15);
+  border-color: #2E7D32;
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
 }
 
 .attach-preview-img {

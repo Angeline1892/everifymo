@@ -18,13 +18,26 @@ document.body.appendChild(verifyBtn);
 let debounceTimer;
 let pendingSelection = '';
 
+let verifyButtonEnabled = true; // default
+
+chrome.storage.local.get(['verifyButtonEnabled'], (result) => {
+  verifyButtonEnabled = result.verifyButtonEnabled !== false;
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.verifyButtonEnabled) {
+    verifyButtonEnabled = changes.verifyButtonEnabled.newValue;
+    if (!verifyButtonEnabled) verifyBtn.style.display = "none";
+  }
+});
+
 document.addEventListener("mouseup", () => {
     clearTimeout(debounceTimer);
  
     debounceTimer = setTimeout(() => {
         const selectedText = window.getSelection().toString();
  
-        if (selectedText.length > 0) {
+        if (selectedText.length > 0 && verifyButtonEnabled) {
             pendingSelection = selectedText;
             const range = window.getSelection().getRangeAt(0).getBoundingClientRect();
  
@@ -317,22 +330,34 @@ function createModal() {
         </div>
       </div>
 
-      <div class="state hidden" id="state-report-success">
-        <p class="state-message">✅ Complaint submitted. You can track it in your account.</p>
+      <div class="state hidden rf-result" id="state-report-success">
+        <div class="icon-ring icon-ring--success">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <p class="rf-result-title">Complaint Submitted</p>
+        <p class="rf-result-message">Your report has been received. You can track its status in your account.</p>
       </div>
 
-      <div class="state hidden" id="state-report-error">
-        <p class="state-message error">❌ <span id="report-error-message">Something went wrong.</span></p>
-        <div class="action-buttons">
-          <button id="rf-error-back" type="button">Back to Form</button>
+      <div class="state hidden rf-result" id="state-report-error">
+        <div class="icon-ring icon-ring--error">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 8v5M12 16.5v.01" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>
+        </div>
+        <p class="rf-result-title">Submission Failed</p>
+        <p class="rf-result-message" id="report-error-message">Something went wrong.</p>
+        <div class="action-row">
+          <button class="btn btn-primary btn-error" id="rf-error-back" type="button">Back to Form</button>
         </div>
       </div>
 
-      <div class="state hidden" id="state-report-unauthorized">
-        <p class="state-message">🔒 You need an account to submit a report. Please sign in first.</p>
-        <div class="action-buttons">
-          <button id="rf-unauth-login" type="button">Sign In</button>
-          <button id="rf-unauth-back" type="button">Back to Results</button>
+      <div class="state hidden rf-result" id="state-report-unauthorized">
+        <div class="icon-ring icon-ring--neutral">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <p class="rf-result-title">Sign In Required</p>
+        <p class="rf-result-message">You'll need an account to submit a report.</p>
+        <div class="action-row">
+          <button class="btn btn-ghost" id="rf-unauth-back" type="button">Back to Results</button>
+          <button class="btn btn-primary" id="rf-unauth-login" type="button">Sign In</button>
         </div>
       </div>
 
@@ -416,35 +441,38 @@ function createModal() {
   });
 
   modal.querySelector('#rf-submit').addEventListener('click', () => {
-    const complaint = {
-      productName: modal.querySelector('#rf-product-name').value,
-      productUrl: sanitizeUrl(lastProductUrl),
-      storeName: modal.querySelector('#rf-store-name').value,
-      description: modal.querySelector('#rf-description').value,
-      platform: platform(lastProductUrl),
-      verificationResult: lastVerificationStatus,
-      attachmentData: lastAttachmentPath,
-      attachmentName: lastAttachmentName
-    };
+    chrome.runtime.sendMessage({ action: "checkAuth" }, (authRes) => {
+      if (!authRes?.loggedIn) {
+        showState('state-report-unauthorized');
+        return;
+      }
 
-    chrome.runtime.sendMessage(
-      { action: "submitComplaint", data: complaint },
-      (response) => {
+      const complaint = {
+        productName: modal.querySelector('#rf-product-name').value,
+        productUrl: sanitizeUrl(lastProductUrl),
+        storeName: modal.querySelector('#rf-store-name').value,
+        description: modal.querySelector('#rf-description').value,
+        platform: platform(lastProductUrl),
+        verificationResult: lastVerificationStatus,
+        attachmentData: lastAttachmentPath,
+        attachmentName: lastAttachmentName
+      };
+
+      chrome.runtime.sendMessage({ action: "submitComplaint", data: complaint }, (response) => {
+        console.log('submitComplaint response:', response);
         if (response?.success) {
           showState('state-report-success');
         } else {
-          document.getElementById('report-error-message').textContent =
-            response?.error || 'Failed to submit report. Please try again.';
+          document.getElementById('report-error-message').textContent = response?.error || 'Failed to submit report. Please try again.';
           showState('state-report-error');
         }
-        // reset AFTER sending, not before
         lastAttachmentPath = null;
         lastAttachmentName = null;
         attachPreview.style.display = 'none';
         attachText.style.display = 'block';
         attachInput.value = '';
-      }
-    );
+      });
+    });
   });
 
   modal.querySelector('#mo-close-x').addEventListener('click', () => {
@@ -470,14 +498,12 @@ function sanitizeUrl(rawUrl) {
 }
 
 function showState(stateId) {
-  modal.style.display = 'block';  
+  modal.style.display = 'block';
   modal.querySelectorAll('.state').forEach(el => {
     el.classList.add('hidden');
-    el.style.display = 'none';
   });
   const target = modal.querySelector(`#${stateId}`);
   target.classList.remove('hidden');
-  target.style.display = 'block';
 
   const closeX = modal.querySelector('#mo-close-x');
   const reportStates = ['state-report-form', 'state-report-success', 'state-report-error'];
@@ -499,6 +525,12 @@ function renderResult(status, productTitle, results = []) {
   showState(stateId);
 }
 
+function matchTier(pct) {
+  if (pct >= 90) return 'best';
+  if (pct >= 70) return 'high';
+  return 'partial';
+}
+
 function populateMatches(stateId, results) {
   const suffix = stateId === 'state-unregistered' ? '-red' : '';
   const cards = modal.querySelectorAll(`#${stateId} .match-card${suffix}`);
@@ -509,8 +541,20 @@ function populateMatches(stateId, results) {
     card.style.display = '';
     card.querySelector(`.match-title${suffix}`).textContent = match.title;
     const pct = Math.round((match.score ?? match.cosine_similarity ?? 0) * 100);
+    const tier = matchTier(pct);
+
     card.querySelector(`.match-percent${suffix}`).textContent = `${pct}%`;
-    card.querySelector(`.progress-fill${suffix}`).style.width = `${pct}%`;
+
+    const fillEl = card.querySelector(`.progress-fill${suffix}`);
+    fillEl.style.width = `${pct}%`;
+    fillEl.classList.remove(`fill-best${suffix}`, `fill-high${suffix}`, `fill-partial${suffix}`);
+    fillEl.classList.add(`fill-${tier}${suffix}`);
+
+    const scoreEl = card.querySelector(`.match-score${suffix}`);
+    if (scoreEl) {
+      scoreEl.classList.remove(`match-score-best${suffix}`, `match-score-high${suffix}`, `match-score-partial${suffix}`);
+      scoreEl.classList.add(`match-score-${tier}${suffix}`);
+    }
   });
 }
 
@@ -538,3 +582,4 @@ verifyBtn.addEventListener("click", () => {
     renderResult(status, lastProductTitle, results);
   });
 });
+

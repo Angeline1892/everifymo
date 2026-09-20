@@ -680,16 +680,16 @@ function FDAProductDB() {
             method: 'POST',
             body: JSON.stringify({
               product_name: selectedProduct.productName,
-              advisory_details: conversionDetails.advisoryDetails.trim() || `Advisory generated from converted product record (Registration No: ${selectedProduct.registrationNumber})`,
-              advisory_date: conversionDetails.advisoryDate || null,
-              source_url: conversionDetails.sourceUrl.trim() || null,
+              advisory_details: (conversionDetails.advisoryDetails && conversionDetails.advisoryDetails.trim()) || `Advisory generated from converted product record (Registration No: ${selectedProduct.registrationNumber})`,
+              advisory_date: conversionDetails.advisoryDate ? conversionDetails.advisoryDate : null,
+              source_url: (conversionDetails.sourceUrl && conversionDetails.sourceUrl.trim()) || null,
             }),
           });
 
           if (!response.ok) {
-            const errorData = await response.json();
+            const errorData = await response.json().catch(() => ({}));
             const errorMsg = extractErrorMessage(errorData, "Failed to convert product.");
-            setFormErrors({ advisoryDate: errorMsg });
+            setFormErrors({ advisoryDate: errorMsg, advisoryDetails: errorMsg });
             return;
           }
 
@@ -705,7 +705,8 @@ function FDAProductDB() {
             message: 'Converted to unregistered product successfully!',
           });
         } catch (err) {
-          setFormErrors({ advisoryDetails: "Network error. Please try again." });
+          console.error("Conversion error:", err);
+          setFormErrors({ advisoryDetails: err.message || "Network error. Please try again." });
         }
       }
     });
@@ -910,16 +911,16 @@ function FDAProductDB() {
             method: 'POST',
             body: JSON.stringify({
               product_name: selectedAdvisory.productName,
-              brand_name: conversionDetails.manufacturer.trim() || null,
+              brand_name: (conversionDetails.manufacturer && conversionDetails.manufacturer.trim()) || null,
               registration_number: conversionDetails.registrationNumber.trim(),
               product_category: 'Cosmetics',
-              date_registered: conversionDetails.dateRegistered || null,
-              expiry_date: conversionDetails.expiryDate || null,
+              date_registered: conversionDetails.dateRegistered ? conversionDetails.dateRegistered : null,
+              expiry_date: conversionDetails.expiryDate ? conversionDetails.expiryDate : null,
             }),
           });
 
           if (!response.ok) {
-            const errorData = await response.json();
+            const errorData = await response.json().catch(() => ({}));
             const errorMsg = extractErrorMessage(errorData, "Failed to convert advisory.");
             setFormErrors({ registrationNumber: errorMsg });
             return;
@@ -937,7 +938,8 @@ function FDAProductDB() {
             message: 'Converted to registered product successfully!',
           });
         } catch (err) {
-          setFormErrors({ registrationNumber: "Network error. Please try again." });
+          console.error("Conversion error:", err);
+          setFormErrors({ registrationNumber: err.message || "Network error. Please try again." });
         }
       }
     });

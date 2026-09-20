@@ -1,0 +1,8 @@
+ACCOUNTCODE,PRODUCT_NAME,BRAND_NAME,PROD_VARIANTS,PRODUCT_INTENDED_USE,COMPANY_NAME,NOTIFICATION_DECISION_DATE,NOTIFICATION_VALIDITY,NOTIFICATION_DECISION
+FDA-COS-2024-10231,GlowSkin Whitening Cream,GlowSkin PH,,Cosmetics,,15 January 2024,15 January 2026,1
+FDA-COS-2022-04451,Skin Whitening Soup,SkinCare Corp PH,,Cosmetics,,06 July 2026,08 September 2029,1
+FDA-COS-2026-00983,Skin Watering Soup,Corp PH,,Cosmetics,,12 August 2026,25 November 2027,1
+FDA-COS-2026-09231,Whitening Soup,Care PH,,Cosmetics,,15 August 2026,12 October 2027,1
+FDA-COS-00342,SKINCARES,Care Ph,,Cosmetics,,09 September 2026,30 September 2026,1
+FDA-TEST-20439f00,Test Convert Adv,Test Brand,,Cosmetics,,,,1
+FDA-LIVE-d635ce80,Test Live Convert,Live Brand,,Cosmetics,,,,1

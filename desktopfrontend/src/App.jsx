@@ -20,9 +20,10 @@ import DeepLinkStatus from './pages/emailtemplates/invitation-status.jsx'
 import ProfileSetting from './pages/profile-setting.jsx';
 import AllNotifications from './pages/component/all-notifications.jsx';
 
-{/* NATIONAL ADMIN PAGES */}
+{/* NATIONAL ADMIN PAGES */ }
 import NationalAdminNewAdminManagement from './pages/nationaladminfolder/national-admin-new-admin-management.jsx';
 import NationalAdminInteragencyAdminManagement from './pages/nationaladminfolder/national-admin-interagency-admin-management.jsx';
+import NationalAdminAuditLogs from './pages/nationaladminfolder/national-admin-audit-logs.jsx';
 
 {/* SUPERADMIN PAGES */ }
 import SuperAdminLogin from './pages/superadminfolder/superadmin-login.jsx';
@@ -47,12 +48,12 @@ import FDAStatus from './pages/fdafolder/fda-status.jsx';
 import FDAProductDB from './pages/fdafolder/fda-product-db.jsx';
 import FDASavedDraft from './pages/fdafolder/fda-saved-draft.jsx';
 
-{/* FDA ADMIN PAGES */}
+{/* FDA ADMIN PAGES */ }
 import FDAAdminUserManagement from './pages/fdaadminfolder/fda-admin-user-management.jsx';
 import FDAAdminAdminManagement from './pages/fdaadminfolder/fda-admin-admin-management.jsx';
 import FDAAdminAuditLogs from './pages/fdaadminfolder/fda-admin-audit-logs.jsx';
 
-{/* LEA ADMIN PAGES */}
+{/* LEA ADMIN PAGES */ }
 import LEAAdminUserManagement from './pages/leaadminfolder/lea-admin-user-management.jsx';
 import LEAAdminAdminManagement from './pages/leaadminfolder/lea-admin-admin-management.jsx';
 import LEAAdminAuditLogs from './pages/leaadminfolder/lea-admin-audit-logs.jsx';
@@ -73,19 +74,10 @@ function DeepLinkListener() {
         .then((data) => {
           console.log('Validate response:', data);
 
-          if (data.role === 'superadmin') {
-            if (data.status === 'valid') {
-              navigate('/create-new-password', { state: { token } });
-            } else {
-              navigate('/superadmin-invite-status', {
-                state: { ...data, token },
-              });
-            }
-            return;
-          }
-
+           // All roles now go through the same flow: valid token -> set password,
+          // anything else (expired/invalid/used) -> the status page.
           if (data.status === 'valid') {
-            navigate('/user-registration', { state: { ...data, invite_token: token } });
+            navigate('/create-new-password', { state: { ...data, token } });
           } else {
             navigate('/invitation-status', { state: { ...data, invite_token: token } });
           }
@@ -126,6 +118,7 @@ export default function App() {
         {/* NATIONAL ADMIN ROUTES */}
         <Route path='/nationaladminfolder/national-admin-new-admin-management' element={<NationalAdminNewAdminManagement />} />
         <Route path='/nationaladminfolder/national-admin-interagency-admin-management' element={<NationalAdminInteragencyAdminManagement />} />
+        <Route path='/nationaladminfolder/national-admin-audit-logs' element={<NationalAdminAuditLogs />} />
 
         {/* SUPERADMIN ROUTES */}
         <Route path='/superadminfolder/superadmin-user-management' element={<SuperAdminUserManagement />} />

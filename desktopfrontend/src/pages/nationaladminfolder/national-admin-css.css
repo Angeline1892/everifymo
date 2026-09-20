@@ -358,6 +358,16 @@
   font-size: 12px;
 }
 
+.NAMActionsPlaceholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
 .NAMEmailCell {
   color: #0D9488 !important;
   font-size: 13.5px;
@@ -398,6 +408,18 @@
   background: #fef2f2;
   color: #b91c1c;
   border: 1px solid #fecaca;
+}
+
+.nam-agency-national {
+  background: #ccfbf1;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+}
+
+.nam-agency-system {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
 }
 
 /* ── Status Badges ── */
@@ -498,8 +520,6 @@
 }
 
 .NAMDropdownMenu.open-upward {
-  top: auto;
-  bottom: calc(100% + 4px);
   animation: NAMDropdownFadeUp 0.15s ease;
 }
 
@@ -1044,6 +1064,224 @@
   background: #1E293B;
   border-color: #1E293B;
   color: #ffffff;
+}
+
+/* =========================================================
+   NATIONAL ADMIN AUDIT LOGS SPECIFIC STYLES
+   ========================================================= */
+
+.NAMAuditTabsRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.NAMAuditTabsWrapper {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border-radius: 9999px;
+  padding: 5px;
+  gap: 4px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.NAMAuditTabsWrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.NAMAuditTabBtn {
+  padding: 8px 18px;
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  color: #51606f;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.NAMAuditTabBtn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.8);
+  color: #0D9488;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.NAMAuditTabBtn.active {
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #0D9488 0%, #0f766e 100%) !important;
+  color: #FDFDFD !important;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.28);
+}
+
+.NAMAuditTabBadge {
+  font-size: 11px;
+  background: rgba(13, 148, 136, 0.08);
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.NAMAuditTabBtn.active .NAMAuditTabBadge {
+  background: rgba(255, 255, 255, 0.22);
+  color: #FDFDFD;
+}
+
+/* Audit Action Badges */
+.badge-action-create,
+.nam-badge-action-create {
+  background: #dcfce7;
+  color: #15803d;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid #bbf7d0;
+  white-space: nowrap;
+}
+
+.badge-action-update,
+.nam-badge-action-update {
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid #bfdbfe;
+  white-space: nowrap;
+}
+
+.badge-action-delete,
+.nam-badge-action-delete {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid #fecaca;
+  white-space: nowrap;
+}
+
+.badge-action-security,
+.nam-badge-action-security {
+  background: #fef3c7;
+  color: #b45309;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid #fde68a;
+  white-space: nowrap;
+}
+
+.badge-action-neutral,
+.nam-badge-action-neutral {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  white-space: nowrap;
+}
+
+/* Audit Detail Modal Helpers */
+.NAMAuditSummaryBox {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.NAMAuditSummaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.NAMAuditSummaryLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+  min-width: 110px;
+}
+
+.NAMAuditSummaryValue {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  text-align: right;
+  word-break: break-all;
+}
+
+.NAMAuditJsonPre {
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  overflow-x: auto;
+  margin: 0;
+}
+
+.NAMAuditJsonPre.old-state {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.NAMAuditJsonPre.new-state {
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  color: #0f766e;
+}
+
+.NAMTableActionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.NAMTableActionBtn:hover {
+  background: #0D9488;
+  color: #ffffff;
+  border-color: #0D9488;
 }
 
 /* =========================================================
