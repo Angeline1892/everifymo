@@ -22,7 +22,7 @@ import {
 
 // ADDED — base URL for all API calls in this file. Mirrors the same constant
 // declared in fda-verification.jsx so the host can be updated from one place.
-const API_BASE = "http://localhost:8000";
+const API_BASE = "https://everify.store"; // ← replace with your actual production URL
 
 // CHANGED — was a client-side page size of 5; now 10 to match the server's
 // default page_size sent in every GET /drafts/fda-verification/ request.

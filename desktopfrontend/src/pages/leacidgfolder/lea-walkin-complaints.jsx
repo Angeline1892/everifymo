@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import mammoth from 'mammoth'
 import { Eye, MoreVertical, Pencil, Trash2, X, Paperclip, FileText, Image as ImageIcon, Download } from 'lucide-react'
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = 'https://everify.store';
 
 // BACKEND: Status values must match the backend complaint workflow states exactly.
 function WcGetStatusClass(status) {
