@@ -547,6 +547,13 @@ function ProfileSetting() {
       });
       return;
     }
+    //fix!!
+    const agencyPart = (localStorage.getItem('agency') || '').toString().trim();
+    const rolePart = (localStorage.getItem('role') || '').toString().trim();
+    const rawAgency = `${agencyPart} ${rolePart}`.trim().toUpperCase();
+    if (rawAgency) {
+      return normalizeWorkspace(rawAgency);
+    }
 
     setIsSavingPassword(true);
     setPasswordStatus(null);

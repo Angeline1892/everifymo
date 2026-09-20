@@ -131,11 +131,11 @@ def reset_password(payload: ResetPasswordRequest, http_request: Request, db: Ses
     )
 
     if user.role == Role.NATIONAL_ADMIN:
-        password_action = AuditAction.UPDATE_SUPERADMIN_PASSWORD
+        password_action = AuditAction.UPDATE_NATIONAL_ADMIN_PASSWORD
     elif user.role in Role.ADMIN_ROLES:
-        password_action = AuditAction.UPDATE_ADMIN_PASSWORD
+        password_action = AuditAction.UPDATE_REGIONAL_ADMIN_PASSWORD
     else:
-        password_action = AuditAction.UPDATE_USER_PASSWORD
+        password_action = AuditAction.UPDATE_PERSONNEL_PASSWORD
 
     write_audit_log(
         db,

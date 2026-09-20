@@ -42,81 +42,21 @@ function extractErrorMessage(errorData, fallback) {
     return fallback;
 }
 
+const KNOWN_ADMIN_STATUSES = [
+  'Pending Approval',
+  'Locked',
+  'Suspended',
+  'Active',
+  'Invited',
+  'Resend Requested',
+  'Link Expired',
+];
+
 export function computeAdminStatus(admin) {
   if (!admin) return '';
-  const rawStatus = (admin.status || '').toString().trim().toLowerCase();
-
-  // 1. Pending Approval check (must be recognized before generic active/inactive logic)
-  if (rawStatus === 'pending_approval' || rawStatus === 'pending approval') {
-    return 'Pending Approval';
-  }
-
-  // 2. Locked must take precedence over Active
-  if (
-    (rawStatus === 'active' && admin.is_active === true && admin.is_locked === true) ||
-    rawStatus === 'locked' ||
-    (admin.is_locked === true && rawStatus === 'active' && admin.is_active !== false)
-  ) {
-    return 'Locked';
-  }
-
-  // 3. Suspended: status == active && is_active == false
-  if (
-    (rawStatus === 'active' && admin.is_active === false) ||
-    rawStatus === 'suspended' ||
-    rawStatus === 'suspend'
-  ) {
-    return 'Suspended';
-  }
-
-  // 4. Active: status == active && is_active == true && is_locked != true
-  if (
-    rawStatus === 'active' ||
-    (!rawStatus && admin.is_active === true && !admin.is_locked)
-  ) {
-    return 'Active';
-  }
-
-  // 5. Invited / Resend Requested / Link Expired
-  if (
-    rawStatus === 'invited' ||
-    rawStatus === 'resend requested' ||
-    rawStatus === 'resend_requested' ||
-    rawStatus === 'link expired' ||
-    rawStatus === 'link_expired'
-  ) {
-    let isExpired = false;
-    if (typeof admin.is_token_expired === 'boolean') {
-      isExpired = admin.is_token_expired;
-    } else if (typeof admin.token_expired === 'boolean') {
-      isExpired = admin.token_expired;
-    } else if (admin.expiration_date || admin.expires_at) {
-      const expDate = new Date(admin.expiration_date || admin.expires_at);
-      if (!isNaN(expDate.getTime())) {
-        isExpired = expDate.getTime() < Date.now();
-      }
-    } else if (
-      rawStatus === 'link expired' ||
-      rawStatus === 'link_expired' ||
-      rawStatus === 'resend requested' ||
-      rawStatus === 'resend_requested'
-    ) {
-      isExpired = true;
-    }
-
-    const hasResendRequest =
-      admin.resend_requested_at !== null && admin.resend_requested_at !== undefined;
-
-    if (hasResendRequest && isExpired) {
-      return 'Resend Requested';
-    }
-    if (!hasResendRequest && isExpired) {
-      return 'Link Expired';
-    }
-    return 'Invited';
-  }
-
-  return admin.status || 'Active';
+  const raw = (admin.status || '').toString().trim();
+  const match = KNOWN_ADMIN_STATUSES.find((s) => s.toLowerCase() === raw.toLowerCase());
+  return match || admin.status || '';
 }
 
 const REGIONAL_ADMIN_STATUS_META = {
@@ -139,6 +79,7 @@ function RegionalAdminStatusBadge({ status }) {
 function RegionalAdminActionDropdown({
   regionalAdmin,
   isSelf,
+  canManage,
   isOpen,
   toggleDropdown,
   onAction,
@@ -252,7 +193,7 @@ function RegionalAdminActionDropdown({
               <Eye size={14} /> View Details
             </button>
 
-            {status === 'Active' && !isSelf && (
+            {status === 'Active' && !isSelf && canManage && (
               <>
                 <div className="NAMDropdownDivider" />
                 <button
@@ -267,7 +208,7 @@ function RegionalAdminActionDropdown({
               </>
             )}
 
-            {status === 'Suspended' && !isSelf && (
+            {status === 'Suspended' && !isSelf && canManage && (
               <>
                 <div className="NAMDropdownDivider" />
                 <button
@@ -282,7 +223,7 @@ function RegionalAdminActionDropdown({
               </>
             )}
 
-            {['Resend Requested', 'Link Expired'].includes(status) && (
+            {['Resend Requested', 'Link Expired'].includes(status) && canManage && (
               <button
                 className="NAMDropdownItem"
                 onClick={() => {
@@ -294,7 +235,7 @@ function RegionalAdminActionDropdown({
               </button>
             )}
 
-            {status === 'Pending Approval' && (
+            {status === 'Pending Approval' && canManage && (
               <button
                 className="NAMDropdownItem"
                 onClick={() => {
@@ -306,7 +247,7 @@ function RegionalAdminActionDropdown({
               </button>
             )}
 
-            {status === 'Link Expired' && (
+            {status === 'Link Expired' && canManage && (
               <>
                 <div className="NAMDropdownDivider" />
                 <button
@@ -321,7 +262,7 @@ function RegionalAdminActionDropdown({
               </>
             )}
 
-            {status === 'Locked' && (
+            {status === 'Locked' && canManage &&(
               <button
                 className="NAMDropdownItem"
                 onClick={() => {
@@ -1409,18 +1350,19 @@ export default function NationalAdminRegionalAdminManagement() {
                         </td>
                         <td>
                           {myUserId !== null ? (
-                          <RegionalAdminActionDropdown
-                            regionalAdmin={admin}
-                            isSelf={admin.id === myUserId}
-                            isOpen={regionalAdminActiveDropdownId === admin.id}
-                            toggleDropdown={() =>
-                              setRegionalAdminActiveDropdownId(
-                                regionalAdminActiveDropdownId === admin.id ? null : admin.id
-                              )
-                            }
-                            onAction={(type) => openConfirm(type, admin.id)}
-                            onView={() => setRegionalAdminViewAdmin(admin)}
-                          />
+                            <RegionalAdminActionDropdown
+                              regionalAdmin={admin}
+                              isSelf={admin.id === myUserId}
+                              canManage={admin.created_by_is_national_admin}
+                              isOpen={regionalAdminActiveDropdownId === admin.id}
+                              toggleDropdown={() =>
+                                setRegionalAdminActiveDropdownId(
+                                  regionalAdminActiveDropdownId === admin.id ? null : admin.id
+                                )
+                              }
+                              onAction={(type) => openConfirm(type, admin.id)}
+                              onView={() => setRegionalAdminViewAdmin(admin)}
+                            />
                           ) : (
                             <span className="NAMActionsPlaceholder">—</span>
                           )}

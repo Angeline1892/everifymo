@@ -20,7 +20,7 @@ def get_fda_audit_logs(
     query = (
         select(AuditLog, User)
         .outerjoin(User, AuditLog.user_id == User.user_id)
-        .where(AuditLog.user_role == "fda_personnel")
+        .where(AuditLog.user_role.in_(["fda_personnel", "fda_admin"]))
         .where(AuditLog.action != "PERSONNEL_REQUEST_INVITE")
     )
 
@@ -67,7 +67,7 @@ def get_lea_audit_logs(
     query = (
         select(AuditLog, User)
         .outerjoin(User, AuditLog.user_id == User.user_id)
-        .where(AuditLog.user_role == "lea_personnel")
+        .where(AuditLog.user_role.in_(["lea_personnel", "lea_admin"]))
         .where(AuditLog.action != "PERSONNEL_REQUEST_INVITE")
     )
 
@@ -101,7 +101,7 @@ def get_lea_audit_logs(
 
     return rows, total
 
-def get_superadmin_audit_logs(
+def get_national_admin_audit_logs(
     db: Session,
     page: int,
     limit: int,
@@ -110,13 +110,22 @@ def get_superadmin_audit_logs(
     date_to=None,
     search: str | None = None,
 ):
+    # Shows: everything a National Admin does themselves, PLUS the three
+    # actions shared between the National Admin and Regional Admin tabs
+    # (approve/suspend/reactivate a Regional Admin account — a National
+    # Admin can perform these, so they need to see them here too).
+    SHARED_WITH_REGIONAL_ADMIN_TAB = (
+        "APPROVE_REGIONAL_ADMIN_ACCOUNT",
+        "SUSPEND_REGIONAL_ADMIN_ACCOUNT",
+        "REACTIVATE_REGIONAL_ADMIN_ACCOUNT",
+    )
     query = (
         select(AuditLog, User)
         .outerjoin(User, AuditLog.user_id == User.user_id)
         .where(
             or_(
-                AuditLog.user_role == "superadmin",
-                AuditLog.action == "PERSONNEL_REQUEST_INVITE",
+                AuditLog.user_role == "national_admin",
+                AuditLog.action.in_(SHARED_WITH_REGIONAL_ADMIN_TAB),
             )
         )
     )
@@ -149,18 +158,17 @@ def get_superadmin_audit_logs(
 
     return rows, total
 
-
 # System tab: automatic actions only, not manually triggered by a user click.
-# Scoped by action code rather than user_role, since these four actions can
-# be logged against personnel (fda_personnel/lea_personnel) or superadmin
-# accounts alike — the row's user_role stays the real role of whichever
-# account the automatic action happened to (Option 1: agency badge should
-# show the real agency, not a generic "System" badge, even inside this tab).
+# Scoped by action code rather than user_role, since these actions can be
+# logged against personnel, regional_admin, or national_admin accounts
+# alike — the row's user_role stays the real role of whichever account the
+# automatic action happened to (agency badge should show the real agency,
+# not a generic "System" badge, even inside this tab).
 SYSTEM_ACTION_CODES = [
-    "PERSONNEL_PENDING_APPROVAL",
-    "SUPERADMIN_PENDING_APPROVAL",
+    "PENDING_NATIONAL_ADMIN_ACCOUNT",
     "LOCK_PERSONNEL_ACCOUNT",
-    "LOCK_SUPERADMIN_ACCOUNT",
+    "LOCK_NATIONAL_ADMIN_ACCOUNT",
+    "LOCK_REGIONAL_ADMIN_ACCOUNT",
 ]
 
 

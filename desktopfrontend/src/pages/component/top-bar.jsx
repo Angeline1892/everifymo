@@ -30,11 +30,9 @@ function timeAgo(dateString) {
  * 🔌 BACKEND: replace localStorage with JWT token claims when backend is connected
  */
 const getAuthenticatedRole = () => {
-  const raw = (
-    localStorage.getItem('agency') ||
-    localStorage.getItem('role') ||
-    'fda'
-  ).toString().trim().toLowerCase();
+  const agencyPart = (localStorage.getItem('agency') || '').toString().trim().toLowerCase();
+  const rolePart = (localStorage.getItem('role') || '').toString().trim().toLowerCase();
+  const raw = `${agencyPart} ${rolePart}`.trim() || 'fda';
 
   if (raw.includes('national') || raw.includes('super')) return 'superadmin';
   if (raw.includes('admin') && raw.includes('fda')) return 'fda_admin';
