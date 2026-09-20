@@ -1109,24 +1109,29 @@ export default function FDAAdminUserManagement() {
       const res = await apiFetch('/personnel-management');
       if (!res.ok) throw new Error('Failed to load personnel records.');
       const data = await res.json();
-      setUsers(
-        data.map((u) => ({
-          id: u.user_id,
-          first_name: u.first_name,
-          middle_name: u.middle_name,
-          last_name: u.last_name,
-          fullname: [u.first_name, u.middle_name, u.last_name].filter(Boolean).join(' '),
-          email: u.email,
-          agency: u.agency,
-          region: u.region,
-          department: u.department,
-          position: u.position,
-          employee_id: u.employee_id,
-          contact_number: u.contact_number,
-          status: u.status,
-          is_locked: u.is_locked,
-        }))
-      );
+      setUsers((current = []) => {
+        const currentMap = new Map((Array.isArray(current) ? current : []).map((item) => [item.id, item]));
+        return data.map((u) => {
+          const prev = currentMap.get(u.user_id);
+          return {
+            id: u.user_id,
+            first_name: u.first_name,
+            middle_name: u.middle_name,
+            last_name: u.last_name,
+            fullname: [u.first_name, u.middle_name, u.last_name].filter(Boolean).join(' '),
+            email: u.email,
+            agency: u.agency,
+            region: u.region,
+            department: u.department,
+            position: u.position,
+            employee_id: u.employee_id,
+            contact_number: u.contact_number,
+            status: u.status,
+            is_locked: u.is_locked,
+            is_active: u.is_active !== undefined ? u.is_active : prev?.is_active,
+          };
+        });
+      });
     } catch (err) {
       setFetchError(err.message || 'Something went wrong.');
     } finally {
@@ -1164,6 +1169,7 @@ export default function FDAAdminUserManagement() {
     const actionPathMap = {
       suspend: 'suspend',
       reactivate: 'reactivate',
+      activate: 'activate',
       unlock: 'unlock',
       resend: 'resend-link',
       resetPassword: 'reset-password',
@@ -1178,6 +1184,7 @@ export default function FDAAdminUserManagement() {
           const errData = await res.json().catch(() => ({}));
           throw new Error(extractErrorMessage(errData, 'Delete failed.'));
         }
+        setUsers((prev) => prev.filter((u) => u.id !== targetId));
         showToast('Personnel entry deleted.');
       } else {
         const path = actionPathMap[actionType];
@@ -1187,13 +1194,29 @@ export default function FDAAdminUserManagement() {
           const errData = await res.json().catch(() => ({}));
           throw new Error(extractErrorMessage(errData, 'Action failed.'));
         }
+        setUsers((prev) =>
+          prev.map((u) => {
+            if (u.id !== targetId) return u;
+            if (actionType === 'suspend') {
+              return { ...u, status: 'Suspended', is_active: false };
+            }
+            if (actionType === 'reactivate' || actionType === 'activate') {
+              return { ...u, status: 'Active', is_active: true };
+            }
+            if (actionType === 'unlock') {
+              return { ...u, status: 'Active', is_locked: false };
+            }
+            return u;
+          })
+        );
         showToast(
           actionType === 'resetPassword'
             ? 'Temporary password emailed to the user.'
+            : actionType === 'resend'
+            ? 'Invitation link resent.'
             : 'Account updated.'
         );
       }
-      await fetchPersonnel(true); // silent — no full-table "Loading…" flash after an action
     } catch (err) {
       showToast(err.message || 'Something went wrong.');
     }

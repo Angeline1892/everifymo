@@ -892,7 +892,13 @@ export default function NationalAdminRegionalAdminManagement() {
   const [regionalAdmins, setRegionalAdmins] = useState([]);
   const [regionalAdminLoading, setRegionalAdminLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
   const [myUserId, setMyUserId] = useState(null);
+
+  function showToast(msg) {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 4000);
+  }
 
   const [regions, setRegions] = useState([]);
   const [regionsLoading, setRegionsLoading] = useState(true);
@@ -918,31 +924,37 @@ export default function NationalAdminRegionalAdminManagement() {
     if (!silent) setRegionalAdminLoading(true);
     setFetchError('');
     try {
+      console.log('[DEBUG fetchRegionalAdmins START]', { silent });
       const res = await apiFetch('/admin-management');
+      console.log('[DEBUG fetchRegionalAdmins response]', { status: res.status, ok: res.ok });
       if (!res.ok) throw new Error('Failed to load administrator records.');
       const data = await res.json();
-      setRegionalAdmins(
-        data.map((a) => ({
-          id: a.user_id,
-          first_name: a.first_name,
-          middle_name: a.middle_name,
-          last_name: a.last_name,
-          fullname: [a.first_name, a.middle_name, a.last_name].filter(Boolean).join(' '),
-          email: a.email,
-          agency: a.agency,
-          region: a.region,
-          department: a.department,
-          position: a.position,
-          employee_id: a.employee_id,
-          contact_number: a.contact_number,
-          invitation_date: a.invitation_date,
-          expiration_date: a.expiration_date,
-          status: a.status,
-          is_locked: a.is_locked,
-          created_by: a.created_by,
-          created_by_is_national_admin: a.created_by_is_national_admin,
-        }))
-      );
+      setRegionalAdmins((current) => {
+        const currentMap = new Map(current.map((item) => [item.id, item]));
+        const mapped = data.map((a) => {
+          const prev = currentMap.get(a.user_id);
+          return {
+            id: a.user_id,
+            first_name: a.first_name,
+            middle_name: a.middle_name,
+            last_name: a.last_name,
+            fullname: [a.first_name, a.middle_name, a.last_name].filter(Boolean).join(' '),
+            email: a.email,
+            agency: a.agency,
+            region: a.region,
+            department: a.department,
+            position: a.position,
+            employee_id: a.employee_id,
+            contact_number: a.contact_number,
+            invitation_date: a.invitation_date,
+            expiration_date: a.expiration_date,
+            status: a.status,
+            is_locked: a.is_locked,
+            is_active: a.is_active !== undefined ? a.is_active : prev?.is_active,
+          };
+        });
+        return mapped;
+      });
     } catch (err) {
       setFetchError(err.message || 'Something went wrong.');
     } finally {
@@ -1003,6 +1015,7 @@ export default function NationalAdminRegionalAdminManagement() {
   }
 
   function handleAddSuccess() {
+    showToast('Administrator invited successfully.');
     fetchRegionalAdmins(true);
   }
 
@@ -1022,25 +1035,108 @@ export default function NationalAdminRegionalAdminManagement() {
 
     setRegionalAdminConfirmModal({ open: false, actionType: '', targetId: null });
 
+    const path = actionPathMap[actionType];
+    const fullUrl = actionType === 'delete'
+      ? `/admin-management/${targetId}`
+      : `/admin-management/${targetId}/${path}`;
+
+    console.log('[DEBUG handleConfirmAction START]', {
+      actionType,
+      targetId,
+      path,
+      fullUrl,
+      targetIdType: typeof targetId,
+    });
+
     try {
       if (actionType === 'delete') {
         const res = await apiFetch(`/admin-management/${targetId}`, { method: 'DELETE' });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
-          throw new Error(extractErrorMessage(errData, 'Delete failed.'));
+          const httpErr = new Error(extractErrorMessage(errData, 'Delete failed.'));
+          httpErr.isHttpError = true;
+          throw httpErr;
         }
+        setRegionalAdmins((prev) => prev.filter((a) => a.id !== targetId));
+        showToast('Admin entry deleted.');
       } else {
-        const path = actionPathMap[actionType];
         if (!path) return;
         const res = await apiFetch(`/admin-management/${targetId}/${path}`, { method: 'POST' });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
-          throw new Error(extractErrorMessage(errData, 'Action failed.'));
+          const httpErr = new Error(extractErrorMessage(errData, 'Action failed.'));
+          httpErr.isHttpError = true;
+          throw httpErr;
+        }
+        setRegionalAdmins((prev) =>
+          prev.map((a) => {
+            if (a.id !== targetId) return a;
+            if (actionType === 'suspend') {
+              return { ...a, status: 'Suspended', is_active: false };
+            }
+            if (actionType === 'reactivate' || actionType === 'activate') {
+              return { ...a, status: 'Active', is_active: true };
+            }
+            if (actionType === 'unlock') {
+              return { ...a, status: 'Active', is_locked: false };
+            }
+            return a;
+          })
+        );
+        showToast(actionType === 'resend' ? 'Invitation link resent.' : 'Account updated.');
+      }
+    } catch (err) {
+      // For network-level fetch failures (e.g. connection dropped right as commit finished):
+      // Verify actual status on the server before displaying a false failure.
+      if (!err.isHttpError) {
+        try {
+          const checkRes = await apiFetch('/admin-management');
+          if (checkRes.ok) {
+            const list = await checkRes.json();
+            const record = list.find((a) => (a.user_id || a.id) === targetId);
+            const expectedStatusMap = {
+              suspend: 'suspended',
+              reactivate: 'active',
+              activate: 'active',
+              unlock: 'active',
+            };
+            const expected = expectedStatusMap[actionType];
+            const recordStatus = (record?.status || '').toString().trim().toLowerCase();
+
+            const isDeleteSuccess = actionType === 'delete' && !record;
+            const isStatusSuccess = expected && recordStatus === expected;
+
+            if (isDeleteSuccess || isStatusSuccess) {
+              if (actionType === 'delete') {
+                setRegionalAdmins((prev) => prev.filter((a) => a.id !== targetId));
+                showToast('Admin entry deleted.');
+              } else {
+                setRegionalAdmins((prev) =>
+                  prev.map((a) => {
+                    if (a.id !== targetId) return a;
+                    if (actionType === 'suspend') {
+                      return { ...a, status: 'Suspended', is_active: false };
+                    }
+                    if (actionType === 'reactivate' || actionType === 'activate') {
+                      return { ...a, status: 'Active', is_active: true };
+                    }
+                    if (actionType === 'unlock') {
+                      return { ...a, status: 'Active', is_locked: false };
+                    }
+                    return a;
+                  })
+                );
+                showToast(actionType === 'resend' ? 'Invitation link resent.' : 'Account updated.');
+              }
+              return;
+            }
+          }
+        } catch (verifyErr) {
+          console.warn('Status re-check failed:', verifyErr);
         }
       }
-      await fetchRegionalAdmins(true);
-    } catch (err) {
-      setFetchError(err.message || 'Something went wrong.');
+
+      showToast(err.message || 'Something went wrong.');
     }
   }
 
@@ -1346,6 +1442,31 @@ export default function NationalAdminRegionalAdminManagement() {
         regionalAdmin={regionalAdminViewAdmin}
         onClose={() => setRegionalAdminViewAdmin(null)}
       />
+
+      {toastMessage && (
+        <div
+          className="NAMToast"
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            background: '#0D9488',
+            color: '#ffffff',
+            padding: '12px 20px',
+            borderRadius: '10px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontSize: '13.5px',
+            fontWeight: 500,
+            zIndex: 100000,
+          }}
+        >
+          <CircleCheckBig size={18} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }

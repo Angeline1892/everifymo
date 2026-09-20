@@ -3,13 +3,12 @@
   "name": "E-VERIFY",
   "version": "0.0.1",
   "description": "Real-time FDA product verification for Philippine e-commerce platforms.",
-  "default_locale": "en",
 
   "icons": {
-    "16": "extension/assets/images/icon16.png",
-    "32": "extension/assets/images/icon32.png",
-    "48": "extension/assets/images/icon48.png",
-    "128": "extension/assets/images/icon128.png"
+    "16": "assets/images/icon16.png",
+    "32": "assets/images/icon32.png",
+    "48": "assets/images/icon48.png",
+    "128": "assets/images/icon128.png"
   },
 
   "action": {
@@ -19,7 +18,6 @@
   "permissions": [
     "activeTab",
     "storage",
-    "scripting",
     "identity"
   ],
 
@@ -36,9 +34,7 @@
     "https://*.shopee.ph/*",
     "https://*.lazada.com.ph/*",
     "https://*.tiktok.com/*",
-    "https://*.facebook.com/marketplace/*",
-    "http://localhost:8001/*",
-    "https://localhost:8001/verify"
+    "https://*.facebook.com/marketplace/*"
   ],
 
   "content_scripts": [
@@ -67,12 +63,17 @@
         "pages/report-status.html",
         "css/*.css",
         "js/*.js",
-        "assets/fonts/*.woff2",
+        "assests/fonts/*.woff2",
         "assets/fonts/*.ttf",
         "assets/icons/*.png",
         "assets/images/*"
       ],
-      "matches": ["<all_urls>"]
+      "matches": [
+        "https://*.shopee.ph/*",
+        "https://*.lazada.com.ph/*",
+        "https://*.tiktok.com/*",
+        "https://*.facebook.com/*"
+      ]
     }
   ]
 }

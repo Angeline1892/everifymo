@@ -794,24 +794,29 @@ export default function FDAAdminAdminManagement() {
       const res = await apiFetch('/admin-management');
       if (!res.ok) throw new Error('Failed to load administrator records.');
       const data = await res.json();
-      setAdmins(
-        data.map((a) => ({
-          id: a.user_id,
-          first_name: a.first_name,
-          middle_name: a.middle_name,
-          last_name: a.last_name,
-          fullname: [a.first_name, a.middle_name, a.last_name].filter(Boolean).join(' '),
-          email: a.email,
-          agency: a.agency,
-          region: a.region,
-          department: a.department,
-          position: a.position,
-          employee_id: a.employee_id,
-          contact_number: a.contact_number,
-          status: a.status,
-          is_locked: a.is_locked,
-        }))
-      );
+      setAdmins((current = []) => {
+        const currentMap = new Map((Array.isArray(current) ? current : []).map((item) => [item.id, item]));
+        return data.map((a) => {
+          const prev = currentMap.get(a.user_id);
+          return {
+            id: a.user_id,
+            first_name: a.first_name,
+            middle_name: a.middle_name,
+            last_name: a.last_name,
+            fullname: [a.first_name, a.middle_name, a.last_name].filter(Boolean).join(' '),
+            email: a.email,
+            agency: a.agency,
+            region: a.region,
+            department: a.department,
+            position: a.position,
+            employee_id: a.employee_id,
+            contact_number: a.contact_number,
+            status: a.status,
+            is_locked: a.is_locked,
+            is_active: a.is_active !== undefined ? a.is_active : prev?.is_active,
+          };
+        });
+      });
     } catch (err) {
       setFetchError(err.message || 'Something went wrong.');
     } finally {
@@ -876,6 +881,7 @@ export default function FDAAdminAdminManagement() {
           const errData = await res.json().catch(() => ({}));
           throw new Error(extractErrorMessage(errData, 'Delete failed.'));
         }
+        setAdmins((prev) => prev.filter((a) => a.id !== targetId));
         showToast('Admin entry deleted.');
       } else {
         const path = actionPathMap[actionType];
@@ -885,9 +891,23 @@ export default function FDAAdminAdminManagement() {
           const errData = await res.json().catch(() => ({}));
           throw new Error(extractErrorMessage(errData, 'Action failed.'));
         }
-        showToast('Account updated.');
+        setAdmins((prev) =>
+          prev.map((a) => {
+            if (a.id !== targetId) return a;
+            if (actionType === 'suspend') {
+              return { ...a, status: 'Suspended', is_active: false };
+            }
+            if (actionType === 'reactivate' || actionType === 'activate') {
+              return { ...a, status: 'Active', is_active: true };
+            }
+            if (actionType === 'unlock') {
+              return { ...a, status: 'Active', is_locked: false };
+            }
+            return a;
+          })
+        );
+        showToast(actionType === 'resend' ? 'Invitation link resent.' : 'Account updated.');
       }
-      await fetchAdmins(true); // silent — no full-table "Loading…" flash after an action
     } catch (err) {
       showToast(err.message || 'Something went wrong.');
     }
