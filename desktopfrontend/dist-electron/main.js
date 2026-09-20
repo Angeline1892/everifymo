@@ -14,9 +14,9 @@ function c() {
 			contextIsolation: !0,
 			preload: i.join(a, "preload.cjs")
 		}
-	}), o.webContents.on("did-finish-load", () => {
+	}), o.webContents.openDevTools(), o.webContents.on("did-finish-load", () => {
 		s &&= (o.webContents.send("deep-link-token", s), null);
-	}), process.env.VITE_DEV_SERVER_URL ? o.loadURL(process.env.VITE_DEV_SERVER_URL) : o.loadFile(i.join(a, "../../dist/index.html"));
+	}), process.env.VITE_DEV_SERVER_URL ? o.loadURL(process.env.VITE_DEV_SERVER_URL) : o.loadFile(i.join(a, "../dist/index.html"));
 }
 console.log("argv:", process.argv), console.log("execPath:", process.execPath), process.env.VITE_DEV_SERVER_URL ? n.setAsDefaultProtocolClient("everifymo", process.execPath, [i.resolve(process.argv[1])]) : n.setAsDefaultProtocolClient("everifymo"), n.requestSingleInstanceLock() ? (n.on("second-instance", (e, t) => {
 	let n = t.find((e) => e.startsWith("everifymo://"));
