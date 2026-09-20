@@ -14,7 +14,7 @@ from .guards import assert_same_agency_and_region, assert_not_self, get_target, 
 def suspend_account(db: Session, actor: User, target_id, request=None):
     target = get_target(db, target_id)
     assert_not_self(actor, target)
-    assert_same_agency_and_region(actor, target)
+    assert_same_agency_and_region(db, actor, target)
 
     if not target.is_active:
         raise HTTPException(status_code=400, detail="This account is already suspended.")
@@ -23,6 +23,18 @@ def suspend_account(db: Session, actor: User, target_id, request=None):
         # Only the national admin workspace gets the "can't suspend the
         # last active one" protection — FDA/LEA regional admins do NOT
         # get this guard; a region can be left with zero active admins.
+        #
+        # Same race as the failed-login lockout path in
+        # national_admin_auth.py: without serializing this decision,
+        # two National Admins suspending two different targets at the
+        # same instant could each see the other as still active and
+        # both commit, leaving zero active National Admins. The
+        # advisory lock uses the SAME key as the login-lockout path so
+        # the two mechanisms are serialized against each other too —
+        # they're protecting the identical invariant.
+        db.flush()
+        db.execute(text("SELECT pg_advisory_xact_lock(hashtext('national_admin_lockout'))"))
+        
         result = db.execute(
             text("""
                 UPDATE users
@@ -72,7 +84,7 @@ def suspend_account(db: Session, actor: User, target_id, request=None):
 def reactivate_account(db: Session, actor: User, target_id, request=None):
     target = get_target(db, target_id)
     assert_not_self(actor, target)
-    assert_same_agency_and_region(actor, target)
+    assert_same_agency_and_region(db, actor, target)
     if target.is_active:
         raise HTTPException(status_code=400, detail="This account is not suspended.")
 
@@ -101,7 +113,7 @@ def reactivate_account(db: Session, actor: User, target_id, request=None):
 def unlock_account(db: Session, actor: User, target_id, request=None):
     target = get_target(db, target_id)
     assert_not_self(actor, target)
-    assert_same_agency_and_region(actor, target)
+    assert_same_agency_and_region(db, actor, target)
     if not target.is_locked:
         raise HTTPException(status_code=400, detail="This account is not locked.")
 

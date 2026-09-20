@@ -11,7 +11,7 @@ from app.core.constants import Role
 from app.core.audit import write_audit_log, get_user_region_code
 from app.desktop.services.admin_notifications import admin_notification_service as notification_service
 from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
-from app.desktop.services.account_status.guards import action_for_role, agency_of
+from app.desktop.services.account_status.guards import assert_same_agency_and_region
 
 
 def create_invited_account(
@@ -111,8 +111,6 @@ def create_invited_account(
 
 
 def activate_account(db: Session, target_id, activated_by, request=None):
-    """Single activator used everywhere a pending_approval account gets
-    approved — National Admin, Admin, and Personnel alike."""
     db.execute(text("SET app.bypass_rls = 'true'"))
     target = db.query(User).filter(User.user_id == target_id).first()
     if not target:
@@ -120,11 +118,7 @@ def activate_account(db: Session, target_id, activated_by, request=None):
     if target.status != "pending_approval":
         raise HTTPException(status_code=400, detail="This account is not awaiting activation.")
 
-    if activated_by.role != Role.NATIONAL_ADMIN:
-        same_region = target.region_id == activated_by.region_id
-        same_agency = agency_of(target.role) == agency_of(activated_by.role)
-        if not (same_region and same_agency):
-            raise HTTPException(status_code=403, detail="You can only activate accounts in your own agency and region.")
+    assert_same_agency_and_region(db, activated_by, target)
 
     target.status = "active"
     target.is_active = True
