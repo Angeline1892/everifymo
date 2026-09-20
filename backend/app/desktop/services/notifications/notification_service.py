@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.notifications import Notification
 from app.models.users import User
 from app.core.user_display import format_officer_display_name  # ADDED import
+from sqlalchemy import text
 
 
 # Mirrors the Priority enum in schemas/drafts/drafts.py — kept here as
@@ -25,22 +26,30 @@ def _priority_label(priority: str | None) -> str:
     return PRIORITY_LABELS.get(priority, priority.title())
 
 
-def _get_fda_user_ids_for_region(db: Session, region_id: UUID) -> list[UUID]:
-    rows = (
-        db.query(User.user_id)
-        .filter(User.role == "fda_personnel", User.region_id == region_id)
-        .all()
-    )
+
+def _user_ids_for_role_in_region(db: Session, role: str, region_id: UUID) -> list[UUID]:
+    """Cross-agency lookup for notification fan-out. RLS on users hides the
+    other agency's rows, so bypass it for this one query only."""
+    prev = db.execute(text("select current_setting('app.bypass_rls', true)")).scalar()
+    db.execute(text("select set_config('app.bypass_rls', 'true', true)"))
+    try:
+        rows = (
+            db.query(User.user_id)
+            .filter(User.role == role, User.region_id == region_id)
+            .all()
+        )
+    finally:
+        # restore so the rest of this transaction keeps normal RLS
+        db.execute(text("select set_config('app.bypass_rls', :v, true)"), {"v": prev or "false"})
     return [r.user_id for r in rows]
+
+
+def _get_fda_user_ids_for_region(db: Session, region_id: UUID) -> list[UUID]:
+    return _user_ids_for_role_in_region(db, "fda_personnel", region_id)
 
 
 def _get_lea_user_ids_for_region(db: Session, region_id: UUID) -> list[UUID]:
-    rows = (
-        db.query(User.user_id)
-        .filter(User.role == "lea_personnel", User.region_id == region_id)
-        .all()
-    )
-    return [r.user_id for r in rows]
+    return _user_ids_for_role_in_region(db, "lea_personnel", region_id)
 
 
 def _bulk_create_personnel_notifications(

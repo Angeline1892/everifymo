@@ -63,3 +63,6 @@ class RequestResendRequest(BaseModel):
 
 class RequestResendResponse(BaseModel):
     message: str
+
+class ValidateTokenRequest(BaseModel):
+    invite_token: str

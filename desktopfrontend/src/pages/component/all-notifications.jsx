@@ -42,11 +42,9 @@ const PAGE_SIZE = 20;
 // silently treated as personnel-tier, routing admin accounts to the wrong
 // notification endpoint. Now mirrors top-bar.jsx's 5-way detection.
 const getAuthenticatedRole = () => {
-  const raw = (
-    localStorage.getItem('agency') ||
-    localStorage.getItem('role') ||
-    'fda'
-  ).toString().trim().toLowerCase();
+  const agencyPart = (localStorage.getItem('agency') || '').toString().trim().toLowerCase();
+  const rolePart = (localStorage.getItem('role') || '').toString().trim().toLowerCase();
+  const raw = `${agencyPart} ${rolePart}`.trim() || 'fda';
 
   if (raw.includes('national') || raw.includes('super')) return 'superadmin';
   if (raw.includes('admin') && raw.includes('fda')) return 'fda_admin';
@@ -193,6 +191,16 @@ export default function AllNotifications() {
   const isAdminTier = currentRole === 'superadmin' || currentRole === 'fda_admin' || currentRole === 'lea_admin';
   const cssRole = currentRole === 'superadmin' ? 'superadmin' : (currentRole === 'lea' || currentRole === 'lea_admin') ? 'lea' : 'fda';
   const notificationsBasePath = isAdminTier ? '/admin-notifications' : '/personnel-notifications';
+
+  // Uncollapsed workspace type for Sidebar, which needs to distinguish
+  // Admin from Personnel to render the correct menu (cssRole above is only
+  // for container/theme CSS classes and must not be used for the sidebar).
+  const sidebarWorkspaceType =
+    currentRole === 'superadmin' ? 'NATIONAL_ADMIN' :
+    currentRole === 'fda_admin' ? 'FDA_ADMIN' :
+    currentRole === 'lea_admin' ? 'LEA_ADMIN' :
+    currentRole === 'lea' ? 'LEA' :
+    'FDA';
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -751,10 +759,10 @@ export default function AllNotifications() {
       `}</style>
 
       <div className={layoutConfig.mainContainerClass}>
-        <Sidebar sidebarType={layoutConfig.sidebarType} />
+        <Sidebar sidebarType={sidebarWorkspaceType} />
 
         <div className={layoutConfig.contentContainerClass}>
-          <TopBar topbarType={layoutConfig.sidebarType} />
+          <TopBar role={currentRole} />
 
           <div className={layoutConfig.mainFeedClass}>
             <div className="NotifPageWrapper">
