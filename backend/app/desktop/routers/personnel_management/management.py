@@ -53,6 +53,7 @@ def list_personnel(db: Session = Depends(get_db), current_user: User = Depends(g
             invitation_date=tokens.get(u.user_id).created_at if tokens.get(u.user_id) else None,
             expiration_date=tokens.get(u.user_id).expires_at if tokens.get(u.user_id) else None,
             status=compute_display_status(u, tokens.get(u.user_id)), is_locked=u.is_locked,
+            is_active=u.is_active,
         ) for u in users
     ]
 

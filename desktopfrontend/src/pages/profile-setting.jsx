@@ -94,7 +94,9 @@ const resolveCurrentWorkspace = (location, searchParams) => {
   if (savedWs) {
     return normalizeWorkspace(savedWs);
   }
-  const rawAgency = (localStorage.getItem('agency') || localStorage.getItem('role') || '').toString().trim().toUpperCase();
+ const agencyPart = (localStorage.getItem('agency') || '').toString().trim();
+  const rolePart = (localStorage.getItem('role') || '').toString().trim();
+  const rawAgency = `${agencyPart} ${rolePart}`.trim().toUpperCase();
   if (rawAgency) {
     return normalizeWorkspace(rawAgency);
   }
@@ -192,6 +194,9 @@ function mapProfileToForm(data) {
     position: data.position ?? '',
   };
 }
+
+const PASSWORD_RESET_COOLDOWN_MS = 8 * 60 * 60 * 1000; // 8 hours
+const PASSWORD_RESET_COOLDOWN_KEY = 'password_reset_request_cooldown_until';
 
 /**
  * UNIFIED PROFILE & SETTINGS COMPONENT FOR EVERIFYMO
@@ -328,6 +333,34 @@ function ProfileSetting() {
     fetchProfile();
   }, [currentWorkspace]);
 
+  // Restore an in-progress "request already sent" cooldown across reloads/navigation
+  useEffect(() => {
+    const storedUntil = localStorage.getItem(PASSWORD_RESET_COOLDOWN_KEY);
+    if (!storedUntil) return;
+
+    const until = parseInt(storedUntil, 10);
+    const remaining = until - Date.now();
+
+    if (remaining <= 0) {
+      localStorage.removeItem(PASSWORD_RESET_COOLDOWN_KEY);
+      return;
+    }
+
+    setRequestSentSuccess(true);
+    setRequestTimestamp(
+      new Date(until - PASSWORD_RESET_COOLDOWN_MS).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    );
+
+    const timer = setTimeout(() => {
+      setRequestSentSuccess(false);
+      localStorage.removeItem(PASSWORD_RESET_COOLDOWN_KEY);
+    }, remaining);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  
+  
   async function fetchProfile() {
     try {
       setLoading(true);
@@ -547,13 +580,7 @@ function ProfileSetting() {
       });
       return;
     }
-    //fix!!
-    const agencyPart = (localStorage.getItem('agency') || '').toString().trim();
-    const rolePart = (localStorage.getItem('role') || '').toString().trim();
-    const rawAgency = `${agencyPart} ${rolePart}`.trim().toUpperCase();
-    if (rawAgency) {
-      return normalizeWorkspace(rawAgency);
-    }
+
 
     setIsSavingPassword(true);
     setPasswordStatus(null);
@@ -622,16 +649,35 @@ function ProfileSetting() {
     setPasswordStatus(null);
   };
 
-  // Personnel: Confirm Password Reset Request Handler (Frontend Mock)
-  const handleConfirmPersonnelResetRequest = () => {
+  // Personnel: Confirm Password Reset Request Handler
+  const handleConfirmPersonnelResetRequest = async () => {
     setIsSubmittingRequest(true);
-    setTimeout(() => {
-      setIsSubmittingRequest(false);
+    try {
+      const res = await apiFetch('/profile/request-password-reset', {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(errData, 'Failed to send request.'));
+      }
       setIsRequestModalOpen(false);
       setRequestSentSuccess(true);
       setRequestTimestamp(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    }, 450);
-  };
+
+      const until = Date.now() + PASSWORD_RESET_COOLDOWN_MS;
+      localStorage.setItem(PASSWORD_RESET_COOLDOWN_KEY, String(until));
+      setTimeout(() => {
+        setRequestSentSuccess(false);
+        localStorage.removeItem(PASSWORD_RESET_COOLDOWN_KEY);
+      }, PASSWORD_RESET_COOLDOWN_MS);
+    } catch (err) {
+      // surface the error somehow — e.g. reuse requestStatus/profileStatus state,
+      // or a simple alert, depending on what error-display pattern this component uses elsewhere
+      console.error('Password reset request failed:', err);
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+};
 
   return (
     <>
@@ -1106,12 +1152,15 @@ function ProfileSetting() {
                           type="button"
                           className="ProfileBtn ProfileBtnPrimary PersonnelResetRequestBtn"
                           onClick={() => setIsRequestModalOpen(true)}
+                          disabled={requestSentSuccess}
                         >
                           <Send size={16} />
-                          Notify Administrator to Reset Password
+                          {requestSentSuccess ? 'Request Already Sent' : 'Notify Administrator to Reset Password'}
                         </button>
                         <p className="PersonnelActionHelperText">
-                          An administrative notification will be dispatched to the {layoutConfig.agencyDisplay} management team.
+                          {requestSentSuccess
+                            ? 'You can send another request later today.'
+                            : `An administrative notification will be dispatched to the ${layoutConfig.agencyDisplay} management team.`}
                         </p>
                       </div>
                     </div>

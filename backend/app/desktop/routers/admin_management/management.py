@@ -68,6 +68,7 @@ def list_admins(db: Session = Depends(get_db), current_user: User = Depends(get_
             invitation_date=tokens.get(a.user_id).created_at if tokens.get(a.user_id) else None,
             expiration_date=tokens.get(a.user_id).expires_at if tokens.get(a.user_id) else None,
             status=compute_display_status(a, tokens.get(a.user_id)), is_locked=a.is_locked,
+            is_active=a.is_active,   
             created_by=str(a.created_by) if a.created_by else None,
             created_by_is_national_admin=creator_roles.get(a.created_by) == Role.NATIONAL_ADMIN,
         ) for a in admins
