@@ -1,4 +1,4 @@
-import { BrowserWindow, app } from "electron";
+import { BrowserWindow, Menu, app } from "electron";
 import { fileURLToPath } from "url";
 import path from "path";
 //#region src/electron/main.js
@@ -37,6 +37,7 @@ else {
 		if (url) handleDeepLink(url);
 	});
 	app.whenReady().then(() => {
+		Menu.setApplicationMenu(null);
 		createWindow();
 		const launchUrl = process.argv.find((arg) => arg.startsWith("everifymo://"));
 		if (launchUrl) handleDeepLink(launchUrl);

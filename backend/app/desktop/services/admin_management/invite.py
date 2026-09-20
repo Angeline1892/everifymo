@@ -57,7 +57,7 @@ def create_invited_superadmin(db: Session, email: str, first_name: str, last_nam
     write_audit_log(
         db,
         user=None,
-        action=AuditAction.INVITE_SUPERADMIN,
+        action=AuditAction.INVITE_NATIONAL_ADMIN,
         target_table="users",
         target_id=user_id,
         target_reference=user_email,
@@ -127,7 +127,7 @@ def complete_superadmin_registration(db: Session, token: str, new_password: str,
     write_audit_log(
         db,
         user=None,
-        action=AuditAction.SUPERADMIN_PENDING_APPROVAL,
+        action=AuditAction.PENDING_NATIONAL_ADMIN_ACCOUNT,
         target_table="users",
         target_id=user_id,
         target_reference=user_email,
@@ -173,7 +173,7 @@ def activate_superadmin(db: Session, admin_id, activated_by=None, request=None):
     write_audit_log(
         db,
         user=None,
-        action=AuditAction.APPROVE_SUPERADMIN_ACCOUNT,
+        action=AuditAction.APPROVE_NATIONAL_ADMIN_ACCOUNT,
         target_table="users",
         target_id=admin_id_val,
         target_reference=admin_email,

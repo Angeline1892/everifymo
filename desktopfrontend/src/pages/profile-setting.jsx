@@ -215,6 +215,7 @@ function ProfileSetting() {
   const isNationalAdmin = currentWorkspace === 'NATIONAL_ADMIN';
 
   const defaultMock = DEFAULT_MOCK_PROFILES[currentWorkspace] || DEFAULT_MOCK_PROFILES.NATIONAL_ADMIN;
+  const [savedProfile, setSavedProfile] = useState(defaultMock);
   const [form, setForm] = useState(defaultMock);
   const [loading, setLoading] = useState(false);
 
@@ -333,14 +334,20 @@ function ProfileSetting() {
       const response = await apiFetch('/profile', { cache: 'no-store' });
       if (response && response.ok) {
         const data = await response.json();
-        setForm(mapProfileToForm(data));
+        const mapped = mapProfileToForm(data);
+        setSavedProfile(mapped);
+        setForm(mapped);
       } else {
         // Graceful fallback to default role mockup if offline/unauthenticated
-        setForm(DEFAULT_MOCK_PROFILES[currentWorkspace] || DEFAULT_MOCK_PROFILES.NATIONAL_ADMIN);
+        const fallback = DEFAULT_MOCK_PROFILES[currentWorkspace] || DEFAULT_MOCK_PROFILES.NATIONAL_ADMIN;
+        setSavedProfile(fallback);
+        setForm(fallback);
       }
     } catch (err) {
       // Offline fallback
-      setForm(DEFAULT_MOCK_PROFILES[currentWorkspace] || DEFAULT_MOCK_PROFILES.NATIONAL_ADMIN);
+      const fallback = DEFAULT_MOCK_PROFILES[currentWorkspace] || DEFAULT_MOCK_PROFILES.NATIONAL_ADMIN;
+      setSavedProfile(fallback);
+      setForm(fallback);
     } finally {
       setLoading(false);
     }
@@ -492,11 +499,30 @@ function ProfileSetting() {
         return;
       }
 
+      const updatedData = await response.json().catch(() => null);
+      const updatedProfile = updatedData
+        ? mapProfileToForm(updatedData)
+        : {
+            ...savedProfile,
+            ...form,
+            firstName: form.firstName.trim(),
+            middleName: form.middleName ? form.middleName.trim() : '',
+            lastName: form.lastName.trim(),
+          };
+
+      setSavedProfile(updatedProfile);
+      setForm(updatedProfile);
+
       setProfileStatus({
         type: 'success',
         message: 'Your profile details have been successfully updated.',
       });
       setJustSavedProfile(true);
+      const newFullName = [updatedProfile.firstName, updatedProfile.lastName].filter(Boolean).join(' ');
+      if (newFullName) {
+        localStorage.setItem('user_name', newFullName);
+        window.dispatchEvent(new CustomEvent('profile-updated', { detail: { userName: newFullName } }));
+      }
     } catch (err) {
       setProfileStatus({
         type: 'error',
@@ -576,7 +602,7 @@ function ProfileSetting() {
     });
     setProfileStatus(null);
     setJustSavedProfile(false);
-    fetchProfile();
+    setForm(savedProfile);
   };
 
   const handlePasswordCancel = () => {
@@ -622,30 +648,29 @@ function ProfileSetting() {
                 <div className="ProfileHeaderInfo">
                   <div className="ProfileHeaderTopLine">
                     <h1 className="ProfileHeaderTitle">
-                      {[form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || '-'}
+                      {[savedProfile.firstName, savedProfile.middleName, savedProfile.lastName].filter(Boolean).join(' ') || '-'}
                     </h1>
                     <span className="ProfileRoleBadge">{layoutConfig.roleBadge}</span>
-                    <span className="ProfileAgencyBadge">{layoutConfig.agencyDisplay}</span>
                   </div>
 
                   <div className="ProfileHeaderMeta">
                     <div className="ProfileMetaItem">
                       <Mail size={14} />
-                      <span>{displayValue(form.email)}</span>
+                      <span>{displayValue(savedProfile.email)}</span>
                     </div>
                     {!isNationalAdmin && (
                       <>
                         <div className="ProfileMetaItem">
                           <Building2 size={14} />
-                          <span>{displayValue(form.department)}</span>
+                          <span>{displayValue(savedProfile.department)}</span>
                         </div>
                         <div className="ProfileMetaItem">
                           <MapPin size={14} />
-                          <span>{displayValue(form.region)}</span>
+                          <span>{displayValue(savedProfile.region)}</span>
                         </div>
                         <div className="ProfileMetaItem">
                           <Fingerprint size={14} />
-                          <span>ID: {displayValue(form.employeeId)}</span>
+                          <span>ID: {displayValue(savedProfile.employeeId)}</span>
                         </div>
                       </>
                     )}
@@ -691,7 +716,7 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Email Address</label>
                             <div className="ProfileDisplayBox">
                               <Mail className="ProfileDisplayIcon" size={16} />
-                              <span className="ProfileDisplayText">{displayValue(form.email)}</span>
+                              <span className="ProfileDisplayText">{displayValue(savedProfile.email)}</span>
                             </div>
                           </div>
                           <div className="ProfileDisplayGroup">
@@ -705,7 +730,7 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Assigned Region</label>
                             <div className="ProfileDisplayBox">
                               <MapPin className="ProfileDisplayIcon" size={16} />
-                              <span className="ProfileDisplayText">{displayValue(form.region)}</span>
+                              <span className="ProfileDisplayText">{displayValue(savedProfile.region)}</span>
                             </div>
                           </div>
                         </div>
@@ -719,15 +744,15 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">First Name</label>
                             <div className="ProfileDisplayBox">
                               <User className="ProfileDisplayIcon" size={16} />
-                              <span className="ProfileDisplayText">{displayValue(form.firstName)}</span>
+                              <span className="ProfileDisplayText">{displayValue(savedProfile.firstName)}</span>
                             </div>
                           </div>
                           <div className="ProfileDisplayGroup">
                             <label className="ProfileDisplayLabel">Middle Name</label>
                             <div className="ProfileDisplayBox">
                               <User className="ProfileDisplayIcon" size={16} />
-                              <span className={form.middleName ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
-                                {displayValue(form.middleName)}
+                              <span className={savedProfile.middleName ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
+                                {displayValue(savedProfile.middleName)}
                               </span>
                             </div>
                           </div>
@@ -735,7 +760,7 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Last Name</label>
                             <div className="ProfileDisplayBox">
                               <User className="ProfileDisplayIcon" size={16} />
-                              <span className="ProfileDisplayText">{displayValue(form.lastName)}</span>
+                              <span className="ProfileDisplayText">{displayValue(savedProfile.lastName)}</span>
                             </div>
                           </div>
                         </div>
@@ -746,8 +771,8 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Employee ID</label>
                             <div className="ProfileDisplayBox">
                               <Fingerprint className="ProfileDisplayIcon" size={16} />
-                              <span className={form.employeeId ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
-                                {displayValue(form.employeeId)}
+                              <span className={savedProfile.employeeId ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
+                                {displayValue(savedProfile.employeeId)}
                               </span>
                             </div>
                           </div>
@@ -755,7 +780,7 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Contact Number</label>
                             <div className="ProfileDisplayBox">
                               <Phone className="ProfileDisplayIcon" size={16} />
-                              <span className="ProfileDisplayText">{displayValue(form.contactNumber)}</span>
+                              <span className="ProfileDisplayText">{displayValue(savedProfile.contactNumber)}</span>
                             </div>
                           </div>
                         </div>
@@ -766,8 +791,8 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Department</label>
                             <div className="ProfileDisplayBox">
                               <Building2 className="ProfileDisplayIcon" size={16} />
-                              <span className={form.department ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
-                                {displayValue(form.department)}
+                              <span className={savedProfile.department ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
+                                {displayValue(savedProfile.department)}
                               </span>
                             </div>
                           </div>
@@ -775,8 +800,8 @@ function ProfileSetting() {
                             <label className="ProfileDisplayLabel">Position / Title</label>
                             <div className="ProfileDisplayBox">
                               <Briefcase className="ProfileDisplayIcon" size={16} />
-                              <span className={form.position ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
-                                {displayValue(form.position)}
+                              <span className={savedProfile.position ? 'ProfileDisplayText' : 'ProfileDisplayEmpty'}>
+                                {displayValue(savedProfile.position)}
                               </span>
                             </div>
                           </div>
@@ -802,7 +827,7 @@ function ProfileSetting() {
                               <input
                                 className="ProfileInput ProfileInputReadonly"
                                 type="email"
-                                value={displayValue(form.email)}
+                                value={displayValue(savedProfile.email)}
                                 readOnly
                                 tabIndex={-1}
                               />
@@ -837,7 +862,7 @@ function ProfileSetting() {
                                 <input
                                   className="ProfileInput ProfileInputReadonly"
                                   type="text"
-                                  value={displayValue(form.region)}
+                                  value={displayValue(savedProfile.region)}
                                   readOnly
                                   tabIndex={-1}
                                 />
@@ -1243,7 +1268,7 @@ function ProfileSetting() {
 
             <div className="ProfileModalBody">
               <p className="ProfileModalText">
-                A formal request will be submitted to the <strong>{layoutConfig.agencyDisplay}</strong> administration team under your account (<strong>{form.email}</strong>). An administrator will issue an official reset link upon verification.
+                A formal request will be submitted to the <strong>{layoutConfig.agencyDisplay}</strong> administration team under your account (<strong>{savedProfile.email}</strong>). An administrator will issue an official reset link upon verification.
               </p>
             </div>
 

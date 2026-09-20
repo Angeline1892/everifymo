@@ -10,17 +10,17 @@ import { apiFetch } from '../../utils/apiFetch'
 const COMPUTED_EVENT_TYPES = ['invite_not_activated', 'invite_expired'];
 
 function timeAgo(dateString) {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffSec = Math.floor((now - date) / 1000);
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffSec = Math.floor((now - date) / 1000);
 
-    if (diffSec < 60) return 'Just now';
-    const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${diffMin} minute${diffMin !== 1 ? 's' : ''} ago`;
-    const diffHour = Math.floor(diffMin / 60);
-    if (diffHour < 24) return `${diffHour} hour${diffHour !== 1 ? 's' : ''} ago`;
-    const diffDay = Math.floor(diffHour / 24);
-    return `${diffDay} day${diffDay !== 1 ? 's' : ''} ago`;
+  if (diffSec < 60) return 'Just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} minute${diffMin !== 1 ? 's' : ''} ago`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} hour${diffHour !== 1 ? 's' : ''} ago`;
+  const diffDay = Math.floor(diffHour / 24);
+  return `${diffDay} day${diffDay !== 1 ? 's' : ''} ago`;
 }
 
 /**
@@ -30,457 +30,474 @@ function timeAgo(dateString) {
  * 🔌 BACKEND: replace localStorage with JWT token claims when backend is connected
  */
 const getAuthenticatedRole = () => {
-    const raw = (
-        localStorage.getItem('agency') ||
-        localStorage.getItem('role') ||
-        'fda'
-    ).toString().trim().toLowerCase();
+  const raw = (
+    localStorage.getItem('agency') ||
+    localStorage.getItem('role') ||
+    'fda'
+  ).toString().trim().toLowerCase();
 
-    if (raw.includes('national') || raw.includes('super')) return 'superadmin';
-    if (raw.includes('admin') && raw.includes('fda')) return 'fda_admin';
-    if (raw.includes('admin') && (raw.includes('lea') || raw.includes('cidg'))) return 'lea_admin';
-    if (raw === 'lea' || raw === 'cidg' || raw.includes('lea') || raw.includes('cidg')) return 'lea';
-    return 'fda';
+  if (raw.includes('national') || raw.includes('super')) return 'superadmin';
+  if (raw.includes('admin') && raw.includes('fda')) return 'fda_admin';
+  if (raw.includes('admin') && (raw.includes('lea') || raw.includes('cidg'))) return 'lea_admin';
+  if (raw === 'lea' || raw === 'cidg' || raw.includes('lea') || raw.includes('cidg')) return 'lea';
+  return 'fda';
 };
 
 // Mock notifications for frontend-only admin prototypes
 const FDA_ADMIN_MOCK_NOTIFICATIONS = [
-    {
-        id: 'mock-fda-1',
-        title: 'New Verification Request',
-        message: 'A new product verification request has been submitted for review.',
-        time: '5 minutes ago',
-        isRead: false,
-        eventType: 'verification_request'
-    },
-    {
-        id: 'mock-fda-2',
-        title: 'Report Escalation',
-        message: 'Adverse event report #ADV-2026-042 requires admin sign-off.',
-        time: '1 hour ago',
-        isRead: false,
-        eventType: 'report_escalation'
-    },
-    {
-        id: 'mock-fda-3',
-        title: 'Monthly Summary Generated',
-        message: 'August 2026 product clearance summary is ready for download.',
-        time: '1 day ago',
-        isRead: true,
-        eventType: 'system'
-    }
+  {
+    id: 'mock-fda-1',
+    title: 'New Verification Request',
+    message: 'A new product verification request has been submitted for review.',
+    time: '5 minutes ago',
+    isRead: false,
+    eventType: 'verification_request'
+  },
+  {
+    id: 'mock-fda-2',
+    title: 'Report Escalation',
+    message: 'Adverse event report #ADV-2026-042 requires admin sign-off.',
+    time: '1 hour ago',
+    isRead: false,
+    eventType: 'report_escalation'
+  },
+  {
+    id: 'mock-fda-3',
+    title: 'Monthly Summary Generated',
+    message: 'August 2026 product clearance summary is ready for download.',
+    time: '1 day ago',
+    isRead: true,
+    eventType: 'system'
+  }
 ];
 
 const LEA_ADMIN_MOCK_NOTIFICATIONS = [
-    {
-        id: 'mock-lea-1',
-        title: 'Intake Case Assigned',
-        message: 'New intake report #LEA-9921 has been assigned to CIDG Region 7.',
-        time: '12 minutes ago',
-        isRead: false,
-        eventType: 'case_intake'
-    },
-    {
-        id: 'mock-lea-2',
-        title: 'Urgent Coordination Alert',
-        message: 'Cross-regional operation coordination update submitted.',
-        time: '2 hours ago',
-        isRead: false,
-        eventType: 'coordination_alert'
-    },
-    {
-        id: 'mock-lea-3',
-        title: 'Personnel Clearance Update',
-        message: 'Special Investigator status reviewed and updated.',
-        time: '2 days ago',
-        isRead: true,
-        eventType: 'system'
-    }
+  {
+    id: 'mock-lea-1',
+    title: 'Intake Case Assigned',
+    message: 'New intake report #LEA-9921 has been assigned to CIDG Region 7.',
+    time: '12 minutes ago',
+    isRead: false,
+    eventType: 'case_intake'
+  },
+  {
+    id: 'mock-lea-2',
+    title: 'Urgent Coordination Alert',
+    message: 'Cross-regional operation coordination update submitted.',
+    time: '2 hours ago',
+    isRead: false,
+    eventType: 'coordination_alert'
+  },
+  {
+    id: 'mock-lea-3',
+    title: 'Personnel Clearance Update',
+    message: 'Special Investigator status reviewed and updated.',
+    time: '2 days ago',
+    isRead: true,
+    eventType: 'system'
+  }
 ];
 
 const NATIONAL_ADMIN_MOCK_NOTIFICATIONS = [
-    {
-        id: 'mock-na-1',
-        title: 'Regional Admin Registered',
-        message: 'New regional administrator account pending approval.',
-        time: '10 minutes ago',
-        isRead: false,
-        eventType: 'admin_registration'
-    },
-    {
-        id: 'mock-na-2',
-        title: 'System Audit Completed',
-        message: 'Quarterly system compliance audit logs compiled.',
-        time: '3 hours ago',
-        isRead: false,
-        eventType: 'audit_log'
-    },
-    {
-        id: 'mock-na-3',
-        title: 'Security Policy Updated',
-        message: 'Global Multi-Factor Authentication policy enforced.',
-        time: '1 day ago',
-        isRead: true,
-        eventType: 'security'
-    }
+  {
+    id: 'mock-na-1',
+    title: 'Regional Admin Registered',
+    message: 'New regional administrator account pending approval.',
+    time: '10 minutes ago',
+    isRead: false,
+    eventType: 'admin_registration'
+  },
+  {
+    id: 'mock-na-2',
+    title: 'System Audit Completed',
+    message: 'Quarterly system compliance audit logs compiled.',
+    time: '3 hours ago',
+    isRead: false,
+    eventType: 'audit_log'
+  },
+  {
+    id: 'mock-na-3',
+    title: 'Security Policy Updated',
+    message: 'Global Multi-Factor Authentication policy enforced.',
+    time: '1 day ago',
+    isRead: true,
+    eventType: 'security'
+  }
 ];
 
 const getMockNotifications = (ws) => {
-    switch (ws) {
-        case 'FDA_ADMIN':
-            return FDA_ADMIN_MOCK_NOTIFICATIONS;
-        case 'LEA_ADMIN':
-            return LEA_ADMIN_MOCK_NOTIFICATIONS;
-        case 'NATIONAL_ADMIN':
-        default:
-            return NATIONAL_ADMIN_MOCK_NOTIFICATIONS;
-    }
+  switch (ws) {
+    case 'FDA_ADMIN':
+      return FDA_ADMIN_MOCK_NOTIFICATIONS;
+    case 'LEA_ADMIN':
+      return LEA_ADMIN_MOCK_NOTIFICATIONS;
+    case 'NATIONAL_ADMIN':
+    default:
+      return NATIONAL_ADMIN_MOCK_NOTIFICATIONS;
+  }
 };
 
 function TopBar({ topbarType, role, agency }) {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    // Determine type to render (single source of truth: topbarType -> role -> agency -> fallback to localStorage)
-    let type = topbarType;
-    if (!type) {
-        const rawRole = (role || '').toString();
-        const rawAgency = (agency || '').toString();
-        if (rawRole) type = rawRole;
-        else if (rawAgency) type = rawAgency;
+  // Determine type to render (single source of truth: topbarType -> role -> agency -> fallback to localStorage)
+  let type = topbarType;
+  if (!type) {
+    const rawRole = (role || '').toString();
+    const rawAgency = (agency || '').toString();
+    if (rawRole) type = rawRole;
+    else if (rawAgency) type = rawAgency;
+  }
+
+
+  const getWorkspace = () => {
+    if (type) {
+      const raw = type.toString().trim().toUpperCase().replace(/[-\s]/g, '_');
+      if (raw === 'NATIONAL_ADMIN' || raw === 'NATIONALADMIN') return 'NATIONAL_ADMIN';
+      if (raw === 'SUPER_ADMIN' || raw === 'SUPERADMIN' || raw.includes('SUPER')) return 'NATIONAL_ADMIN';
+      if (raw === 'FDA_ADMIN' || raw === 'FDAADMIN' || (raw.includes('FDA') && raw.includes('ADMIN'))) return 'FDA_ADMIN';
+      if (raw === 'LEA_ADMIN' || raw === 'LEAADMIN' || ((raw.includes('LEA') || raw.includes('CIDG')) && raw.includes('ADMIN'))) return 'LEA_ADMIN';
+      if (raw === 'FDA' || raw.includes('FDA')) return 'FDA';
+      if (raw === 'LEA' || raw === 'CIDG' || raw.includes('LEA') || raw.includes('CIDG')) return 'LEA';
     }
-    
+    const authRole = getAuthenticatedRole();
+    if (authRole === 'superadmin') return 'NATIONAL_ADMIN';
+    if (authRole === 'fda_admin') return 'FDA_ADMIN';
+    if (authRole === 'lea_admin') return 'LEA_ADMIN';
+    if (authRole === 'lea') return 'LEA';
+    return 'FDA';
+  };
 
-    // Maps the current workspace to the correct UniversalLogin tab on logout
-    const getLoginRedirectPath = () => {
-        switch (workspace) {
-            case 'NATIONAL_ADMIN':
-                return '/universal-login?tab=national-admin';
-            case 'FDA_ADMIN':
-            case 'LEA_ADMIN':
-                return '/universal-login?tab=interagency-admin';
-            case 'FDA':
-            case 'LEA':
-            default:
-                return '/universal-login?tab=personnel';
-        }
-    };
+  const workspace = getWorkspace();
 
-    const getWorkspace = () => {
-        if (type) {
-            const raw = type.toString().trim().toUpperCase().replace(/[-\s]/g, '_');
-            if (raw === 'NATIONAL_ADMIN' || raw === 'NATIONALADMIN') return 'NATIONAL_ADMIN';
-            if (raw === 'SUPER_ADMIN' || raw === 'SUPERADMIN' || raw.includes('SUPER')) return 'NATIONAL_ADMIN';
-            if (raw === 'FDA_ADMIN' || raw === 'FDAADMIN' || (raw.includes('FDA') && raw.includes('ADMIN'))) return 'FDA_ADMIN';
-            if (raw === 'LEA_ADMIN' || raw === 'LEAADMIN' || ((raw.includes('LEA') || raw.includes('CIDG')) && raw.includes('ADMIN'))) return 'LEA_ADMIN';
-            if (raw === 'FDA' || raw.includes('FDA')) return 'FDA';
-            if (raw === 'LEA' || raw === 'CIDG' || raw.includes('LEA') || raw.includes('CIDG')) return 'LEA';
-        }
-        const authRole = getAuthenticatedRole();
-        if (authRole === 'superadmin') return 'NATIONAL_ADMIN';
-        if (authRole === 'fda_admin') return 'FDA_ADMIN';
-        if (authRole === 'lea_admin') return 'LEA_ADMIN';
-        if (authRole === 'lea') return 'LEA';
-        return 'FDA';
-    };
+  // Maps the current workspace to the correct UniversalLogin tab on logout
+  const getLoginRedirectPath = () => {
+    switch (workspace) {
+      case 'NATIONAL_ADMIN':
+        return '/universal-login?tab=national-admin';
+      case 'FDA_ADMIN':
+      case 'LEA_ADMIN':
+        return '/universal-login?tab=interagency-admin';
+      case 'FDA':
+      case 'LEA':
+      default:
+        return '/universal-login?tab=personnel';
+    }
+  };
+  // CHANGED: isSuperadmin only matched NATIONAL_ADMIN, so FDA_ADMIN/LEA_ADMIN
+  // fell into the personnel-notifications branch — same bug as
+  // all-notifications.jsx, fixed the same way: widen to all 3 admin tiers.
+  const isAdminTier = workspace === 'NATIONAL_ADMIN' || workspace === 'FDA_ADMIN' || workspace === 'LEA_ADMIN';
+  const notificationsBasePath = isAdminTier ? '/admin-notifications' : '/personnel-notifications';
 
-    const workspace = getWorkspace();
-    const isSuperadmin = workspace === 'NATIONAL_ADMIN';
-    const normalizedAgency = isSuperadmin ? 'superadmin' : (workspace === 'FDA_ADMIN' || workspace === 'FDA') ? 'fda' : 'lea';
-    const notificationsBasePath = isSuperadmin ? '/notifications' : '/personnel-notifications';
-
-const isMockWorkspace =
+  const isMockWorkspace =
     (workspace === 'FDA_ADMIN' || workspace === 'LEA_ADMIN' || workspace === 'NATIONAL_ADMIN')
-        ? !localStorage.getItem('access_token')
-        : false;
+      ? !localStorage.getItem('access_token')
+      : false;
 
-    // New state — actual fetched user name
-    const [userName, setUserName] = useState(null);
-    const [nameLoading, setNameLoading] = useState(!isMockWorkspace);
+  // New state — actual fetched user name (lazy-read from cache to prevent navigation flash)
+  const [userName, setUserName] = useState(() => localStorage.getItem('user_name') || null);
+  const [nameLoading, setNameLoading] = useState(!isMockWorkspace);
 
-    // ---- fetch the authenticated user's real name (skip for mock workspaces) ----
-    useEffect(() => {
-        if (isMockWorkspace) {
-            setUserName(null);
-            setNameLoading(false);
-            return;
+  // ---- fetch the authenticated user's real name (skip for mock workspaces) ----
+  useEffect(() => {
+    if (isMockWorkspace) {
+      setUserName(null);
+      setNameLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const fetchUserName = async () => {
+      setNameLoading(true);
+      try {
+        const res = await apiFetch('/profile');
+        if (!res.ok) return;
+        const data = await res.json();
+        const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ');
+        if (!cancelled && fullName) {
+          setUserName(fullName);
+          localStorage.setItem('user_name', fullName);
         }
-
-        let cancelled = false;
-        const fetchUserName = async () => {
-            setNameLoading(true);
-            try {
-                const res = await apiFetch('/profile');
-                if (!res.ok) return;
-                const data = await res.json();
-                const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ');
-                if (!cancelled && fullName) setUserName(fullName);
-            } catch (err) {
-                console.error('Failed to fetch user profile:', err);
-            } finally {
-                if (!cancelled) setNameLoading(false);
-            }
-        };
-
-        fetchUserName();
-        return () => { cancelled = true; };
-    }, [isMockWorkspace, workspace]);
-
-    // dropdown open/close states
-    const [isNotifOpen, setIsNotifOpen] = useState(false);
-    const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-    // End Session confirmation modal states
-    const [isEndSessionModalOpen, setIsEndSessionModalOpen] = useState(false);
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-    // refs for detecting clicks outside dropdowns
-    const notifRef = useRef(null);
-    const profileRef = useRef(null);
-
-    // Notifications state — initialized with mock data if in mock workspace
-    const [notifications, setNotifications] = useState(() => {
-        if (isMockWorkspace) {
-            return getMockNotifications(workspace);
-        }
-        return [];
-    });
-    const [unreadCount, setUnreadCount] = useState(() => {
-        if (isMockWorkspace) {
-            return getMockNotifications(workspace).filter(n => !n.isRead).length;
-        }
-        return 0;
-    });
-    const [notifLoading, setNotifLoading] = useState(false);
-
-    // ---- fetch unread count on mount + poll every 30s (live personnel) ----
-    useEffect(() => {
-        if (isMockWorkspace) {
-            const mockList = getMockNotifications(workspace);
-            setNotifications(mockList);
-            setUnreadCount(mockList.filter(n => !n.isRead).length);
-            return;
-        }
-
-        const fetchUnreadCount = async () => {
-            try {
-                const res = await apiFetch(`${notificationsBasePath}/unread-count`);
-                if (!res.ok) return;
-                const data = await res.json();
-                setUnreadCount(data.unread_count);
-            } catch (err) {
-                console.error('Failed to fetch unread count:', err);
-            }
-        };
-
-        fetchUnreadCount();
-        const interval = setInterval(fetchUnreadCount, 30000);
-        return () => clearInterval(interval);
-    }, [isMockWorkspace, notificationsBasePath, workspace]);
-
-    // ---- fetch full list when dropdown opens (live personnel) ----
-    useEffect(() => {
-        if (!isNotifOpen) return;
-        if (isMockWorkspace) return;
-
-        const fetchNotifications = async () => {
-            setNotifLoading(true);
-            try {
-                const res = await apiFetch(`${notificationsBasePath}?limit=20&offset=0`);
-                if (!res.ok) return;
-                const data = await res.json();
-                setNotifications(
-                    data.notifications.map(n => ({
-                        id: n.notification_id,
-                        title: n.title,
-                        message: n.message,
-                        time: timeAgo(n.created_at),
-                        isRead: n.is_read,
-                        eventType: n.event_type,
-                    }))
-                );
-                setUnreadCount(data.unread_count);
-            } catch (err) {
-                console.error('Failed to fetch notifications:', err);
-            } finally {
-                setNotifLoading(false);
-            }
-        };
-
-        fetchNotifications();
-    }, [isNotifOpen, isMockWorkspace, notificationsBasePath]);
-
-    // close dropdowns when clicking outside
-    useEffect(() => {
-        function handleClickOutside(event) {
-            if (notifRef.current && !notifRef.current.contains(event.target)) {
-                setIsNotifOpen(false);
-            }
-            if (profileRef.current && !profileRef.current.contains(event.target)) {
-                setIsProfileOpen(false);
-            }
-        }
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    // Unread count
-    const displayUnreadCount = unreadCount;
-
-    const handleMarkAllAsRead = async () => {
-        if (isMockWorkspace) {
-            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-            setUnreadCount(0);
-            return;
-        }
-
-        try {
-            const res = await apiFetch(`${notificationsBasePath}/read-all`, { method: 'PATCH' });
-            if (!res.ok) return;
-            const data = await res.json();
-            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-            setUnreadCount(data.unread_count);
-        } catch (err) {
-            console.error('Failed to mark all as read:', err);
-        }
+      } catch (err) {
+        console.error('Failed to fetch user profile:', err);
+      } finally {
+        if (!cancelled) setNameLoading(false);
+      }
     };
 
-    const handleNotificationClick = async (notif) => {
-        if (isMockWorkspace) {
-            if (notif.isRead) return;
-            setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
-            setUnreadCount(prev => Math.max(0, prev - 1));
-            return;
-        }
+    fetchUserName();
+    return () => { cancelled = true; };
+  }, [isMockWorkspace, workspace]);
 
-        // Computed entries (invite_not_activated / invite_expired) have no
-        // real DB row - nothing to mark read, they resolve on their own.
-        if (COMPUTED_EVENT_TYPES.includes(notif.eventType)) return;
-        if (notif.isRead) return;
+  // Keep TopBar user name in sync when profile is saved in ProfileSetting
+  useEffect(() => {
+    const handleProfileUpdated = (e) => {
+      const updated = e?.detail?.userName || localStorage.getItem('user_name');
+      if (updated) {
+        setUserName(updated);
+      }
+    };
+    window.addEventListener('profile-updated', handleProfileUpdated);
+    return () => window.removeEventListener('profile-updated', handleProfileUpdated);
+  }, []);
 
-        try {
-            const res = await apiFetch(`${notificationsBasePath}/${notif.id}/read`, { method: 'PATCH' });
-            if (!res.ok) return;
-            const data = await res.json();
-            setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
-            setUnreadCount(data.unread_count);
-        } catch (err) {
-            console.error('Failed to mark notification as read:', err);
-        }
+  // dropdown open/close states
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // End Session confirmation modal states
+  const [isEndSessionModalOpen, setIsEndSessionModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // refs for detecting clicks outside dropdowns
+  const notifRef = useRef(null);
+  const profileRef = useRef(null);
+
+  // Notifications state — initialized with mock data if in mock workspace
+  const [notifications, setNotifications] = useState(() => {
+    if (isMockWorkspace) {
+      return getMockNotifications(workspace);
+    }
+    return [];
+  });
+  const [unreadCount, setUnreadCount] = useState(() => {
+    if (isMockWorkspace) {
+      return getMockNotifications(workspace).filter(n => !n.isRead).length;
+    }
+    return 0;
+  });
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  // ---- fetch unread count on mount + poll every 30s (live personnel) ----
+  useEffect(() => {
+    if (isMockWorkspace) {
+      const mockList = getMockNotifications(workspace);
+      setNotifications(mockList);
+      setUnreadCount(mockList.filter(n => !n.isRead).length);
+      return;
+    }
+
+    const fetchUnreadCount = async () => {
+      try {
+        const res = await apiFetch(`${notificationsBasePath}/unread-count`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setUnreadCount(data.unread_count);
+      } catch (err) {
+        console.error('Failed to fetch unread count:', err);
+      }
     };
 
-    // Profile Settings
-    const handleProfileClick = () => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [isMockWorkspace, notificationsBasePath, workspace]);
+
+  // ---- fetch full list when dropdown opens (live personnel) ----
+  useEffect(() => {
+    if (!isNotifOpen) return;
+    if (isMockWorkspace) return;
+
+    const fetchNotifications = async () => {
+      setNotifLoading(true);
+      try {
+        const res = await apiFetch(`${notificationsBasePath}?limit=20&offset=0`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setNotifications(
+          data.notifications.map(n => ({
+            id: n.notification_id,
+            title: n.title,
+            message: n.message,
+            time: timeAgo(n.created_at),
+            isRead: n.is_read,
+            eventType: n.event_type,
+          }))
+        );
+        setUnreadCount(data.unread_count);
+      } catch (err) {
+        console.error('Failed to fetch notifications:', err);
+      } finally {
+        setNotifLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, [isNotifOpen, isMockWorkspace, notificationsBasePath]);
+
+  // close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setIsNotifOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
-        if (workspace) {
-            localStorage.setItem('current_workspace', workspace);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Unread count
+  const displayUnreadCount = unreadCount;
+
+  const handleMarkAllAsRead = async () => {
+    if (isMockWorkspace) {
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+      return;
+    }
+
+    try {
+      const res = await apiFetch(`${notificationsBasePath}/read-all`, { method: 'PATCH' });
+      if (!res.ok) return;
+      const data = await res.json();
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(data.unread_count);
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
+  };
+
+  const handleNotificationClick = async (notif) => {
+    if (isMockWorkspace) {
+      if (notif.isRead) return;
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      return;
+    }
+
+    // Computed entries (invite_not_activated / invite_expired) have no
+    // real DB row - nothing to mark read, they resolve on their own.
+    if (COMPUTED_EVENT_TYPES.includes(notif.eventType)) return;
+    if (notif.isRead) return;
+
+    try {
+      const res = await apiFetch(`${notificationsBasePath}/${notif.id}/read`, { method: 'PATCH' });
+      if (!res.ok) return;
+      const data = await res.json();
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+      setUnreadCount(data.unread_count);
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
+  };
+
+  // Profile Settings
+  const handleProfileClick = () => {
+    setIsProfileOpen(false);
+    if (workspace) {
+      localStorage.setItem('current_workspace', workspace);
+    }
+    navigate('/profile-setting', { state: { workspace } });
+  };
+
+  const handleLogoutClick = async () => {
+    setIsProfileOpen(false);
+
+    if (!isMockWorkspace) {
+      const refreshToken = localStorage.getItem('refresh_token');
+      try {
+        if (refreshToken) {
+          await apiFetch('/auth/token/revoke', {
+            method: 'POST',
+            body: JSON.stringify({ refresh_token: refreshToken }),
+          });
         }
-        navigate('/profile-setting', { state: { workspace } });
-    };
+      } catch (err) {
+        console.error('Logout failed:', err);
+      }
+    }
 
-    const handleLogoutClick = async () => {
-        setIsProfileOpen(false);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('agency');
+    localStorage.removeItem('role');
+    localStorage.removeItem('user_name');
 
-        if (!isMockWorkspace) {
-            const refreshToken = localStorage.getItem('refresh_token');
-            try {
-                if (refreshToken) {
-                    await apiFetch('/auth/token/revoke', {
-                        method: 'POST',
-                        body: JSON.stringify({ refresh_token: refreshToken }),
-                    });
-                }
-            } catch (err) {
-                console.error('Logout failed:', err);
-            }
-        }
+    navigate(getLoginRedirectPath());
+  };
 
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('agency');
-        localStorage.removeItem('role');
+  // Gated End Session UI Handlers — opens modal first, never ends session prematurely
+  const handleEndSessionClick = () => {
+    setIsProfileOpen(false);
+    setIsEndSessionModalOpen(true);
+  };
 
-        navigate(getLoginRedirectPath());
-    };
+  const handleCancelEndSession = () => {
+    if (isLoggingOut) return;
+    setIsEndSessionModalOpen(false);
+  };
 
-    // Gated End Session UI Handlers — opens modal first, never ends session prematurely
-    const handleEndSessionClick = () => {
-        setIsProfileOpen(false);
-        setIsEndSessionModalOpen(true);
-    };
+  const handleConfirmEndSession = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    // Reset modal state before navigating — avoids setState on unmounted component
+    setIsEndSessionModalOpen(false);
+    await handleLogoutClick();
+    // Safety reset in case navigate didn't unmount (e.g. logout failed silently)
+    setIsLoggingOut(false);
+  };
 
-    const handleCancelEndSession = () => {
-        if (isLoggingOut) return;
-        setIsEndSessionModalOpen(false);
-    };
+  const getRoleLabel = () => {
+    switch (workspace) {
+      case 'NATIONAL_ADMIN':
+        return 'National Admin';
+      case 'FDA_ADMIN':
+        return 'FDA Admin';
+      case 'LEA_ADMIN':
+        return 'LEA Admin';
+      case 'FDA':
+        return 'FDA Personnel';
+      case 'LEA':
+        return 'LEA-CIDG Personnel';
+      default:
+        return 'Personnel';
+    }
+  };
 
-    const handleConfirmEndSession = async () => {
-        if (isLoggingOut) return;
-        setIsLoggingOut(true);
-        try {
-            await handleLogoutClick();
-        } finally {
-            setIsLoggingOut(false);
-            setIsEndSessionModalOpen(false);
-        }
-    };
+  const getDisplayName = () => {
+    if (userName) return userName;
+    return getRoleLabel();
+  };
 
-    const getRoleLabel = () => {
-        switch (workspace) {
-            case 'NATIONAL_ADMIN':
-                return 'National Admin';
-            case 'FDA_ADMIN':
-                return 'FDA Admin';
-            case 'LEA_ADMIN':
-                return 'LEA Admin';
-            case 'FDA':
-                return 'FDA Personnel';
-            case 'LEA':
-                return 'LEA-CIDG Personnel';
-            default:
-                return 'Personnel';
-        }
-    };
+  const getAvatarClass = () => {
+    switch (workspace) {
+      case 'NATIONAL_ADMIN':
+        return 'agency-national-admin agency-superadmin';
+      case 'FDA_ADMIN':
+        return 'agency-fda-admin agency-fda';
+      case 'LEA_ADMIN':
+        return 'agency-lea-admin agency-lea';
+      case 'FDA':
+        return 'agency-fda';
+      case 'LEA':
+      default:
+        return 'agency-lea';
+    }
+  };
 
-    const getDisplayName = () => {
-        if (userName) return userName;
-        return getRoleLabel();
-    };
+  const getContainerClass = () => {
+    switch (workspace) {
+      case 'NATIONAL_ADMIN':
+        return 'NationalAdminTopBar';
+      case 'FDA_ADMIN':
+        return 'FDAAdminTopBar';
+      case 'LEA_ADMIN':
+        return 'LEAAdminTopBar';
+      case 'FDA':
+        return 'FDATopBar';
+      case 'LEA':
+      default:
+        return 'LEATopBar';
+    }
+  };
 
-    const getAvatarClass = () => {
-        switch (workspace) {
-            case 'NATIONAL_ADMIN':
-                return 'agency-national-admin agency-superadmin';
-            case 'FDA_ADMIN':
-                return 'agency-fda-admin agency-fda';
-            case 'LEA_ADMIN':
-                return 'agency-lea-admin agency-lea';
-            case 'FDA':
-                return 'agency-fda';
-            case 'LEA':
-            default:
-                return 'agency-lea';
-        }
-    };
-
-    const getContainerClass = () => {
-        switch (workspace) {
-            case 'NATIONAL_ADMIN':
-                return 'NationalAdminTopBar';
-            case 'FDA_ADMIN':
-                return 'FDAAdminTopBar';
-            case 'LEA_ADMIN':
-                return 'LEAAdminTopBar';
-            case 'FDA':
-                return 'FDATopBar';
-            case 'LEA':
-            default:
-                return 'LEATopBar';
-        }
-    };
-
-    return (
-        <>
-            <style>{`
+  return (
+    <>
+      <style>{`
                 .TopbarContainer {
                     height: 60px;
                     background: #FDFDFD;
@@ -1051,159 +1068,159 @@ const isMockWorkspace =
                     }
             `}</style>
 
-            <div className={`TopbarContainer ${getContainerClass()}`}>
-                <div className='TopbarActions'>
+      <div className={`TopbarContainer ${getContainerClass()}`}>
+        <div className='TopbarActions'>
 
-                    {/* Profile Dropdown */}
-                    <div className='TopbarProfileWrapper' ref={profileRef}>
-                        <div
-                            className='TopbarProfileBox'
-                            onClick={() => setIsProfileOpen(!isProfileOpen)}
-                        >
-                            {/* Avatar circle color changes per agency / workspace */}
-                            <div className={`TopbarAvatarCircle ${getAvatarClass()}`}>
-                                <User />
-                            </div>
+          {/* Profile Dropdown */}
+          <div className='TopbarProfileWrapper' ref={profileRef}>
+            <div
+              className='TopbarProfileBox'
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+            >
+              {/* Avatar circle color changes per agency / workspace */}
+              <div className={`TopbarAvatarCircle ${getAvatarClass()}`}>
+                <User />
+              </div>
 
-                            {/* Username label */}
-                            <span className='TopbarUsername'>
-                                {getDisplayName()}
-                            </span>
+              {/* Username label */}
+              <span className='TopbarUsername'>
+                {getDisplayName()}
+              </span>
 
-                            <ChevronDown
-                                size={14}
-                                className={`TopbarChevron ${isProfileOpen ? 'open' : ''}`}
-                            />
-                        </div>
-
-                        {isProfileOpen && (
-                            <div className='TopbarProfileDropdown'>
-
-                                {/* Profile Settings — visible for FDA, LEA, and SUPERADMIN */}
-                                <button
-                                    className='TopbarDropdownItem'
-                                    onClick={handleProfileClick}
-                                >
-                                    <Settings size={16} />
-                                    <span>Profile Settings</span>
-                                </button>
-
-                                <div className='TopbarDropdownDivider' />
-
-                                {/* Logout / End Session */}
-                                {/* redirects to superadmin-login if superadmin, else to /login */}
-                                <button
-                                    className='TopbarDropdownItem TopbarDropdownItemLogout'
-                                    onClick={handleEndSessionClick}
-                                >
-                                    <LogOut size={16} />
-                                    <span>End Session</span>
-                                </button>
-
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Notification Bell */}
-                    <div className='TopbarNotifWrapper' ref={notifRef}>
-                        <div
-                            className='TopbarBox'
-                            onClick={() => setIsNotifOpen(!isNotifOpen)}
-                        >
-                            <Bell />
-                            {displayUnreadCount > 0 && (
-                                <span className='BellBadge'>{displayUnreadCount}</span>
-                            )}
-                        </div>
-
-                        {isNotifOpen && (
-                            <div className='TopbarDropdown'>
-                                <div className='TopNotifTitle'>
-                                    <h5>Notifications</h5>
-                                    {displayUnreadCount > 0 && (
-                                        <button
-                                            className='MarkAllReadBtn'
-                                            onClick={handleMarkAllAsRead}
-                                        >
-                                            Mark all as read
-                                        </button>
-                                    )}
-                                </div>
-                                <div className='NotifList'>
-                                    {notifLoading ? (
-                                        <div className='EmptyNotif'>Loading...</div>
-                                    ) : notifications.length === 0 ? (
-                                        <div className='EmptyNotif'>No notifications</div>
-                                    ) : (
-                                        notifications.slice(0, 10).map((notif) => (
-                                            <div
-                                                key={notif.id}
-                                                className={`NotifItem ${notif.isRead ? '' : 'unread'}`}
-                                                onClick={() => handleNotificationClick(notif)}
-                                            >
-                                                <div className='NotifContent'>
-                                                    <div className='NotifItemTitle'>{notif.title}</div>
-                                                    <div className='NotifItemMsg'>{notif.message}</div>
-                                                    <div className='NotifItemTime'>{notif.time}</div>
-                                                </div>
-                                                {!notif.isRead && <div className='NotifBadgeDot'></div>}
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                                <div className='TopNotifFooter'>
-                                    <button
-                                        type='button'
-                                        className='SeeAllNotifsBtn'
-                                        onClick={() => {
-                                            setIsNotifOpen(false);
-                                            navigate('/all-notifications');
-                                        }}
-                                    >
-                                        See all notifications
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                </div>
+              <ChevronDown
+                size={14}
+                className={`TopbarChevron ${isProfileOpen ? 'open' : ''}`}
+              />
             </div>
 
-            {/* End Session Confirmation Modal */}
-            {isEndSessionModalOpen && (
-                <div className='TopbarModalOverlay' onClick={handleCancelEndSession}>
-                    <div className='TopbarModalCard' onClick={(e) => e.stopPropagation()}>
-                        <div className='TopbarModalIconCircle'>
-                            <LogOut size={24} />
-                        </div>
-                        <h3 className='TopbarModalTitle'>End Session?</h3>
-                        <p className='TopbarModalMessage'>
-                            Are you sure you want to end your current session?
-                        </p>
-                        <div className='TopbarModalActions'>
-                            <button
-                                type='button'
-                                className='TopbarModalCancelBtn'
-                                onClick={handleCancelEndSession}
-                                disabled={isLoggingOut}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type='button'
-                                className='TopbarModalConfirmBtn'
-                                onClick={handleConfirmEndSession}
-                                disabled={isLoggingOut}
-                            >
-                                {isLoggingOut ? 'Ending Session...' : 'End Session'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            {isProfileOpen && (
+              <div className='TopbarProfileDropdown'>
+
+                {/* Profile Settings — visible for FDA, LEA, and SUPERADMIN */}
+                <button
+                  className='TopbarDropdownItem'
+                  onClick={handleProfileClick}
+                >
+                  <Settings size={16} />
+                  <span>Profile Settings</span>
+                </button>
+
+                <div className='TopbarDropdownDivider' />
+
+                {/* Logout / End Session */}
+                {/* redirects to superadmin-login if superadmin, else to /login */}
+                <button
+                  className='TopbarDropdownItem TopbarDropdownItemLogout'
+                  onClick={handleEndSessionClick}
+                >
+                  <LogOut size={16} />
+                  <span>End Session</span>
+                </button>
+
+              </div>
             )}
-        </>
-    )
+          </div>
+
+          {/* Notification Bell */}
+          <div className='TopbarNotifWrapper' ref={notifRef}>
+            <div
+              className='TopbarBox'
+              onClick={() => setIsNotifOpen(!isNotifOpen)}
+            >
+              <Bell />
+              {displayUnreadCount > 0 && (
+                <span className='BellBadge'>{displayUnreadCount}</span>
+              )}
+            </div>
+
+            {isNotifOpen && (
+              <div className='TopbarDropdown'>
+                <div className='TopNotifTitle'>
+                  <h5>Notifications</h5>
+                  {displayUnreadCount > 0 && (
+                    <button
+                      className='MarkAllReadBtn'
+                      onClick={handleMarkAllAsRead}
+                    >
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+                <div className='NotifList'>
+                  {notifLoading ? (
+                    <div className='EmptyNotif'>Loading...</div>
+                  ) : notifications.length === 0 ? (
+                    <div className='EmptyNotif'>No notifications</div>
+                  ) : (
+                    notifications.slice(0, 10).map((notif) => (
+                      <div
+                        key={notif.id}
+                        className={`NotifItem ${notif.isRead ? '' : 'unread'}`}
+                        onClick={() => handleNotificationClick(notif)}
+                      >
+                        <div className='NotifContent'>
+                          <div className='NotifItemTitle'>{notif.title}</div>
+                          <div className='NotifItemMsg'>{notif.message}</div>
+                          <div className='NotifItemTime'>{notif.time}</div>
+                        </div>
+                        {!notif.isRead && <div className='NotifBadgeDot'></div>}
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className='TopNotifFooter'>
+                  <button
+                    type='button'
+                    className='SeeAllNotifsBtn'
+                    onClick={() => {
+                      setIsNotifOpen(false);
+                      navigate('/all-notifications');
+                    }}
+                  >
+                    See all notifications
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+
+      {/* End Session Confirmation Modal */}
+      {isEndSessionModalOpen && (
+        <div className='TopbarModalOverlay' onClick={handleCancelEndSession}>
+          <div className='TopbarModalCard' onClick={(e) => e.stopPropagation()}>
+            <div className='TopbarModalIconCircle'>
+              <LogOut size={24} />
+            </div>
+            <h3 className='TopbarModalTitle'>End Session?</h3>
+            <p className='TopbarModalMessage'>
+              Are you sure you want to end your current session?
+            </p>
+            <div className='TopbarModalActions'>
+              <button
+                type='button'
+                className='TopbarModalCancelBtn'
+                onClick={handleCancelEndSession}
+                disabled={isLoggingOut}
+              >
+                Cancel
+              </button>
+              <button
+                type='button'
+                className='TopbarModalConfirmBtn'
+                onClick={handleConfirmEndSession}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? 'Ending Session...' : 'End Session'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
 }
 
 export default TopBar;
