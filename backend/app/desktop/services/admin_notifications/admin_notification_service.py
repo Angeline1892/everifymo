@@ -145,6 +145,16 @@ def notify_regional_admin_workspace(
     return new_rows
 
 
+# ADDED: which admin-account lifecycle events on a regional peer also
+# need to reach National Admin, on top of the regional-peer notification.
+# Invite/resend/unlock/delete stay regional-only by design.
+NATIONAL_ADMIN_ALSO_NOTIFIED = {
+    NotificationEventType.ACCOUNT_ACTIVATED,
+    NotificationEventType.ACCOUNT_SUSPENDED,
+    NotificationEventType.ACCOUNT_REACTIVATED,
+}
+
+
 def notify_account_event(
     db: Session,
     actor: User,
@@ -168,6 +178,12 @@ def notify_account_event(
     - target is national_admin/fda_admin/lea_admin -> National Admin
       workspace if the actor IS national_admin, otherwise the actor's own
       regional workspace (they're managing a co-admin in their region).
+
+    Scope change: when a regional admin activates, suspends, or
+    reactivates a co-admin in their own region, National Admin is now
+    ALSO notified in addition to the regional-peer notification (see
+    NATIONAL_ADMIN_ALSO_NOTIFIED). Invite/resend/unlock/delete stay
+    regional-only.
     """
     if target_role in Role.PERSONNEL_ROLES:
         notify_regional_admin_workspace(
@@ -188,6 +204,15 @@ def notify_account_event(
             agency=agency_of(actor.role), event_type=event_type,
             title=title, message=message, related_user_id=target_user_id,
         )
+        # CHANGED: was ACCOUNT_ACTIVATED-only; widened to also cover
+        # suspend/reactivate on a co-admin.
+        if event_type in NATIONAL_ADMIN_ALSO_NOTIFIED and target_role in Role.ADMIN_ROLES:
+            notify_national_admin_workspace(
+                db=db, event_type=event_type, title=title, message=message,
+                related_user_id=target_user_id,
+                agency=agency_of(target_role),
+                region_id=target_region_id,
+            )
 
 
 def notify_self_service_account_event(
@@ -385,27 +410,36 @@ def _get_expired_invite_notifications(db: Session, recipient: User) -> List[Noti
 # 3. READ PATH - used by the router endpoints
 # ---------------------------------------------------------------------------
 
+
 def get_notifications(
     db: Session,
     current_admin: User,
     limit: int = 20,
     offset: int = 0,
-) -> List[NotificationOut]:
+) -> tuple[List[NotificationOut], bool]:
     """
     Stored notifications for this admin, merged with computed entries,
-    newest first. No extra scoping needed beyond filtering by
-    recipient_id - the WRITE path only ever inserts a row for an admin
-    who was a valid recipient, so every stored row here is already
-    correctly scoped.
+    newest first.
+
+    # CHANGED: now returns (notifications, has_more) instead of a bare
+    # list. has_more is determined by fetching one extra STORED row
+    # (limit + 1) and checking whether it came back - if so, there's
+    # another page, and we drop that extra row before returning.
+    # Computed entries (stale/expired invites) are excluded from this
+    # check entirely - they only ever appear on page 1 and were never
+    # part of the stored table's offset space to begin with, which was
+    # the root cause of the original bug.
     """
     stored = (
         db.query(AdminNotification)
         .filter(AdminNotification.recipient_id == current_admin.user_id)
         .order_by(AdminNotification.created_at.desc())
         .offset(offset)
-        .limit(limit)
+        .limit(limit + 1)
         .all()
     )
+    has_more = len(stored) > limit
+    stored = stored[:limit]
     stored_out = [NotificationOut.model_validate(row) for row in stored]
 
     computed = []
@@ -415,7 +449,7 @@ def get_notifications(
 
     combined = stored_out + computed
     combined.sort(key=lambda n: n.created_at, reverse=True)
-    return combined
+    return combined, has_more
 
 
 def get_unread_count(db: Session, current_admin: User) -> int:

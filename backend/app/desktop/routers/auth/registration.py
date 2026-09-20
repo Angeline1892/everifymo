@@ -135,7 +135,7 @@ def complete_registration(data: RegistrationCompleteRequest, http_request: Reque
         write_audit_log(
             db,
             user=user_row,
-            action=AuditAction.PERSONNEL_SELF_ACTIVATED,
+            action=AuditAction.PERSONNEL_SELF_ACTIVATE,
             target_table="users",
             target_id=user_id,
             target_reference=user_email,
@@ -286,16 +286,20 @@ def request_resend(data: RequestResendRequest, http_request: Request, db: Sessio
 def _pending_approval_action_for_role(role: str) -> str:
     from app.core.constants import AuditAction, Role
     if role == Role.NATIONAL_ADMIN:
-        return AuditAction.SUPERADMIN_PENDING_APPROVAL  # national_admin is a 1:1 successor to superadmin; no new constant added
+        return AuditAction.PENDING_NATIONAL_ADMIN_ACCOUNT
     if role in Role.ADMIN_ROLES:
-        return AuditAction.ADMIN_PENDING_APPROVAL
-    return AuditAction.PERSONNEL_PENDING_APPROVAL
+        return AuditAction.PENDING_REGIONAL_ADMIN_ACCOUNT
+    # Personnel no longer reach this helper (see complete_registration —
+    # personnel go straight to ACTIVE, not PENDING_APPROVAL), so this
+    # branch should be unreachable in practice. Left in for safety in
+    # case something upstream changes.
+    raise ValueError(f"Unexpected role reached _pending_approval_action_for_role: {role}")
 
 
 def _request_invite_action_for_role(role: str) -> str:
     from app.core.constants import AuditAction, Role
     if role == Role.NATIONAL_ADMIN:
-        return AuditAction.SUPERADMIN_REQUEST_INVITE  # same reuse as above
+        return AuditAction.NATIONAL_ADMIN_REQUEST_INVITE
     if role in Role.ADMIN_ROLES:
-        return AuditAction.ADMIN_REQUEST_INVITE
+        return AuditAction.REGIONAL_ADMIN_REQUEST_INVITE
     return AuditAction.PERSONNEL_REQUEST_INVITE
