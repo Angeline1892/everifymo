@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import Login from './pages/login-user.jsx'
 {/* for universal login*/ }
 import UniversalLogin from './pages/universal-login.jsx';
@@ -92,7 +92,7 @@ function DeepLinkListener() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <DeepLinkListener />
       <Routes>
         <Route path='/' element={<UniversalLogin />} />
@@ -160,6 +160,6 @@ export default function App() {
         <Route path='/leaadminfolder/lea-admin-admin-management' element={<LEAAdminAdminManagement />} />
         <Route path='/leaadminfolder/lea-admin-audit-logs' element={<LEAAdminAuditLogs />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }

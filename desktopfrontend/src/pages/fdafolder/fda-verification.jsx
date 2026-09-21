@@ -247,7 +247,7 @@ const dummyRejectedRequests = [
 // ADDED — base URL for all FDA backend API calls; mirrors the same constant
 // used in the LEA pages (e.g. lea-saved-draft.jsx) so the host is easy to
 // update from one place.
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://everify.store'; 
 
 function FDAVerification() {
 

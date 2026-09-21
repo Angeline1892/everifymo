@@ -20,6 +20,8 @@ COPY backend/alembic.ini ./backend/alembic.ini
 
 COPY extension ./extension
 
+COPY backend/scripts ./backend/scripts
+
 ENV PYTHONPATH=/everifymo/backend
 
 COPY entrypoint.sh ./entrypoint.sh
