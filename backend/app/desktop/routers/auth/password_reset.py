@@ -122,20 +122,20 @@ def reset_password(payload: ResetPasswordRequest, http_request: Request, db: Ses
     otp_token.is_used = True
     db.commit()
 
-    notification_service.create_notification_for_all_superadmins(
+    notification_service.notify_self_service_account_event(
         db=db,
+        target=user,
         event_type=NotificationEventType.PASSWORD_CHANGED,
         title="Password reset completed",
         message=f"{user.email} reset their password via forgot-password flow.",
-        related_user_id=user.user_id,
     )
 
     if user.role == Role.NATIONAL_ADMIN:
-        password_action = AuditAction.UPDATE_SUPERADMIN_PASSWORD
+        password_action = AuditAction.UPDATE_NATIONAL_ADMIN_PASSWORD
     elif user.role in Role.ADMIN_ROLES:
-        password_action = AuditAction.UPDATE_ADMIN_PASSWORD
+        password_action = AuditAction.UPDATE_REGIONAL_ADMIN_PASSWORD
     else:
-        password_action = AuditAction.UPDATE_USER_PASSWORD
+        password_action = AuditAction.UPDATE_PERSONNEL_PASSWORD
 
     write_audit_log(
         db,

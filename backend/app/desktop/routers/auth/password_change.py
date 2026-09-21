@@ -1,11 +1,11 @@
-# app/routers/auth/password_change.py
+# backend/app/desktop/routers/auth/password_change.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from fastapi import Request
 from app.core.audit import write_audit_log, get_user_region_code
-from app.core.constants import AuditAction
+from app.core.constants import AuditAction, Role
 
 from app.database.sessions import get_db
 from app.core.dependencies import get_current_user
@@ -33,19 +33,20 @@ def change_password(
     current_user.force_password_change = False
     db.commit()
 
-    notification_service.create_notification_for_all_superadmins(
+    notification_service.notify_self_service_account_event(
         db=db,
+        target=current_user,
         event_type=NotificationEventType.PASSWORD_CHANGED,
-        title="First-login password change completed",
-        message=f"{current_user.email} completed the required first-login password change.",
-        related_user_id=current_user.user_id,
+        title="Password changed",
+        message=f"{current_user.email} changed their account password.",
     )
 
-    password_action = (
-        AuditAction.UPDATE_SUPERADMIN_PASSWORD
-        if current_user.role == "superadmin"
-        else AuditAction.UPDATE_USER_PASSWORD
-    )
+    if current_user.role == Role.NATIONAL_ADMIN:
+        password_action = AuditAction.UPDATE_NATIONAL_ADMIN_PASSWORD
+    elif current_user.role in Role.ADMIN_ROLES:
+        password_action = AuditAction.UPDATE_REGIONAL_ADMIN_PASSWORD
+    else:
+        password_action = AuditAction.UPDATE_PERSONNEL_PASSWORD
 
     write_audit_log(
         db,
