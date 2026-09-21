@@ -37,14 +37,18 @@ const PAGE_SIZE = 20;
  * getAuthenticatedRole() in top-bar.jsx so both surfaces always agree on
  * which notification endpoint to call.
  */
+// CHANGED: was a 3-way check (superadmin/lea/fda) that couldn't tell an
+// fda_admin/lea_admin apart from fda_personnel/lea_personnel — both got
+// silently treated as personnel-tier, routing admin accounts to the wrong
+// notification endpoint. Now mirrors top-bar.jsx's 5-way detection.
 const getAuthenticatedRole = () => {
-  const raw = (
-    localStorage.getItem('agency') ||
-    localStorage.getItem('role') ||
-    'fda'
-  ).toString().trim().toLowerCase();
+  const agencyPart = (localStorage.getItem('agency') || '').toString().trim().toLowerCase();
+  const rolePart = (localStorage.getItem('role') || '').toString().trim().toLowerCase();
+  const raw = `${agencyPart} ${rolePart}`.trim() || 'fda';
 
-  if (raw.includes('super')) return 'superadmin';
+  if (raw.includes('national') || raw.includes('super')) return 'superadmin';
+  if (raw.includes('admin') && raw.includes('fda')) return 'fda_admin';
+  if (raw.includes('admin') && (raw.includes('lea') || raw.includes('cidg'))) return 'lea_admin';
   if (raw === 'lea' || raw === 'cidg' || raw.includes('lea') || raw.includes('cidg')) return 'lea';
   return 'fda';
 };
@@ -93,25 +97,34 @@ const GROUP_METADATA = [
   { key: 'older', label: 'Older' }
 ];
 
-// ── Superadmin: event_type -> icon / category / color theme ─────────────
-// Covers every value in NotificationEventType (notification_enums.py).
-const SUPERADMIN_EVENT_META = {
+// ── Admin tiers (superadmin / fda_admin / lea_admin): event_type -> icon / category / color theme
+// CHANGED: renamed SUPERADMIN_EVENT_META -> ADMIN_EVENT_META (it covers all
+// 3 admin tiers, not just superadmin) and reconciled every key against the
+// real NotificationEventType enum in notification_enums.py:
+//   - superadmin_invited -> admin_invited (renamed backend-side)
+//   - superadmin_password_created -> account_pending_approval (renamed backend-side)
+//   - registration_accomplished REMOVED (not a real event_type anymore, was a dead key)
+//   - password_reset_requested / password_reset_completed ADDED (real event
+//     types that had no entry at all, were silently falling through to the
+//     generic gray fallback icon before this)
+const ADMIN_EVENT_META = {
+  admin_invited:              { icon: 'user',   category: 'Personnel',  theme: 'bg-blue' },
+  account_pending_approval:   { icon: 'key',    category: 'Personnel',  theme: 'bg-teal' },
+  resend_link_requested:      { icon: 'system', category: 'Invitation', theme: 'bg-amber' },
+  invite_not_activated:       { icon: 'system', category: 'Invitation', theme: 'bg-amber' },
+  invite_expired:             { icon: 'system', category: 'Invitation', theme: 'bg-red' },
+  password_changed:           { icon: 'key',    category: 'Account',    theme: 'bg-indigo' },
   account_locked:              { icon: 'lock',   category: 'Security',   theme: 'bg-red' },
   account_unlocked:            { icon: 'lock',   category: 'Security',   theme: 'bg-teal' },
   failed_login_warning:        { icon: 'audit',  category: 'Security',   theme: 'bg-red' },
-  superadmin_invited:          { icon: 'user',   category: 'Personnel',  theme: 'bg-blue' },
-  personnel_invited:           { icon: 'user',   category: 'Personnel',  theme: 'bg-blue' },
-  registration_accomplished:   { icon: 'user',   category: 'Personnel',  theme: 'bg-teal' },
-  superadmin_password_created: { icon: 'key',    category: 'Personnel',  theme: 'bg-teal' },
-  resend_link_requested:       { icon: 'system', category: 'Invitation', theme: 'bg-amber' },
-  password_changed:            { icon: 'key',    category: 'Account',    theme: 'bg-indigo' },
-  account_info_updated:        { icon: 'report', category: 'Account',    theme: 'bg-indigo' },
   account_suspended:           { icon: 'audit',  category: 'Account',    theme: 'bg-purple' },
   account_reactivated:         { icon: 'audit',  category: 'Account',    theme: 'bg-teal' },
   account_activated:           { icon: 'user',   category: 'Personnel',  theme: 'bg-teal' },
   account_deleted:             { icon: 'audit',  category: 'Account',    theme: 'bg-red' },
-  invite_not_activated:        { icon: 'system', category: 'Invitation', theme: 'bg-amber' },
-  invite_expired:              { icon: 'system', category: 'Invitation', theme: 'bg-red' },
+  account_info_updated:        { icon: 'report', category: 'Account',    theme: 'bg-indigo' },
+  password_reset_requested:    { icon: 'key',    category: 'Personnel',  theme: 'bg-amber' },
+  password_reset_completed:    { icon: 'key',    category: 'Personnel',  theme: 'bg-teal' },
+  personnel_invited:           { icon: 'user',   category: 'Personnel',  theme: 'bg-blue' },
 };
 
 // ── LEA/FDA personnel: rows carry no event_type field (see Notification
@@ -126,6 +139,13 @@ function getPersonnelMeta(title) {
   if (t.includes('case closed')) return { icon: 'complaint', category: 'Case', theme: 'bg-slate' };
   if (t.includes('takedown')) return { icon: 'takedown', category: 'Operation', theme: 'bg-amber' };
   if (t.includes('deadline') || t.includes('response needed')) return { icon: 'audit', category: 'SLA', theme: 'bg-red' };
+  // ADDED: personnel's own dual-write row for a profile edit by their
+  // admin carries the literal title "Personnel profile updated" (see
+  // personnel.py, edit_personnel_info) — had no match before this, was
+  // silently falling into the generic/gray fallback.
+  if (t.includes('profile updated')) {
+    return { icon: 'user', category: 'Account', theme: 'bg-indigo' };
+  }
   return { icon: 'system', category: 'General', theme: 'bg-slate' };
 }
 
@@ -160,9 +180,27 @@ function getCategoryTheme(themeKey) {
 }
 
 export default function AllNotifications() {
-  const currentRole = getAuthenticatedRole(); // 'fda' | 'lea' | 'superadmin'
-  const isSuperadmin = currentRole === 'superadmin';
-  const notificationsBasePath = isSuperadmin ? '/notifications' : '/personnel-notifications';
+  // CHANGED: currentRole can now be 5 values, not 3. isSuperadmin renamed
+  // to isAdminTier and widened to cover fda_admin/lea_admin too — these are
+  // the admin accounts that should hit /admin-notifications, same as
+  // national admin. cssRole is a NEW separate variable that stays 3-way
+  // (superadmin/fda/lea) specifically for layoutConfig/agencyClass below,
+  // so no CSS files need to change — fda_admin visually reuses the fda
+  // layout, lea_admin reuses lea, exactly as before.
+  const currentRole = getAuthenticatedRole(); // 'fda' | 'lea' | 'fda_admin' | 'lea_admin' | 'superadmin'
+  const isAdminTier = currentRole === 'superadmin' || currentRole === 'fda_admin' || currentRole === 'lea_admin';
+  const cssRole = currentRole === 'superadmin' ? 'superadmin' : (currentRole === 'lea' || currentRole === 'lea_admin') ? 'lea' : 'fda';
+  const notificationsBasePath = isAdminTier ? '/admin-notifications' : '/personnel-notifications';
+
+  // Uncollapsed workspace type for Sidebar, which needs to distinguish
+  // Admin from Personnel to render the correct menu (cssRole above is only
+  // for container/theme CSS classes and must not be used for the sidebar).
+  const sidebarWorkspaceType =
+    currentRole === 'superadmin' ? 'NATIONAL_ADMIN' :
+    currentRole === 'fda_admin' ? 'FDA_ADMIN' :
+    currentRole === 'lea_admin' ? 'LEA_ADMIN' :
+    currentRole === 'lea' ? 'LEA' :
+    'FDA';
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -175,8 +213,8 @@ export default function AllNotifications() {
   // Normalizes both backend shapes (superadmin rows carry event_type;
   // LEA/FDA rows don't) into one common shape the rest of the component uses.
   const normalizeNotification = useCallback((n) => {
-    if (isSuperadmin) {
-      const meta = SUPERADMIN_EVENT_META[n.event_type] || { icon: 'system', category: 'General', theme: 'bg-slate' };
+    if (isAdminTier) {
+      const meta = ADMIN_EVENT_META[n.event_type] || { icon: 'system', category: 'General', theme: 'bg-slate' };
       return {
         id: n.notification_id,
         title: n.title,
@@ -201,7 +239,7 @@ export default function AllNotifications() {
       category: meta.category,
       theme: meta.theme,
     };
-  }, [isSuperadmin]);
+  }, [isAdminTier]);
 
   const loadPage = useCallback((pageOffset, replace) => {
     const setBusy = replace ? setLoading : setLoadingMore;
@@ -213,7 +251,14 @@ export default function AllNotifications() {
         const mapped = data.notifications.map(normalizeNotification);
         setNotifications((prev) => (replace ? mapped : [...prev, ...mapped]));
         setUnreadCount(data.unread_count);
-        setHasMore(mapped.length === PAGE_SIZE);
+        // CHANGED: admin-notifications now returns an explicit has_more field
+        // (backend computes it via a limit+1 fetch, so it's correct even when
+        // computed entries like invite_not_activated/invite_expired push a
+        // page over PAGE_SIZE). personnel-notifications never had that bug —
+        // no computed entries on that side — so it keeps the old
+        // length-based inference rather than depending on a field its router
+        // doesn't return.
+        setHasMore(isAdminTier ? data.has_more : mapped.length === PAGE_SIZE);
         setOffset(pageOffset + mapped.length);
       })
       .catch((err) => console.error('Failed to load notifications:', err))
@@ -242,9 +287,9 @@ export default function AllNotifications() {
   };
 
   const handleMarkRead = (notif) => {
-    // Computed entries (superadmin invite_not_activated / invite_expired)
+    // Computed entries (admin-tier invite_not_activated / invite_expired)
     // have no real DB row — nothing to mark read, they resolve on their own.
-    if (isSuperadmin && COMPUTED_EVENT_TYPES.includes(notif.eventType)) return;
+    if (isAdminTier && COMPUTED_EVENT_TYPES.includes(notif.eventType)) return;
     if (notif.isRead) return;
 
     apiFetch(`${notificationsBasePath}/${notif.id}/read`, { method: 'PATCH' })
@@ -259,7 +304,7 @@ export default function AllNotifications() {
 
   // Workspace Layout configuration matching existing FDA / LEA / Superadmin dashboards
   const layoutConfig = useMemo(() => {
-    switch (currentRole) {
+    switch (cssRole) {
       case 'superadmin':
         return {
           sidebarType: 'SUPER_ADMIN',
@@ -283,7 +328,7 @@ export default function AllNotifications() {
           mainFeedClass: 'FdaMainFeed',
         };
     }
-  }, [currentRole]);
+  }, [cssRole]);
 
   // Filtered list — filters only what's currently loaded on the page.
   const filteredNotifications = useMemo(() => {
@@ -301,7 +346,7 @@ export default function AllNotifications() {
     return groups;
   }, [filteredNotifications]);
 
-  const agencyClass = `agency-${currentRole}`;
+  const agencyClass = `agency-${cssRole}`;
 
   return (
     <>
@@ -325,53 +370,84 @@ export default function AllNotifications() {
         }
 
         .NotifFilterTabs {
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          background: #EBEFF5;
-          padding: 4px;
-          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.55);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.85);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+          border-radius: 9999px;
+          padding: 5px;
           gap: 4px;
+          flex-wrap: nowrap;
+          white-space: nowrap;
+          max-width: 100%;
+          overflow-x: auto;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .NotifFilterTabs::-webkit-scrollbar {
+          display: none;
         }
 
         .NotifFilterTabBtn {
+          padding: 8px 18px;
+          background: transparent;
+          border: none;
+          border-radius: 9999px;
+          color: #51606f;
+          font-family: 'Poppins', sans-serif;
+          font-size: 0.88rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          white-space: nowrap;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 7px 20px;
-          border-radius: 7px;
-          border: none;
-          background: transparent;
-          color: #64748B;
-          font-size: 13.5px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-family: inherit;
+          gap: 8px;
+          line-height: 1.4;
           user-select: none;
         }
 
         .NotifFilterTabBtn:hover:not(.active) {
-          color: #1E293B;
-          background: rgba(255, 255, 255, 0.6);
+          background: rgba(255, 255, 255, 0.8);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .NotifFilterTabBtn:hover:not(.active).agency-fda {
+          color: #1B4332;
+        }
+
+        .NotifFilterTabBtn:hover:not(.active).agency-lea {
+          color: #13213C;
+        }
+
+        .NotifFilterTabBtn:hover:not(.active).agency-superadmin {
+          color: #0D9488;
         }
 
         /* Agency-specific active tab highlight colors */
+        .NotifFilterTabBtn.active {
+          border-radius: 9999px;
+          color: #FDFDFD !important;
+        }
+
         .NotifFilterTabBtn.active.agency-fda {
-          background: #1B4332;
-          color: #FFFFFF;
-          box-shadow: 0 2px 6px rgba(27, 67, 50, 0.25);
+          background: #1B4332 !important;
+          box-shadow: 0 4px 12px rgba(27, 67, 50, 0.25);
         }
 
         .NotifFilterTabBtn.active.agency-lea {
-          background: #13213C;
-          color: #FFFFFF;
-          box-shadow: 0 2px 6px rgba(19, 33, 60, 0.25);
+          background: #13213C !important;
+          box-shadow: 0 4px 12px rgba(19, 33, 60, 0.25);
         }
 
         .NotifFilterTabBtn.active.agency-superadmin {
-          background: #0D9488;
-          color: #FFFFFF;
-          box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
+          background: #0D9488 !important;
+          box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
         }
 
         .NotifSummaryText {
@@ -663,12 +739,13 @@ export default function AllNotifications() {
             align-items: flex-start;
           }
           .NotifFilterTabs {
-            width: 100%;
+            max-width: 100%;
           }
           .NotifFilterTabBtn {
             flex: 1;
             justify-content: center;
-            padding: 7px 10px;
+            padding: 7px 12px;
+            font-size: 0.82rem;
           }
           .NotifRowItem {
             padding: 12px 14px;
@@ -682,10 +759,10 @@ export default function AllNotifications() {
       `}</style>
 
       <div className={layoutConfig.mainContainerClass}>
-        <Sidebar sidebarType={layoutConfig.sidebarType} />
+        <Sidebar sidebarType={sidebarWorkspaceType} />
 
         <div className={layoutConfig.contentContainerClass}>
-          <TopBar topbarType={layoutConfig.sidebarType} />
+          <TopBar role={currentRole} />
 
           <div className={layoutConfig.mainFeedClass}>
             <div className="NotifPageWrapper">

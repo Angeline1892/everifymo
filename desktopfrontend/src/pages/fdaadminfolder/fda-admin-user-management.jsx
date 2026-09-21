@@ -1,7 +1,8 @@
 // desktopfrontend/src/pages/fdaadminfolder/fda-admin-user-management.jsx
 import './fda-admin-css.css';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { apiFetch } from '../../utils/apiFetch';
 import {
   Send,
   UserCheck,
@@ -31,10 +32,27 @@ import {
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
 
-// Personnel accounts strictly use: Active, Suspended, Locked
+function extractErrorMessage(errorData, fallback) {
+    const detail = errorData?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+        return detail.map(d => d?.msg || JSON.stringify(d)).join(' ');
+    }
+    if (detail && typeof detail === 'object') {
+        return detail.msg || detail.message || JSON.stringify(detail);
+    }
+    return fallback;
+}
+
+// Backend (`compute_display_status`) can return any of these — not just
+// Active/Suspended/Locked, since personnel go through the same invite flow
+// as admins (Invited -> accepted -> Active, or Resend Requested/Link Expired).
 const STATUS_META = {
+  Invited: { label: 'Invited', className: 'badge-pending' },
   Active: { label: 'Active', className: 'badge-active' },
   Suspended: { label: 'Suspended', className: 'badge-suspended' },
+  'Resend Requested': { label: 'Resend Requested', className: 'badge-pending' },
+  'Link Expired': { label: 'Link Expired', className: 'badge-expired' },
   Locked: { label: 'Locked', className: 'badge-locked' },
 };
 
@@ -43,171 +61,64 @@ function StatusBadge({ status }) {
   return <span className={`FDAAdminStatusBadge ${meta.className}`}>{meta.label}</span>;
 }
 
-// Initial realistic mock FDA personnel data (Active, Suspended, Locked only)
-const INITIAL_FDA_PERSONNEL = [
-  {
-    id: 'fda-u-001',
-    first_name: 'Maria Clara',
-    middle_name: 'Santos',
-    last_name: 'Cruz',
-    fullname: 'Maria Clara Santos Cruz',
-    employee_id: 'FDA-NCR-2024-001',
-    email: 'mariaclara.cruz@fda.gov.ph',
-    contact_number: '09171234567',
-    agency: 'FDA Personnel',
-    region: 'National Capital Region (NCR)',
-    department: 'Center for Drug Regulation and Research',
-    position: 'Senior Food and Drug Regulation Officer',
-    status: 'Active',
-  },
-  {
-    id: 'fda-u-002',
-    first_name: 'Juan',
-    middle_name: 'Reyes',
-    last_name: 'Dela Cruz',
-    fullname: 'Juan Reyes Dela Cruz',
-    employee_id: 'FDA-REG3-2024-042',
-    email: 'juan.delacruz@fda.gov.ph',
-    contact_number: '09182345678',
-    agency: 'FDA Personnel',
-    region: 'Region III - Central Luzon',
-    department: 'Field Regulatory Operations Office',
-    position: 'Regulatory Enforcement Inspector',
-    status: 'Active',
-  },
-  {
-    id: 'fda-u-003',
-    first_name: 'Elena',
-    middle_name: 'Villanueva',
-    last_name: 'Bautista',
-    fullname: 'Elena Villanueva Bautista',
-    employee_id: 'FDA-NCR-2024-088',
-    email: 'elena.bautista@fda.gov.ph',
-    contact_number: '09223456789',
-    agency: 'FDA Personnel',
-    region: 'National Capital Region (NCR)',
-    department: 'Center for Cosmetics and Household Devices',
-    position: 'Product Verification Specialist',
-    status: 'Active',
-  },
-  {
-    id: 'fda-u-004',
-    first_name: 'Antonio',
-    middle_name: 'Mercado',
-    last_name: 'Luna',
-    fullname: 'Antonio Mercado Luna',
-    employee_id: 'FDA-REG7-2023-115',
-    email: 'antonio.luna@fda.gov.ph',
-    contact_number: '09194567890',
-    agency: 'FDA Personnel',
-    region: 'Region VII - Central Visayas',
-    department: 'Post-Marketing Surveillance Unit',
-    position: 'Field Inspection Supervisor',
-    status: 'Suspended',
-  },
-  {
-    id: 'fda-u-005',
-    first_name: 'Corazon',
-    middle_name: 'Aquino',
-    last_name: 'Mendoza',
-    fullname: 'Corazon Aquino Mendoza',
-    employee_id: 'FDA-REG4A-2024-023',
-    email: 'corazon.mendoza@fda.gov.ph',
-    contact_number: '09205678901',
-    agency: 'FDA Personnel',
-    region: 'Region IV-A - CALABARZON',
-    department: 'Center for Food Regulation and Research',
-    position: 'Laboratory Analyst III',
-    status: 'Locked',
-  },
-  {
-    id: 'fda-u-006',
-    first_name: 'Danilo',
-    middle_name: 'Perez',
-    last_name: 'Ramos',
-    fullname: 'Danilo Perez Ramos',
-    employee_id: 'FDA-NCR-2024-119',
-    email: 'danilo.ramos@fda.gov.ph',
-    contact_number: '09276789012',
-    agency: 'FDA Personnel',
-    region: 'National Capital Region (NCR)',
-    department: 'Policy and Planning Service',
-    position: 'Information Technology Officer',
-    status: 'Active',
-  },
-  {
-    id: 'fda-u-007',
-    first_name: 'Rosario',
-    middle_name: 'Castillo',
-    last_name: 'Navarro',
-    fullname: 'Rosario Castillo Navarro',
-    employee_id: 'FDA-REG1-2024-009',
-    email: 'rosario.navarro@fda.gov.ph',
-    contact_number: '09397890123',
-    agency: 'FDA Personnel',
-    region: 'Region I - Ilocos Region',
-    department: 'Field Regulatory Operations Office',
-    position: 'Licensing Inspector II',
-    status: 'Active',
-  },
-  {
-    id: 'fda-u-008',
-    first_name: 'Felipe',
-    middle_name: 'Gomez',
-    last_name: 'Salazar',
-    fullname: 'Felipe Gomez Salazar',
-    employee_id: 'FDA-REG11-2023-078',
-    email: 'felipe.salazar@fda.gov.ph',
-    contact_number: '09458901234',
-    agency: 'FDA Personnel',
-    region: 'Region XI - Davao Region',
-    department: 'Common Services Laboratory',
-    position: 'Chemical Control Officer',
-    status: 'Suspended',
-  },
-];
-
-const PHILIPPINE_REGIONS = [
-  'National Capital Region (NCR)',
-  'Cordillera Administrative Region (CAR)',
-  'Region I - Ilocos Region',
-  'Region II - Cagayan Valley',
-  'Region III - Central Luzon',
-  'Region IV-A - CALABARZON',
-  'MIMAROPA Region',
-  'Region V - Bicol Region',
-  'Region VI - Western Visayas',
-  'Region VII - Central Visayas',
-  'Region VIII - Eastern Visayas',
-  'Region IX - Zamboanga Peninsula',
-  'Region X - Northern Mindanao',
-  'Region XI - Davao Region',
-  'Region XII - SOCCSKSARGEN',
-  'Region XIII - Caraga',
-  'Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)',
-];
-
 function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPassword }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [openUpward, setOpenUpward] = useState(false);
+  const [menuStyle, setMenuStyle] = useState({});
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
   const displayStatus = user.status;
 
-  function openMenu() {
+  const updateMenuPosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
-    const upward = spaceBelow < 200;
-    setMenuPos({
-      top: upward ? Math.max(8, rect.top - 180) : rect.bottom + 6,
-      left: Math.max(8, rect.right - 185),
-    });
-    setIsOpen(true);
-  }
+    const spaceAbove = rect.top;
+    const upward = spaceBelow < 220 && spaceAbove > spaceBelow;
+    const right = Math.max(8, window.innerWidth - rect.right);
+
+    if (upward) {
+      setMenuStyle({
+        position: 'fixed',
+        bottom: `${Math.max(8, window.innerHeight - rect.top + 4)}px`,
+        top: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '175px',
+        maxHeight: `${Math.max(120, rect.top - 16)}px`,
+        overflowY: 'auto',
+      });
+    } else {
+      setMenuStyle({
+        position: 'fixed',
+        top: `${rect.bottom + 4}px`,
+        bottom: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '175px',
+        maxHeight: `${Math.max(120, spaceBelow - 16)}px`,
+        overflowY: 'auto',
+      });
+    }
+    setOpenUpward(upward);
+  }, []);
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (!isOpen) {
+      updateMenuPosition();
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
+    updateMenuPosition();
+
     function handleOutsideClick(event) {
       if (
         menuRef.current && !menuRef.current.contains(event.target) &&
@@ -216,9 +127,22 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
         setIsOpen(false);
       }
     }
-    document.addEventListener('click', handleOutsideClick);
-    return () => document.removeEventListener('click', handleOutsideClick);
-  }, [isOpen]);
+
+    function handleScrollOrResize(event) {
+      if (menuRef.current && menuRef.current.contains(event.target)) return;
+      setIsOpen(false);
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [isOpen, updateMenuPosition]);
 
   return (
     <div className={`FDAAdminDropdownWrapper ${isOpen ? 'active-open' : ''}`}>
@@ -227,10 +151,7 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
         className="FDAAdminDropdownTrigger"
         data-tooltip="Actions"
         title="More Actions"
-        onClick={(e) => {
-          e.stopPropagation();
-          isOpen ? setIsOpen(false) : openMenu();
-        }}
+        onClick={handleToggle}
       >
         <MoreVertical size={16} />
       </button>
@@ -238,9 +159,9 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
       {isOpen &&
         createPortal(
           <div
-            className="FDAAdminDropdownMenu"
+            className={`FDAAdminDropdownMenu ${openUpward ? 'open-upward' : ''}`}
             ref={menuRef}
-            style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }}
+            style={menuStyle}
           >
             <button
               className="FDAAdminDropdownItem"
@@ -252,7 +173,9 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
               <Eye size={14} /> View Details
             </button>
 
-            {/* Active Accounts: Edit Profile, Reset Password (ONLY for Active), Suspend */}
+            {/* Active -> Edit Profile, Reset Password, Suspend.
+                Personnel have no self-edit/self-reset rights (see profile.py),
+                so both actions live here, performed by their agency admin. */}
             {displayStatus === 'Active' && (
               <>
                 <button
@@ -286,18 +209,33 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
               </>
             )}
 
-            {/* Suspended -> Reactivate, Delete */}
             {displayStatus === 'Suspended' && (
+              <button
+                className="FDAAdminDropdownItem primary-action"
+                onClick={() => {
+                  onAction('reactivate');
+                  setIsOpen(false);
+                }}
+              >
+                <RotateCcw size={14} /> Reactivate Account
+              </button>
+            )}
+
+
+            {['Resend Requested', 'Link Expired'].includes(displayStatus) && (
+              <button
+                className="FDAAdminDropdownItem"
+                onClick={() => {
+                  onAction('resend');
+                  setIsOpen(false);
+                }}
+              >
+                <Send size={14} /> Resend Link
+              </button>
+            )}
+
+            {displayStatus === 'Link Expired' && (
               <>
-                <button
-                  className="FDAAdminDropdownItem primary-action"
-                  onClick={() => {
-                    onAction('reactivate');
-                    setIsOpen(false);
-                  }}
-                >
-                  <RotateCcw size={14} /> Reactivate Account
-                </button>
                 <div className="FDAAdminDropdownDivider" />
                 <button
                   className="FDAAdminDropdownItem danger"
@@ -311,7 +249,6 @@ function UserMgmtActionDropdown({ user, onAction, onView, onEdit, onResetPasswor
               </>
             )}
 
-            {/* Locked -> Unlock */}
             {displayStatus === 'Locked' && (
               <button
                 className="FDAAdminDropdownItem primary-action"
@@ -351,9 +288,14 @@ const CONFIRM_MESSAGES = {
     message: 'Are you sure you want to unlock this personnel account? Access will be restored.',
     confirmLabel: 'Unlock Account',
   },
+  resend: {
+    title: 'Resend Invitation Link',
+    message: 'Are you sure you want to resend the registration link to this personnel account?',
+    confirmLabel: 'Resend Link',
+  },
   resetPassword: {
     title: 'Reset Account Password',
-    message: 'Are you sure you want to reset the password for this active personnel account? A temporary password notification will be issued.',
+    message: 'Are you sure you want to reset the password for this active personnel account? A temporary password will be emailed to them.',
     confirmLabel: 'Reset Password',
   },
 };
@@ -396,9 +338,12 @@ function ConfirmModal({ open, actionType, onConfirm, onCancel }) {
   );
 }
 
-// 2-Step Add Personnel Flow: Form -> Verification/Confirmation Summary Modal -> Confirmed as Active
-function AddPersonnelFlow({ open, onClose, onCreated }) {
-  const [step, setStep] = useState(1); // 1 = Form, 2 = Confirmation Summary
+// 2-step Add Personnel flow — wired to POST /personnel-management.
+// Region/agency are derived server-side from the logged-in admin, but we now
+// also fetch and DISPLAY the real values here (via GET /profile), passed
+// down as the `myProfile` prop, instead of hardcoded placeholder text.
+function AddPersonnelFlow({ open, onClose, onCreated, myProfile }) {
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     firstName: '',
     middleName: '',
@@ -406,13 +351,12 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
     employeeId: '',
     contactNumber: '',
     email: '',
-    agency: 'FDA Personnel', // Read-only
-    region: '',
     department: '',
     position: '',
   });
-
   const [errors, setErrors] = useState({});
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -424,16 +368,21 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
         employeeId: '',
         contactNumber: '',
         email: '',
-        agency: 'FDA Personnel',
-        region: '',
         department: '',
         position: '',
       });
       setErrors({});
+      setSubmitError('');
+      setSending(false);
     }
   }, [open]);
 
   if (!open) return null;
+
+  // Real agency/region of the current logged-in admin, fetched via /profile
+  // by the parent component. Falls back to "Loading…" until it resolves.
+  const agencyDisplay = myProfile ? `${myProfile.agency} Personnel` : 'Loading…';
+  const regionDisplay = myProfile?.region || 'Loading…';
 
   function validate() {
     const errs = {};
@@ -458,10 +407,6 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
       }
     }
 
-    if (!formData.region) {
-      errs.region = 'Region is required. Please select an agency region.';
-    }
-
     return errs;
   }
 
@@ -473,29 +418,40 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
       return;
     }
     setErrors({});
-    setStep(2); // Proceed to Step 2: Confirmation Modal
+    setStep(2);
   }
 
-  function handleFinalConfirm() {
-    const fullName = [formData.firstName, formData.middleName, formData.lastName].filter(Boolean).join(' ');
-    const newAccount = {
-      id: `fda-u-${Date.now()}`,
-      first_name: formData.firstName.trim(),
-      middle_name: formData.middleName.trim(),
-      last_name: formData.lastName.trim(),
-      fullname: fullName,
-      employee_id: formData.employeeId.trim() || `FDA-${Math.floor(1000 + Math.random() * 9000)}`,
-      email: formData.email.trim().toLowerCase(),
-      contact_number: formData.contactNumber.trim(),
-      agency: 'FDA Personnel',
-      region: formData.region,
-      department: formData.department.trim() || 'General Regulatory Affairs',
-      position: formData.position.trim() || 'Regulatory Officer',
-      status: 'Active', // Confirmed accounts are automatically Active
-    };
+  async function handleFinalConfirm() {
+    setSending(true);
+    setSubmitError('');
+    try {
+      const res = await apiFetch('/personnel-management', {
+        method: 'POST',
+        body: JSON.stringify({
+          first_name: formData.firstName.trim(),
+          middle_name: formData.middleName.trim() || null,
+          last_name: formData.lastName.trim(),
+          email: formData.email.trim(),
+          contact_number: formData.contactNumber.trim() || null,
+          employee_id: formData.employeeId.trim() || null,
+          position: formData.position.trim() || null,
+          department: formData.department.trim() || null,
+        }),
+      });
 
-    onCreated(newAccount);
-    onClose();
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(errData, 'Failed to send invitation.'));
+      }
+
+      onCreated(formData.email.trim());
+      onClose();
+    } catch (err) {
+      setSubmitError(err.message || 'Something went wrong.');
+      setStep(1);
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -505,7 +461,7 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
           <div className="FDAAdminModalHeader">
             <h3 className="FDAAdminModalTitle">Add Personnel Account</h3>
             <p className="FDAAdminModalSubtitle">
-              Register a new FDA Personnel account. All confirmed accounts will be automatically activated.
+              Register a new FDA Personnel account under your current agency and region.
             </p>
             <button className="FDAAdminModalCloseBtn" onClick={onClose}>
               <X size={18} />
@@ -514,7 +470,6 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
 
           <form onSubmit={handleFormSubmit}>
             <div className="FDAAdminModalBody">
-              {/* Row 1: First Name, Middle Name, Last Name */}
               <div className="FDAAdminFormRow3">
                 <div className="FDAAdminFormGroup">
                   <label className="FDAAdminLabel">
@@ -544,7 +499,7 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                     <input
                       type="text"
                       className="FDAAdminInput"
-                      placeholder="e.g. Santos"
+                      placeholder="e.g. Santos (Optional)"
                       value={formData.middleName}
                       onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
                     />
@@ -573,7 +528,6 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                 </div>
               </div>
 
-              {/* Row 2: Employee ID, Contact Number */}
               <div className="FDAAdminFormRow">
                 <div className="FDAAdminFormGroup">
                   <label className="FDAAdminLabel">Employee ID</label>
@@ -582,7 +536,7 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                     <input
                       type="text"
                       className="FDAAdminInput"
-                      placeholder="e.g. FDA-2026-091"
+                      placeholder="e.g. FDA-2026-091 (Optional)"
                       value={formData.employeeId}
                       onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
                     />
@@ -615,7 +569,6 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                 </div>
               </div>
 
-              {/* Row 3: Email Address */}
               <div className="FDAAdminFormGroup">
                 <label className="FDAAdminLabel">
                   Email Address <span className="FDAAdminRequired">*</span>
@@ -637,48 +590,23 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                 )}
               </div>
 
-              {/* Row 4: Agency, Region */}
               <div className="FDAAdminFormRow">
                 <div className="FDAAdminFormGroup">
-                  <label className="FDAAdminLabel">Agency (Read-only)</label>
+                  <label className="FDAAdminLabel">Agency</label>
                   <div className="FDAAdminInputWrapper">
                     <Building2 className="FDAAdminInputIcon" size={17} />
-                    <input
-                      type="text"
-                      className="FDAAdminInput readonly-input"
-                      value={formData.agency}
-                      readOnly
-                      disabled
-                    />
+                    <input type="text" className="FDAAdminInput readonly-input" value={agencyDisplay} readOnly disabled />
                   </div>
                 </div>
-
                 <div className="FDAAdminFormGroup">
-                  <label className="FDAAdminLabel">
-                    Region <span className="FDAAdminRequired">*</span>
-                  </label>
+                  <label className="FDAAdminLabel">Region</label>
                   <div className="FDAAdminInputWrapper">
                     <MapPin className="FDAAdminInputIcon" size={17} />
-                    <select
-                      className={`FDAAdminSelect ${errors.region ? 'input-error' : ''}`}
-                      value={formData.region}
-                      onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                    >
-                      <option value="">Select Region</option>
-                      {PHILIPPINE_REGIONS.map((reg) => (
-                        <option key={reg} value={reg}>{reg}</option>
-                      ))}
-                    </select>
+                    <input type="text" className="FDAAdminInput readonly-input" value={regionDisplay} readOnly disabled />
                   </div>
-                  {errors.region && (
-                    <span className="FDAAdminFieldError">
-                      <AlertCircle size={12} /> {errors.region}
-                    </span>
-                  )}
                 </div>
               </div>
 
-              {/* Row 5: Department, Position */}
               <div className="FDAAdminFormRow">
                 <div className="FDAAdminFormGroup">
                   <label className="FDAAdminLabel">Department</label>
@@ -687,13 +615,12 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                     <input
                       type="text"
                       className="FDAAdminInput"
-                      placeholder="e.g. Regulatory Compliance"
+                      placeholder="e.g. Regulatory Compliance (Optional)"
                       value={formData.department}
                       onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     />
                   </div>
                 </div>
-
                 <div className="FDAAdminFormGroup">
                   <label className="FDAAdminLabel">Position</label>
                   <div className="FDAAdminInputWrapper">
@@ -701,13 +628,19 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
                     <input
                       type="text"
                       className="FDAAdminInput"
-                      placeholder="e.g. Inspection Officer"
+                      placeholder="e.g. Inspection Officer (Optional)"
                       value={formData.position}
                       onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                     />
                   </div>
                 </div>
               </div>
+
+              {submitError && (
+                <span className="FDAAdminFieldError">
+                  <AlertCircle size={12} /> {submitError}
+                </span>
+              )}
             </div>
 
             <div className="FDAAdminModalFooter">
@@ -721,75 +654,72 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
           </form>
         </div>
       ) : (
-        /* STEP 2: Readable Summary Confirmation Modal */
         <div className="FDAAdminModal" style={{ maxWidth: '480px' }}>
           <div className="FDAAdminModalHeader">
-            <h3 className="FDAAdminModalTitle">Confirm Personnel Creation</h3>
+            <h3 className="FDAAdminModalTitle">Confirm Personnel Registration</h3>
             <p className="FDAAdminModalSubtitle">
-              Please verify the following information before creating this account.
+              Verify the details below before sending the invitation.
             </p>
           </div>
 
           <div className="FDAAdminModalBody">
             <div className="FDAAdminSummaryNotice">
-              <CircleCheckBig size={18} />
-              <span>Upon confirmation, this personnel account will be created immediately with <strong>Active</strong> status.</span>
+              <Mail size={18} />
+              <span>An invitation link will be emailed to this address. The account stays <strong>Invited</strong> until it's accepted.</span>
             </div>
 
             <div className="FDAAdminSummaryBox">
               <div className="FDAAdminSummaryRow">
-                <span className="FDAAdminSummaryLabel">First Name:</span>
-                <span className="FDAAdminSummaryValue">{formData.firstName}</span>
-              </div>
-              {formData.middleName && (
-                <div className="FDAAdminSummaryRow">
-                  <span className="FDAAdminSummaryLabel">Middle Name:</span>
-                  <span className="FDAAdminSummaryValue">{formData.middleName}</span>
-                </div>
-              )}
-              <div className="FDAAdminSummaryRow">
-                <span className="FDAAdminSummaryLabel">Last Name:</span>
-                <span className="FDAAdminSummaryValue">{formData.lastName}</span>
+                <span className="FDAAdminSummaryLabel">Full Name:</span>
+                <span className="FDAAdminSummaryValue">
+                  {[formData.firstName, formData.middleName, formData.lastName].filter(Boolean).join(' ') || '-'}
+                </span>
               </div>
               <div className="FDAAdminSummaryRow">
                 <span className="FDAAdminSummaryLabel">Employee ID:</span>
-                <span className="FDAAdminSummaryValue">{formData.employeeId || '— (Auto-generated)'}</span>
+                <span className="FDAAdminSummaryValue">{formData.employeeId || '-'}</span>
               </div>
               <div className="FDAAdminSummaryRow">
                 <span className="FDAAdminSummaryLabel">Contact Number:</span>
-                <span className="FDAAdminSummaryValue">{formData.contactNumber}</span>
+                <span className="FDAAdminSummaryValue">{formData.contactNumber || '-'}</span>
               </div>
               <div className="FDAAdminSummaryRow">
                 <span className="FDAAdminSummaryLabel">Email Address:</span>
-                <span className="FDAAdminSummaryValue">{formData.email}</span>
+                <span className="FDAAdminSummaryValue">{formData.email || '-'}</span>
               </div>
               <div className="FDAAdminSummaryRow">
                 <span className="FDAAdminSummaryLabel">Agency:</span>
                 <span className="FDAAdminSummaryValue">
-                  <span className="FDAAdminAgencyTag">FDA Personnel</span>
+                  <span className="FDAAdminAgencyTag">{agencyDisplay}</span>
                 </span>
               </div>
               <div className="FDAAdminSummaryRow">
                 <span className="FDAAdminSummaryLabel">Region:</span>
-                <span className="FDAAdminSummaryValue">{formData.region}</span>
+                <span className="FDAAdminSummaryValue">{regionDisplay}</span>
               </div>
               <div className="FDAAdminSummaryRow">
                 <span className="FDAAdminSummaryLabel">Department:</span>
-                <span className="FDAAdminSummaryValue">{formData.department || '—'}</span>
+                <span className="FDAAdminSummaryValue">{formData.department || '-'}</span>
               </div>
               <div className="FDAAdminSummaryRow">
                 <span className="FDAAdminSummaryLabel">Position:</span>
-                <span className="FDAAdminSummaryValue">{formData.position || '—'}</span>
+                <span className="FDAAdminSummaryValue">{formData.position || '-'}</span>
               </div>
             </div>
+
+            {submitError && (
+              <span className="FDAAdminFieldError">
+                <AlertCircle size={12} /> {submitError}
+              </span>
+            )}
           </div>
 
           <div className="FDAAdminModalFooter">
-            <button type="button" className="FDAAdminCancelBtn" onClick={() => setStep(1)}>
+            <button type="button" className="FDAAdminCancelBtn" onClick={() => setStep(1)} disabled={sending}>
               Go Back
             </button>
-            <button type="button" className="FDAAdminConfirmBtn primary" onClick={handleFinalConfirm}>
-              Confirm / Add Personnel Account
+            <button type="button" className="FDAAdminConfirmBtn primary" onClick={handleFinalConfirm} disabled={sending}>
+              {sending ? 'Sending Invitation…' : 'Confirm / Send Invitation'}
             </button>
           </div>
         </div>
@@ -798,21 +728,15 @@ function AddPersonnelFlow({ open, onClose, onCreated }) {
   );
 }
 
-// Edit Profile Modal
-function EditProfileModal({ open, user, onClose, onSave }) {
+
+function EditProfileModal({ open, user, onClose, onSaved }) {
   const [form, setForm] = useState({
-    firstName: '',
-    middleName: '',
-    lastName: '',
-    employeeId: '',
-    contactNumber: '',
-    email: '',
-    agency: 'FDA Personnel',
-    region: '',
-    department: '',
-    position: '',
+    firstName: '', middleName: '', lastName: '',
+    employeeId: '', contactNumber: '', department: '', position: '',
   });
   const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -822,13 +746,11 @@ function EditProfileModal({ open, user, onClose, onSave }) {
         lastName: user.last_name || '',
         employeeId: user.employee_id || '',
         contactNumber: user.contact_number || '',
-        email: user.email || '',
-        agency: user.agency || 'FDA Personnel', // Read-only
-        region: user.region || '',
         department: user.department || '',
         position: user.position || '',
       });
       setErrors({});
+      setSubmitError('');
     }
   }, [user]);
 
@@ -846,43 +768,48 @@ function EditProfileModal({ open, user, onClose, onSave }) {
         errs.contactNumber = 'Enter a valid 11-digit Philippine mobile number starting with 09.';
       }
     }
-    if (!form.email.trim()) {
-      errs.email = 'Email Address is required.';
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(form.email.trim())) {
-        errs.email = 'Please enter a valid email address.';
-      }
-    }
-    if (!form.region) {
-      errs.region = 'Region is required. Please select an agency region.';
-    }
     return errs;
   }
 
-  function handleSave(e) {
+  async function handleSave(e) {
     e.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-    const updated = {
-      ...user,
-      first_name: form.firstName.trim(),
-      middle_name: form.middleName.trim(),
-      last_name: form.lastName.trim(),
-      fullname: [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' '),
-      employee_id: form.employeeId.trim(),
-      contact_number: form.contactNumber.trim(),
-      email: form.email.trim().toLowerCase(),
-      agency: 'FDA Personnel',
-      region: form.region,
-      department: form.department.trim(),
-      position: form.position.trim(),
-    };
-    onSave(updated);
-    onClose();
+    setSaving(true);
+    setSubmitError('');
+    try {
+      const body = {
+        first_name: form.firstName.trim(),
+        middle_name: form.middleName.trim() || null, // middle_name is the ONLY field allowed to be blanked
+        last_name: form.lastName.trim(),
+        contact_number: form.contactNumber.trim() || null,
+      };
+
+      // These three are optional-at-creation but NOT blankable on edit —
+      // only include them if they actually have a value, otherwise the
+      // backend rejects the whole request with "X is required and cannot be blank."
+      if (form.employeeId.trim()) body.employee_id = form.employeeId.trim();
+      if (form.department.trim()) body.department = form.department.trim();
+      if (form.position.trim()) body.position = form.position.trim();
+
+      const res = await apiFetch(`/personnel-management/${user.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(errData, 'Failed to update profile.'));
+      }
+      onSaved();
+      onClose();
+    } catch (err) {
+      setSubmitError(err.message || 'Something went wrong.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -895,7 +822,6 @@ function EditProfileModal({ open, user, onClose, onSave }) {
         </div>
         <form onSubmit={handleSave}>
           <div className="FDAAdminModalBody">
-            {/* Row 1: First Name, Middle Name, Last Name */}
             <div className="FDAAdminFormRow3">
               <div className="FDAAdminFormGroup">
                 <label className="FDAAdminLabel">
@@ -906,7 +832,6 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                   <input
                     type="text"
                     className={`FDAAdminInput with-icon ${errors.firstName ? 'input-error' : ''}`}
-                    placeholder="e.g. Maria"
                     value={form.firstName}
                     onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                   />
@@ -925,7 +850,6 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                   <input
                     type="text"
                     className="FDAAdminInput with-icon"
-                    placeholder="e.g. Santos"
                     value={form.middleName}
                     onChange={(e) => setForm({ ...form, middleName: e.target.value })}
                   />
@@ -941,7 +865,6 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                   <input
                     type="text"
                     className={`FDAAdminInput with-icon ${errors.lastName ? 'input-error' : ''}`}
-                    placeholder="e.g. Cruz"
                     value={form.lastName}
                     onChange={(e) => setForm({ ...form, lastName: e.target.value })}
                   />
@@ -954,7 +877,6 @@ function EditProfileModal({ open, user, onClose, onSave }) {
               </div>
             </div>
 
-            {/* Row 2: Employee ID, Contact Number */}
             <div className="FDAAdminFormRow">
               <div className="FDAAdminFormGroup">
                 <label className="FDAAdminLabel">Employee ID</label>
@@ -963,7 +885,6 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                   <input
                     type="text"
                     className="FDAAdminInput with-icon"
-                    placeholder="e.g. FDA-2026-091"
                     value={form.employeeId}
                     onChange={(e) => setForm({ ...form, employeeId: e.target.value })}
                   />
@@ -980,12 +901,8 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                     type="tel"
                     maxLength={11}
                     className={`FDAAdminInput with-icon ${errors.contactNumber ? 'input-error' : ''}`}
-                    placeholder="e.g. 09171234567"
                     value={form.contactNumber}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 11);
-                      setForm({ ...form, contactNumber: val });
-                    }}
+                    onChange={(e) => setForm({ ...form, contactNumber: e.target.value.replace(/\D/g, '').slice(0, 11) })}
                   />
                 </div>
                 {errors.contactNumber && (
@@ -996,70 +913,31 @@ function EditProfileModal({ open, user, onClose, onSave }) {
               </div>
             </div>
 
-            {/* Row 3: Email Address */}
             <div className="FDAAdminFormGroup">
-              <label className="FDAAdminLabel">
-                Email Address <span className="FDAAdminRequired">*</span>
-              </label>
+              <label className="FDAAdminLabel">Email (read-only)</label>
               <div className="FDAAdminInputWrapper">
                 <Mail className="FDAAdminInputIcon" size={17} />
-                <input
-                  type="email"
-                  className={`FDAAdminInput with-icon ${errors.email ? 'input-error' : ''}`}
-                  placeholder="e.g. maria.cruz@fda.gov.ph"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
+                <input type="email" className="FDAAdminInput with-icon readonly-input" value={user.email} readOnly disabled />
               </div>
-              {errors.email && (
-                <span className="FDAAdminFieldError">
-                  <AlertCircle size={12} /> {errors.email}
-                </span>
-              )}
             </div>
 
-            {/* Row 4: Agency, Region */}
             <div className="FDAAdminFormRow">
               <div className="FDAAdminFormGroup">
-                <label className="FDAAdminLabel">Agency (Read-only)</label>
+                <label className="FDAAdminLabel">Agency (read-only)</label>
                 <div className="FDAAdminInputWrapper">
                   <Building2 className="FDAAdminInputIcon" size={17} />
-                  <input
-                    type="text"
-                    className="FDAAdminInput with-icon readonly-input"
-                    value={form.agency}
-                    readOnly
-                    disabled
-                  />
+                  <input type="text" className="FDAAdminInput with-icon readonly-input" value={user.agency || 'FDA Personnel'} readOnly disabled />
                 </div>
               </div>
-
               <div className="FDAAdminFormGroup">
-                <label className="FDAAdminLabel">
-                  Region <span className="FDAAdminRequired">*</span>
-                </label>
+                <label className="FDAAdminLabel">Region (read-only)</label>
                 <div className="FDAAdminInputWrapper">
                   <MapPin className="FDAAdminInputIcon" size={17} />
-                  <select
-                    className={`FDAAdminSelect with-icon ${errors.region ? 'input-error' : ''}`}
-                    value={form.region}
-                    onChange={(e) => setForm({ ...form, region: e.target.value })}
-                  >
-                    <option value="">Select Region</option>
-                    {PHILIPPINE_REGIONS.map((reg) => (
-                      <option key={reg} value={reg}>{reg}</option>
-                    ))}
-                  </select>
+                  <input type="text" className="FDAAdminInput with-icon readonly-input" value={user.region || '-'} readOnly disabled />
                 </div>
-                {errors.region && (
-                  <span className="FDAAdminFieldError">
-                    <AlertCircle size={12} /> {errors.region}
-                  </span>
-                )}
               </div>
             </div>
 
-            {/* Row 5: Department, Position */}
             <div className="FDAAdminFormRow">
               <div className="FDAAdminFormGroup">
                 <label className="FDAAdminLabel">Department</label>
@@ -1068,13 +946,11 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                   <input
                     type="text"
                     className="FDAAdminInput with-icon"
-                    placeholder="e.g. Regulatory Compliance"
                     value={form.department}
                     onChange={(e) => setForm({ ...form, department: e.target.value })}
                   />
                 </div>
               </div>
-
               <div className="FDAAdminFormGroup">
                 <label className="FDAAdminLabel">Position</label>
                 <div className="FDAAdminInputWrapper">
@@ -1082,17 +958,24 @@ function EditProfileModal({ open, user, onClose, onSave }) {
                   <input
                     type="text"
                     className="FDAAdminInput with-icon"
-                    placeholder="e.g. Inspection Officer"
                     value={form.position}
                     onChange={(e) => setForm({ ...form, position: e.target.value })}
                   />
                 </div>
               </div>
             </div>
+
+            {submitError && (
+              <span className="FDAAdminFieldError">
+                <AlertCircle size={12} /> {submitError}
+              </span>
+            )}
           </div>
           <div className="FDAAdminModalFooter">
-            <button type="button" className="FDAAdminCancelBtn" onClick={onClose}>Cancel</button>
-            <button type="submit" className="FDAAdminConfirmBtn primary">Save Changes</button>
+            <button type="button" className="FDAAdminCancelBtn" onClick={onClose} disabled={saving}>Cancel</button>
+            <button type="submit" className="FDAAdminConfirmBtn primary" disabled={saving}>
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
           </div>
         </form>
       </div>
@@ -1100,13 +983,8 @@ function EditProfileModal({ open, user, onClose, onSave }) {
   );
 }
 
-// View Details Modal
 function ViewPersonnelModal({ open, user, onClose }) {
   if (!open || !user) return null;
-  const resolvedFullName =
-    user.fullname ||
-    [user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ') ||
-    '-';
   return (
     <div className="FDAAdminModalOverlay">
       <div className="FDAAdminModal FDAAdminViewModal">
@@ -1133,7 +1011,7 @@ function ViewPersonnelModal({ open, user, onClose }) {
 
               <div className="FDAAdminVDField full-span">
                 <span className="FDAAdminVDLabel">Full Name</span>
-                <span className="FDAAdminVDValue">{resolvedFullName}</span>
+                <span className="FDAAdminVDValue">{user.fullname || '-'}</span>
               </div>
 
               <div className="FDAAdminVDField">
@@ -1190,7 +1068,15 @@ function ViewPersonnelModal({ open, user, onClose }) {
 }
 
 export default function FDAAdminUserManagement() {
-  const [users, setUsers] = useState(INITIAL_FDA_PERSONNEL);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+
+  // Real region/agency of the LOGGED-IN admin, fetched once from GET /profile.
+  // Passed into AddPersonnelFlow so the "Add Personnel Account" form shows
+  // real data instead of the old hardcoded "Same as your region" text.
+  const [myProfile, setMyProfile] = useState(null);
+
   const [statusFilter, setStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewUser, setViewUser] = useState(null);
@@ -1212,54 +1098,132 @@ export default function FDAAdminUserManagement() {
     setTimeout(() => setToastMessage(''), 4000);
   }
 
-  function handleAddPersonnelSuccess(newAccount) {
-    setUsers((prev) => [newAccount, ...prev]);
-    showToast(`Account for ${newAccount.fullname} has been successfully created and activated.`);
+  // `silent`: when true, skips toggling the table-wide `loading` state.
+  // Used for refetches triggered by an action (activate/suspend/reset
+  // password/etc.) so the whole table doesn't flash back to "Loading
+  // personnel records…" — only the initial mount-time fetch shows that.
+  const fetchPersonnel = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    setFetchError('');
+    try {
+      const res = await apiFetch('/personnel-management');
+      if (!res.ok) throw new Error('Failed to load personnel records.');
+      const data = await res.json();
+      setUsers((current = []) => {
+        const currentMap = new Map((Array.isArray(current) ? current : []).map((item) => [item.id, item]));
+        return data.map((u) => {
+          const prev = currentMap.get(u.user_id);
+          return {
+            id: u.user_id,
+            first_name: u.first_name,
+            middle_name: u.middle_name,
+            last_name: u.last_name,
+            fullname: [u.first_name, u.middle_name, u.last_name].filter(Boolean).join(' '),
+            email: u.email,
+            agency: u.agency,
+            region: u.region,
+            department: u.department,
+            position: u.position,
+            employee_id: u.employee_id,
+            contact_number: u.contact_number,
+            status: u.status,
+            is_locked: u.is_locked,
+            is_active: u.is_active !== undefined ? u.is_active : prev?.is_active,
+          };
+        });
+      });
+    } catch (err) {
+      setFetchError(err.message || 'Something went wrong.');
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, []);
+
+  const fetchMyProfile = useCallback(async () => {
+    try {
+      const res = await apiFetch('/profile');
+      if (!res.ok) return;
+      const data = await res.json();
+      setMyProfile(data); // { region, agency, first_name, ... }
+    } catch (err) {
+      console.error('Failed to fetch current admin profile:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPersonnel();
+    fetchMyProfile();
+  }, [fetchPersonnel, fetchMyProfile]);
+
+  function handleAddPersonnelSuccess(email) {
+    showToast(`Invitation sent to ${email}.`);
+    fetchPersonnel(true); // silent — table already has data, just refresh it quietly
   }
 
   function openConfirm(actionType, userId) {
     setConfirmModal({ open: true, actionType, targetId: userId });
   }
 
-  function handleConfirmAction() {
+  async function handleConfirmAction() {
     const { actionType, targetId } = confirmModal;
-    setUsers((prev) =>
-      prev.flatMap((u) => {
-        if (u.id !== targetId) return [u];
-        if (actionType === 'suspend') {
-          showToast(`Account ${u.fullname} suspended.`);
-          return [{ ...u, status: 'Suspended' }];
-        }
-        if (actionType === 'reactivate') {
-          showToast(`Account ${u.fullname} reactivated.`);
-          return [{ ...u, status: 'Active' }];
-        }
-        if (actionType === 'unlock') {
-          showToast(`Account ${u.fullname} unlocked.`);
-          return [{ ...u, status: 'Active' }];
-        }
-        if (actionType === 'resetPassword') {
-          showToast(`Password reset notification dispatched for ${u.email}.`);
-          return [u];
-        }
-        if (actionType === 'delete') {
-          showToast(`Account record for ${u.fullname} removed.`);
-          return [];
-        }
-        return [u];
-      })
-    );
+    const actionPathMap = {
+      suspend: 'suspend',
+      reactivate: 'reactivate',
+      activate: 'activate',
+      unlock: 'unlock',
+      resend: 'resend-link',
+      resetPassword: 'reset-password',
+    };
+
     setConfirmModal({ open: false, actionType: '', targetId: null });
+
+    try {
+      if (actionType === 'delete') {
+        const res = await apiFetch(`/personnel-management/${targetId}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(extractErrorMessage(errData, 'Delete failed.'));
+        }
+        setUsers((prev) => prev.filter((u) => u.id !== targetId));
+        showToast('Personnel entry deleted.');
+      } else {
+        const path = actionPathMap[actionType];
+        if (!path) return;
+        const res = await apiFetch(`/personnel-management/${targetId}/${path}`, { method: 'POST' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(extractErrorMessage(errData, 'Action failed.'));
+        }
+        setUsers((prev) =>
+          prev.map((u) => {
+            if (u.id !== targetId) return u;
+            if (actionType === 'suspend') {
+              return { ...u, status: 'Suspended', is_active: false };
+            }
+            if (actionType === 'reactivate' || actionType === 'activate') {
+              return { ...u, status: 'Active', is_active: true };
+            }
+            if (actionType === 'unlock') {
+              return { ...u, status: 'Active', is_locked: false };
+            }
+            return u;
+          })
+        );
+        showToast(
+          actionType === 'resetPassword'
+            ? 'Temporary password emailed to the user.'
+            : actionType === 'resend'
+            ? 'Invitation link resent.'
+            : 'Account updated.'
+        );
+      }
+    } catch (err) {
+      showToast(err.message || 'Something went wrong.');
+    }
   }
 
-  function handleSaveEdit(updatedUser) {
-    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
-    showToast(`Profile information for ${updatedUser.fullname} updated.`);
-  }
-
-  // Frontend search and filter
   const filteredUsers = users.filter((u) => {
-    const matchesStatus = statusFilter === 'All' ? true : u.status === statusFilter;
+    const matchesStatus = statusFilter === 'All' || u.status === statusFilter;
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
@@ -1285,7 +1249,6 @@ export default function FDAAdminUserManagement() {
         <TopBar topbarType="FDA_ADMIN" />
         <div className="FDAAdminMainfeed">
           <div className="FDAAdminPageContainer">
-            {/* Header */}
             <div className="FDAAdminPageHeader">
               <div className="FDAAdminPageTitleBlock">
                 <h1 className="FDAAdminPageTitle">
@@ -1305,24 +1268,17 @@ export default function FDAAdminUserManagement() {
               </button>
             </div>
 
-            {/* Stats Row - Active, Suspended, Locked */}
+            {fetchError && (
+              <div className="FDAAdminFieldError" style={{ marginBottom: '12px' }}>
+                <AlertCircle size={12} /> {fetchError}
+              </div>
+            )}
+
             <div className="FDAAdminStatsRow">
               {[
-                {
-                  label: 'Active',
-                  value: users.filter((u) => u.status === 'Active').length,
-                  className: 'stat-active',
-                },
-                {
-                  label: 'Suspended',
-                  value: users.filter((u) => u.status === 'Suspended').length,
-                  className: 'stat-suspended',
-                },
-                {
-                  label: 'Locked',
-                  value: users.filter((u) => u.status === 'Locked').length,
-                  className: 'stat-locked',
-                },
+                { label: 'Active', value: users.filter((u) => u.status === 'Active').length, className: 'stat-active' },
+                { label: 'Suspended', value: users.filter((u) => u.status === 'Suspended').length, className: 'stat-suspended' },
+                { label: 'Locked', value: users.filter((u) => u.status === 'Locked').length, className: 'stat-locked' },
               ].map((s) => (
                 <div key={s.label} className={`FDAAdminStatCard ${s.className}`}>
                   <span className="FDAAdminStatValue">{s.value}</span>
@@ -1331,7 +1287,6 @@ export default function FDAAdminUserManagement() {
               ))}
             </div>
 
-            {/* Filter & Search Bar */}
             <div className="FDAAdminFiltersContainer">
               <div className="FDAAdminSearchGroup">
                 <Search size={16} className="FDAAdminSearchIcon" />
@@ -1362,6 +1317,9 @@ export default function FDAAdminUserManagement() {
                     <option value="Active">Active</option>
                     <option value="Suspended">Suspended</option>
                     <option value="Locked">Locked</option>
+                    <option value="Invited">Invited</option>
+                    <option value="Resend Requested">Resend Requested</option>
+                    <option value="Link Expired">Link Expired</option>
                   </select>
                 </div>
 
@@ -1381,7 +1339,6 @@ export default function FDAAdminUserManagement() {
               </div>
             </div>
 
-            {/* Table */}
             <div className="FDAAdminTableWrapper">
               <table className="FDAAdminTable">
                 <thead>
@@ -1397,7 +1354,13 @@ export default function FDAAdminUserManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayedUsers.length > 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="FDAAdminEmpty">
+                        Loading personnel records…
+                      </td>
+                    </tr>
+                  ) : displayedUsers.length > 0 ? (
                     displayedUsers.map((user, idx) => (
                       <tr key={user.id}>
                         <td className="FDAAdminTdCenter">{startIndex + idx + 1}</td>
@@ -1432,7 +1395,7 @@ export default function FDAAdminUserManagement() {
                 </tbody>
               </table>
 
-              {totalItems > 0 && (
+              {!loading && totalItems > 0 && (
                 <div className="FDAAdminPaginationWrapper">
                   <span className="FDAAdminPaginationInfo">
                     Showing {startIndex + 1}–{endIndex} of {totalItems} personnel entries
@@ -1469,14 +1432,13 @@ export default function FDAAdminUserManagement() {
         </div>
       </div>
 
-      {/* Add Personnel 2-Step Flow */}
       <AddPersonnelFlow
         open={addFlowOpen}
         onClose={() => setAddFlowOpen(false)}
         onCreated={handleAddPersonnelSuccess}
+        myProfile={myProfile}
       />
 
-      {/* Confirmation Modal */}
       <ConfirmModal
         open={confirmModal.open}
         actionType={confirmModal.actionType}
@@ -1484,22 +1446,19 @@ export default function FDAAdminUserManagement() {
         onCancel={() => setConfirmModal({ open: false, actionType: '', targetId: null })}
       />
 
-      {/* View Personnel Modal */}
       <ViewPersonnelModal
         open={!!viewUser}
         user={viewUser}
         onClose={() => setViewUser(null)}
       />
 
-      {/* Edit Profile Modal */}
       <EditProfileModal
         open={!!editUser}
         user={editUser}
         onClose={() => setEditUser(null)}
-        onSave={handleSaveEdit}
+        onSaved={() => { showToast('Profile updated.'); fetchPersonnel(true); }}
       />
 
-      {/* Success Toast */}
       {toastMessage && (
         <div className="FDAAdminToast">
           <CheckCircle2 size={18} />

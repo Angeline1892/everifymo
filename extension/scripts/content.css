@@ -389,7 +389,7 @@
 #everifymo-modal #state-registered .progress-fill {
   height: 100%;
   border-radius: 99px;
-  background-color: #66BB6A;
+  /* background-color: #66BB6A; */
 }
 
 #everifymo-modal #state-registered .match-score {
@@ -406,6 +406,10 @@
   font-size: 13px;
   line-height: 1;
 }
+
+#everifymo-modal #state-registered .match-score-best .match-percent { color: #2E7D32; }
+#everifymo-modal #state-registered .match-score-high .match-percent { color: #66BB6A; }
+#everifymo-modal #state-registered .match-score-partial .match-percent { color: #A5D6A7; }
 
 /* SUSPICIOUS STATE (ORANGE) */
 #everifymo-modal #state-suspicious {
@@ -645,7 +649,7 @@
 #everifymo-modal #state-unregistered .progress-fill-red {
   height: 100%;
   border-radius: 99px;
-  background-color: #B22222;
+  /* background-color: #B22222; */
 }
 
 
@@ -663,6 +667,10 @@
   font-size: 13px;
   line-height: 1;
 }
+
+#everifymo-modal #state-unregistered .match-score-best-red .match-percent-red { color: #B22222; }
+#everifymo-modal #state-unregistered .match-score-high-red .match-percent-red { color: #D32F2F; }
+#everifymo-modal #state-unregistered .match-score-partial-red .match-percent-red { color: #EF5350; }
 
 /* STATE ACTION BUTTONS (all three states) */
 #everifymo-modal #state-unregistered .action-buttons-red,
@@ -829,3 +837,72 @@
   font-size: 1.15rem;
 }
 
+#everifymo-modal .rf-result{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  padding:8px 4px;
+}
+
+#everifymo-modal .icon-ring{
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:16px;
+}
+#everifymo-modal .icon-ring svg{ width:24px; height:24px; }
+
+#everifymo-modal .icon-ring--success{ background:#DCFCE7; color:#15803D; }
+#everifymo-modal .icon-ring--error{ background:#FEE2E2; color:#B91C1C; }
+#everifymo-modal .icon-ring--neutral{ background:#EEF0F3; color:#1F2937; }
+
+#everifymo-modal .rf-result-title{
+  margin:0 0 6px;
+  font-family:'Poppins', sans-serif;
+  font-weight:700;
+  font-size:15px;
+  color:#1F2937;
+}
+#everifymo-modal .rf-result-message{
+  margin:0;
+  font-family:'Inter', sans-serif;
+  font-size:13px;
+  line-height:1.55;
+  color:#6B7280;
+  max-width:270px;
+}
+
+#everifymo-modal .rf-result .action-row{
+  display:flex;
+  gap:10px;
+  width:100%;
+  margin-top:20px;
+}
+#everifymo-modal .rf-result .btn{
+  flex:1;
+  padding:11px 0;
+  border-radius:10px;
+  font-family:'Inter', sans-serif;
+  font-weight:600;
+  font-size:13px;
+  cursor:pointer;
+  border:1px solid transparent;
+  transition:background-color .15s ease;
+}
+#everifymo-modal .rf-result .btn-ghost{
+  background:#FFFFFF;
+  border-color:#E5E7EB;
+  color:#1F2937;
+}
+#everifymo-modal .rf-result .btn-ghost:hover{ background:#F3F4F6; }
+#everifymo-modal .rf-result .btn-primary{
+  background:#1F2937;
+  color:#FFFFFF;
+}
+#everifymo-modal .rf-result .btn-primary:hover{ background:#374151; }
+#everifymo-modal .rf-result .btn-error{ background:#B91C1C; }
+#everifymo-modal .rf-result .btn-error:hover{ background:#991B1B; }

@@ -3,12 +3,24 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CircleCheckBig, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { API_BASE_URL } from '../utils/apiConfig';
 
+function extractErrorMessage(errorData, fallback) {
+    const detail = errorData?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+        return detail.map(d => d?.msg || JSON.stringify(d)).join(' ');
+    }
+    if (detail && typeof detail === 'object') {
+        return detail.msg || detail.message || JSON.stringify(detail);
+    }
+    return fallback;
+}
+
 function ForgotPassword() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const VALID_PORTALS = ['personnel', 'national-admin', 'interagency-admin'];
     const from = searchParams.get('from');
-    const isSuperAdmin = from === 'superadmin';
-    const themeClass = isSuperAdmin ? 'superadmin' : 'interagency';
+    const portal = VALID_PORTALS.includes(from) ? from : 'personnel'; //
 
     const [step, setStep] = useState('email'); 
     const [email, setEmail] = useState('');
@@ -42,11 +54,7 @@ function ForgotPassword() {
     }, [step, timer]);
 
     const handleBackToLogin = () => {
-        if (from === 'superadmin') {
-            navigate('/universal-login?tab=superadmin');
-        } else {
-            navigate('/universal-login');
-        }
+        navigate(`/universal-login?tab=${portal}`);
     };
 
     const handleEmailChange = (e) => {
@@ -75,13 +83,13 @@ function ForgotPassword() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                   email,
-                  portal: isSuperAdmin ? 'superadmin' : 'personnel',
+                  portal,
               }),
           });
 
           if (!response.ok) {
               const errorData = await response.json();
-              throw new Error(errorData.detail || 'Failed to send code.');
+              throw new Error(extractErrorMessage(errorData, 'Failed to send code.'));
           }
 
           setStep('code');
@@ -103,13 +111,13 @@ function ForgotPassword() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     email,
-                    portal: isSuperAdmin ? 'superadmin' : 'personnel',
+                    portal,
                 }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.detail || 'Failed to resend code.');
+                throw new Error(extractErrorMessage(errorData, 'Failed to resend code.'));
             }
 
             setTimer(300);
@@ -138,13 +146,13 @@ function ForgotPassword() {
               body: JSON.stringify({
                   email,
                   otp: otpCode,
-                  portal: isSuperAdmin ? 'superadmin' : 'personnel',
+                  portal,
               }),
           });
 
           if (!response.ok) {
               const errorData = await response.json();
-              throw new Error(errorData.detail || 'Invalid verification code.');
+              throw new Error(extractErrorMessage(errorData, 'Invalid verification code.'));
           }
 
           setStep('reset');
@@ -191,13 +199,13 @@ function ForgotPassword() {
                   email,
                   otp: otp.join(''),
                   new_password: newPassword,
-                  portal: isSuperAdmin ? 'superadmin' : 'personnel',
+                  portal,
               }),
           });
 
           if (!response.ok) {
               const errorData = await response.json();
-              throw new Error(errorData.detail || 'Failed to reset password.');
+              throw new Error(extractErrorMessage(errorData, 'Failed to reset password.'));
           }
 
           setStep('success');

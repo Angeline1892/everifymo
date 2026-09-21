@@ -16,7 +16,7 @@ function UniversalLogin() {
   // Which tab is active: 'personnel' | 'national-admin' | 'interagency-admin'
   // Supports deep-linking via ?tab=national-admin (or legacy ?tab=superadmin) or ?tab=interagency-admin
   const tabParam = searchParams.get('tab');
-  const initialTab = (tabParam === 'superadmin' || tabParam === 'national-admin')
+  const initialTab = tabParam === 'national-admin'
     ? 'national-admin'
     : tabParam === 'interagency-admin'
     ? 'interagency-admin'
@@ -135,7 +135,7 @@ function UniversalLogin() {
           justify-content: space-between;
           align-items: stretch;
           width: min(95vw, 1450px);
-          min-height: 700px;
+          min-height: 750px;
           background: rgba(253, 253, 253, 0.07);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
@@ -230,20 +230,20 @@ function UniversalLogin() {
         }
 
         .universal-login-tabs-container {
-          display: flex;
-          width: 90%;
-          margin: 0 auto 18px auto;
-          background: rgba(29, 52, 57, 0.07);
-          border: 1px solid rgba(29, 52, 57, 0.12);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          border-radius: 10px;
-          padding: 4px;
-          gap: 4px;
-          box-sizing: border-box;
-          box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
-          height: 44px;
-          flex-shrink: 0;
+         display: flex;
+        width: 100%;
+        margin: 0 auto 28px auto;
+        background: rgba(29, 52, 57, 0.07);
+        border: 1px solid rgba(29, 52, 57, 0.12);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 10px;
+        padding: 4px;
+        gap: 4px;
+        box-sizing: border-box;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+        height: 44px;
+        flex-shrink: 0;
         }
 
         .universal-login-tab-btn {
@@ -290,7 +290,7 @@ function UniversalLogin() {
         .universal-login-right-panel {
           width: 510px;
           max-width: 100%;
-          min-height: 580px;
+          min-height: 620px;
           height: auto;
           background: #ffffff;
           padding: 24px 28px;
@@ -333,28 +333,28 @@ function UniversalLogin() {
 
         .universal-login-otp-header {
           text-align: center;
-          margin-bottom: 6px;
+          margin-bottom: 10px;
         }
         .universal-login-otp-header h2, .universal-login-otp-header h3 {
-          font-size: 20px;
+          font-size: 24px;
           font-weight: 700;
           color: #0f172a;
           letter-spacing: -0.2px;
-          margin-bottom: 3px;
+          margin-bottom: 5px;
         }
         .universal-login-otp-header small {
           display: block;
-          font-size: 11px;
+          font-size: 13px;
           font-weight: 600;
           letter-spacing: 0.8px;
           text-transform: uppercase;
           color: #64748b;
-          margin-bottom: 3px;
+          margin-bottom: 5px;
         }
         .universal-login-otp-header p {
-          font-size: 12px;
+          font-size: 14.5px;
           color: #64748b;
-          margin-bottom: 16px;
+          margin-bottom: 18px;
         }
 
         /* ===== FORM CONTROLS ===== */
@@ -684,35 +684,36 @@ function UniversalLogin() {
           flex-direction: column;
           animation: universalLoginFadeIn 0.35s ease-out forwards;
         }
-        .universal-login-otp-instructions {
-          font-size: 12px;
+      .universal-login-otp-instructions {
+          font-size: 14.5px;
           color: #475569;
-          margin-bottom: 14px;
-          line-height: 1.45;
+          margin-bottom: 16px;
+          line-height: 1.5;
           text-align: center;
         }
-        .universal-login-otp-instructions span { font-weight: 600; color: #0f172a; }
+        .universal-login-otp-instructions span { font-weight: 600; color: #0891b2; font-style: italic}
         .universal-login-otp-input-grid,
         .universal-login-admin-otp-grid {
           display: flex;
-          gap: 6px;
+          gap: 10px;
           justify-content: center;
-          margin-bottom: 12px;
+          margin-bottom: 16px;
         }
         .universal-login-otp-digit-input,
         .universal-login-admin-otp-digit-input {
-          width: 40px;
-          height: 44px;
+          width: 55px;
+          height: 59px;
           text-align: center;
-          font-size: 18px;
+          font-size: 22px;
           font-weight: 700;
-          border-radius: 7px;
+          border-radius: 8px;
           border: 1.5px solid #cbd5e1 !important;
           background-color: #ffffff;
           color: #0f172a;
           transition: all 0.2s ease;
           margin-bottom: 0 !important;
           padding: 0 !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
         .universal-login-otp-digit-input:focus,
         .universal-login-admin-otp-digit-input:focus {
@@ -905,7 +906,7 @@ function UniversalLogin() {
           .universal-login-agency-buttons { gap: 6px; }
           .universal-login-inter-buttons { padding: 6px 5px; font-size: 11.5px; }
           .universal-login-otp-input-grid, .universal-login-admin-otp-grid { gap: 5px; }
-          .universal-login-otp-digit-input, .universal-login-admin-otp-digit-input { width: 36px; height: 40px; font-size: 16px; }
+          .universal-login-otp-digit-input, .universal-login-admin-otp-digit-input { width: 36px; height: 40px; font-size: 16px;  }
           .universal-login-interagency-otp-grid { gap: 6px; }
           .universal-login-interagency-otp-digit-input { width: 42px; height: 48px; font-size: 18px; }
         }
@@ -1142,9 +1143,11 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
         }
 
         const data = await response.json();
+        localStorage.removeItem('user_name');
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
         localStorage.setItem('agency', personnelAgency);
+        localStorage.setItem('role', 'personnel');
 
         if (data.force_password_change) {
           navigate('/change-password');
@@ -1269,7 +1272,7 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
               Remember my email
             </label>
             <a
-              onClick={() => navigate('/forgot-password?from=interagency')}
+              onClick={() => navigate('/forgot-password?from=personnel')}
               className="universal-login-forget-pass"
             >
               Forgot password?
@@ -1351,8 +1354,18 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
 }
 
 // ============================================================================
-// SUPER ADMIN LOGIN FORM
-// Supports both mock frontend testing and real API fallback
+// NATIONAL ADMIN LOGIN FORM (formerly "SuperAdminLoginForm")
+// Maps to backend/app/desktop/routers/auth/national_admin_login.py
+//   POST /auth/national-admin/login
+//   POST /auth/national-admin/verify-otp
+//
+// CHANGES FROM THE OLD VERSION:
+//   1. Endpoint paths fixed: /auth/superadmin/* -> /auth/national-admin/*
+//      (2 spots: handleAdminResendOtp and handleAdminLoginSubmit)
+//   2. Redirect after successful OTP verify fixed:
+//      /superadminfolder/superadmin-user-management
+//      -> /nationaladminfolder/national-admin-new-admin-management
+//   Nothing else changed — same validation, same OTP UI, same lockout handling.
 // ============================================================================
 function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
   const [adminEmail, setAdminEmail] = useState('');
@@ -1393,7 +1406,6 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
   const [adminTimer, setAdminTimer] = useState(300);
   const adminOtpRefs = useRef([]);
 
-  // Notify parent when OTP screen visibility changes
   useEffect(() => {
     if (onOtpStateChange) onOtpStateChange(adminIsOtpSent);
   }, [adminIsOtpSent]);
@@ -1447,9 +1459,9 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
   async function handleAdminResendOtp() {
     setAdminLoginError('');
 
-
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/superadmin/login`, {
+      // CHANGED: /auth/superadmin/login -> /auth/national-admin/login
+      const response = await fetch(`${API_BASE_URL}/auth/national-admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: adminEmail.trim(), password: adminPassword }),
@@ -1526,11 +1538,9 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
       }
       setAdminErrors({});
 
-      const cleanEmail = adminEmail.trim().toLowerCase();
-     
-      // REAL BACKEND SUPERADMIN LOGIN API CALL
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/superadmin/login`, {
+        // CHANGED: /auth/superadmin/login -> /auth/national-admin/login
+        const response = await fetch(`${API_BASE_URL}/auth/national-admin/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: adminEmail.trim(), password: adminPassword }),
@@ -1552,7 +1562,6 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
           localStorage.removeItem(REMEMBERED_EMAIL_KEY);
         }
 
-
         setAdminIsOtpSent(true);
         setAdminTimer(300);
         setAdminLoginError('');
@@ -1561,18 +1570,15 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
         setAdminLoginError(err.message || 'Something went wrong. Please try again.');
       }
     } else {
-      // OTP VERIFICATION STEP
       const otpCode = adminOtp.join('');
       if (otpCode.length < 6) {
         setAdminLoginError('Please enter the full 6-digit verification code.');
         return;
       }
 
-
-
-      // REAL BACKEND OTP VERIFICATION
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/superadmin/verify-otp`, {
+        // CHANGED: /auth/superadmin/verify-otp -> /auth/national-admin/verify-otp
+        const response = await fetch(`${API_BASE_URL}/auth/national-admin/verify-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: adminEmail.trim(), otp: otpCode }),
@@ -1588,10 +1594,13 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
         }
 
         const data = await response.json();
+        localStorage.removeItem('user_name');
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
-        localStorage.setItem('agency', 'superadmin');
-        navigate('/superadminfolder/superadmin-user-management');
+        localStorage.setItem('agency', 'national_admin');   // CHANGED from 'superadmin'
+        localStorage.setItem('role', 'national_admin'); 
+
+        navigate('/nationaladminfolder/national-admin-interagency-admin-management');
       } catch (err) {
         setAdminLoginError(err.message || 'Invalid verification code. Please try again.');
         setAdminOtp(new Array(6).fill(''));
@@ -1682,7 +1691,7 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
               Remember my email
             </label>
             <a
-              onClick={() => navigate('/forgot-password?from=superadmin')}
+              onClick={() => navigate('/forgot-password?from=national-admin')}
               className="universal-login-forgot-password-link"
             >
               Forgot password?
@@ -1772,24 +1781,29 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
 }
 
 // ============================================================================
-// INTERAGENCY ADMIN LOGIN FORM (FRONTEND MOCKUP ONLY)
+// INTERAGENCY ADMIN LOGIN FORM (NOW WIRED TO REAL BACKEND)
+// Maps to backend/app/desktop/routers/auth/admin_login.py
+//   POST /auth/admin/login
+//   POST /auth/admin/verify-otp
 // ============================================================================
-function InteragencyAdminLoginForm({ onOtpStateChange }) {
+function InteragencyAdminLoginForm({ navigate, onOtpStateChange }) {
   const [agency, setAgency] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [loginError, setLoginError] = useState('');       // NEW: banner error for the credentials step
+  const [lockoutSeconds, setLockoutSeconds] = useState(0); // NEW: for the 429 throttled-login case
 
-  // OTP mockup state
+  // OTP state
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [otp, setOtp] = useState(new Array(6).fill(''));
   const [timer, setTimer] = useState(300);
   const [otpError, setOtpError] = useState('');
-  const [otpSuccess, setOtpSuccess] = useState('');
+  // NOTE: otpSuccess is removed — it was only ever used to show the fake
+  // "Mockup demonstration only" message. Real success now just navigates away.
   const otpRefs = useRef([]);
 
-  // Notify parent when OTP screen visibility changes
   useEffect(() => {
     if (onOtpStateChange) onOtpStateChange(isOtpSent);
   }, [isOtpSent, onOtpStateChange]);
@@ -1801,6 +1815,21 @@ function InteragencyAdminLoginForm({ onOtpStateChange }) {
     }
     return () => clearInterval(interval);
   }, [isOtpSent, timer]);
+
+  // Countdown for the lockout banner (mirrors SuperAdminLoginForm's pattern)
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setLockoutSeconds((prev) => {
+        if (prev <= 1) {
+          setLoginError('');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutSeconds]);
 
   function handleAgencyChange(value) {
     setAgency(value);
@@ -1824,36 +1853,50 @@ function InteragencyAdminLoginForm({ onOtpStateChange }) {
     if (errors.password) setErrors((prev) => ({ ...prev, password: '' }));
   }
 
-  function handleCredentialsSubmit(e) {
+  // ---- STEP 1: credentials -> request OTP -------------------------------
+  async function handleCredentialsSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
 
     const newErrors = {};
-    if (!agency) {
-      newErrors.agency = 'Please select an agency.';
-    }
-
-    if (!email.trim()) {
-      newErrors.email = 'Email is required.';
-    } else if (!EMAIL_REGEX.test(email.trim())) {
-      newErrors.email = 'Please enter a valid email address.';
-    }
-
-    if (!password.trim()) {
-      newErrors.password = 'Please enter your password.';
-    }
+    if (!agency) newErrors.agency = 'Please select an agency.';
+    if (!email.trim()) newErrors.email = 'Email is required.';
+    else if (!EMAIL_REGEX.test(email.trim())) newErrors.email = 'Please enter a valid email address.';
+    if (!password.trim()) newErrors.password = 'Please enter your password.';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-
     setErrors({});
-    setIsOtpSent(true);
-    setTimer(300);
-    setOtp(new Array(6).fill(''));
-    setOtpError('');
-    setOtpSuccess('');
-    setTimeout(() => otpRefs.current[0]?.focus(), 0);
+    setLoginError('');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password, agency }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        // admin_login.py raises 429 with a structured detail object when throttled
+        if (errorData.detail && typeof errorData.detail === 'object') {
+          setLockoutSeconds(errorData.detail.retry_after_seconds || 0);
+          throw new Error(errorData.detail.message || 'Too many failed attempts.');
+        }
+        setLockoutSeconds(0);
+        throw new Error(errorData.detail || 'Invalid email or password.');
+      }
+
+      // Success: backend sent the OTP email, move to the OTP screen
+      setIsOtpSent(true);
+      setTimer(300);
+      setOtp(new Array(6).fill(''));
+      setOtpError('');
+      setTimeout(() => otpRefs.current[0]?.focus(), 0);
+    } catch (err) {
+      setLoginError(err.message || 'Something went wrong. Please try again.');
+    }
   }
 
   function handleOtpChange(element, index) {
@@ -1894,31 +1937,81 @@ function InteragencyAdminLoginForm({ onOtpStateChange }) {
     }
   }
 
-  function handleResendOtp() {
+  // ---- Resend OTP: re-call login endpoint (same pattern as the other two forms)
+  async function handleResendOtp() {
     setOtpError('');
-    setOtpSuccess('');
-    setTimer(300);
-    setOtp(new Array(6).fill(''));
-    setTimeout(() => otpRefs.current[0]?.focus(), 0);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password, agency }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.detail && typeof errorData.detail === 'object') {
+          setLockoutSeconds(errorData.detail.retry_after_seconds || 0);
+          throw new Error(errorData.detail.message || 'Failed to resend code.');
+        }
+        throw new Error(errorData.detail || 'Failed to resend code.');
+      }
+
+      setTimer(300);
+      setOtp(new Array(6).fill(''));
+      setTimeout(() => otpRefs.current[0]?.focus(), 0);
+    } catch (err) {
+      setOtpError(err.message);
+    }
   }
 
   function handleBackToLogin() {
     setIsOtpSent(false);
     setOtp(new Array(6).fill(''));
     setOtpError('');
-    setOtpSuccess('');
+    setLoginError('');
+    setLockoutSeconds(0);
   }
 
-  function handleOtpSubmit(e) {
+  // ---- STEP 2: OTP -> verify -> store tokens -> redirect ----------------
+  async function handleOtpSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
     const otpCode = otp.join('');
     if (otpCode.length < 6) {
       setOtpError('Please enter the full 6-digit verification code.');
-      setOtpSuccess('');
       return;
     }
-    setOtpError('');
-    setOtpSuccess('OTP verified successfully! (Mockup demonstration only — no backend connection)');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/admin/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), otp: otpCode }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Invalid verification code. Please try again.');
+      }
+
+      const data = await response.json();
+      localStorage.removeItem('user_name');
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      localStorage.setItem('agency', agency);
+      localStorage.setItem('role', `${agency}_admin`); 
+
+      if (data.force_password_change) {
+        navigate('/change-password');
+      } else if (agency === 'fda') {
+        navigate('/fdaadminfolder/fda-admin-user-management');
+      } else {
+        navigate('/leaadminfolder/lea-admin-user-management');
+      }
+    } catch (err) {
+      setOtpError(err.message || 'Invalid verification code. Please try again.');
+      setOtp(new Array(6).fill(''));
+      setTimeout(() => otpRefs.current[0]?.focus(), 0);
+    }
   }
 
   const formatTimer = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -1930,6 +2023,10 @@ function InteragencyAdminLoginForm({ onOtpStateChange }) {
     const maskedLocal = localPart.slice(0, visibleChars) + '*'.repeat(Math.max(localPart.length - visibleChars, 3));
     return `${maskedLocal}@${domain}`;
   }
+
+  const displayedLoginError = lockoutSeconds > 0
+    ? `Too many failed attempts. Try again in ${lockoutSeconds} second${lockoutSeconds === 1 ? '' : 's'}.`
+    : loginError;
 
   return (
     <div className="universal-login-admin-form">
@@ -2023,9 +2120,27 @@ function InteragencyAdminLoginForm({ onOtpStateChange }) {
             )}
           </div>
 
-          <button type="submit" className="universal-login-submit-btn">
-            Login
-          </button>
+         {/* Forgot-password link — was completely missing before */}
+        <div className="universal-login-admin-remember-row">
+          <a
+            onClick={() => navigate('/forgot-password?from=interagency-admin')}
+            className="universal-login-forgot-password-link"
+            style={{ marginLeft: 'auto' }}
+          >
+            Forgot password?
+          </a>
+        </div>
+
+        {displayedLoginError && (
+          <div className="universal-login-admin-error-container">
+            <p className="universal-login-admin-error-msg">{displayedLoginError}</p>
+          </div>
+        )}
+
+        <button type="submit" className="universal-login-submit-btn" disabled={lockoutSeconds > 0}>
+          Login
+        </button>
+
         </form>
       ) : (
         <form noValidate onSubmit={handleOtpSubmit}>
@@ -2075,13 +2190,6 @@ function InteragencyAdminLoginForm({ onOtpStateChange }) {
             {otpError && (
               <div className="universal-login-admin-error-container">
                 <p className="universal-login-admin-error-msg">{otpError}</p>
-              </div>
-            )}
-
-            {otpSuccess && (
-              <div className="universal-login-mockup-success" style={{ marginBottom: '12px' }}>
-                <CheckCircle2 size={15} />
-                <span>{otpSuccess}</span>
               </div>
             )}
 

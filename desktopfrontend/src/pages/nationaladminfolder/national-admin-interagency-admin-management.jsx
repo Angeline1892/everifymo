@@ -1,10 +1,10 @@
 import './national-admin-css.css';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { apiFetch } from '../../utils/apiFetch';
 import { createPortal } from 'react-dom';
 import {
   Send,
   UserX,
-  UserCheck,
   Trash2,
   Eye,
   MoreVertical,
@@ -29,236 +29,34 @@ import {
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
 
-// Realistic Philippine regions list
-const PHILIPPINE_REGIONS = [
-  'National Capital Region (NCR)',
-  'Cordillera Administrative Region (CAR)',
-  'Region I - Ilocos Region',
-  'Region II - Cagayan Valley',
-  'Region III - Central Luzon',
-  'Region IV-A - CALABARZON',
-  'MIMAROPA Region',
-  'Region V - Bicol Region',
-  'Region VI - Western Visayas',
-  'Region VII - Central Visayas',
-  'Region VIII - Eastern Visayas',
-  'Region IX - Zamboanga Peninsula',
-  'Region X - Northern Mindanao',
-  'Region XI - Davao Region',
-  'Region XII - SOCCSKSARGEN',
-  'Region XIII - Caraga',
-  'Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)',
-];
 
-// Initial realistic mock data for Regional Agency Admins (FDA & LEA)
-const INITIAL_REGIONAL_ADMINS = [
-  {
-    id: 'ra-001',
-    first_name: 'Gabriel',
-    middle_name: 'Jose',
-    last_name: 'Alvarez',
-    fullname: 'Gabriel Jose Alvarez',
-    employee_id: 'FDA-REG-0104',
-    contact_number: '09171234567',
-    email: 'gabriel.alvarez@fda.gov.ph',
-    agency: 'FDA',
-    region: 'National Capital Region (NCR)',
-    department: 'Regulatory Compliance and Inspection',
-    position: 'Regional Admin Supervisor',
-    status: 'Active',
-    is_locked: false,
-  },
-  {
-    id: 'ra-002',
-    first_name: 'Dominic',
-    middle_name: 'Cruz',
-    last_name: 'Valdez',
-    fullname: 'Dominic Cruz Valdez',
-    employee_id: 'CIDG-REG-0892',
-    contact_number: '09189876543',
-    email: 'dominic.valdez@cidg.pnp.gov.ph',
-    agency: 'LEA-CIDG',
-    region: 'Region III - Central Luzon',
-    department: 'Special Operations Division',
-    position: 'Regional Investigation Admin',
-    status: 'Active',
-    is_locked: false,
-  },
-  {
-    id: 'ra-003',
-    first_name: 'Lourdes',
-    middle_name: 'Santos',
-    last_name: 'Magsaysay',
-    fullname: 'Lourdes Santos Magsaysay',
-    employee_id: 'FDA-REG-0219',
-    contact_number: '09228881234',
-    email: 'lourdes.magsaysay@fda.gov.ph',
-    agency: 'FDA',
-    region: 'Region VII - Central Visayas',
-    department: 'Field Regulatory Enforcement',
-    position: 'Regional Director / Admin',
-    status: 'Suspended',
-    is_locked: false,
-  },
-  {
-    id: 'ra-004',
-    first_name: 'Renato',
-    middle_name: 'Perez',
-    last_name: 'Soriano',
-    fullname: 'Renato Perez Soriano',
-    employee_id: 'CIDG-REG-0341',
-    contact_number: '09194567890',
-    email: 'renato.soriano@cidg.pnp.gov.ph',
-    agency: 'LEA-CIDG',
-    region: 'Region XI - Davao Region',
-    department: 'Anti-Fraud and Counterfeiting Unit',
-    position: 'Senior Regional Admin',
-    status: 'Locked',
-    is_locked: true,
-  },
-  {
-    id: 'ra-005',
-    first_name: 'Cynthia',
-    middle_name: 'Navarro',
-    last_name: 'Dizon',
-    fullname: 'Cynthia Navarro Dizon',
-    employee_id: 'FDA-REG-0435',
-    contact_number: '09176543210',
-    email: 'cynthia.dizon@fda.gov.ph',
-    agency: 'FDA',
-    region: 'Region IV-A - CALABARZON',
-    department: 'Post-Marketing Surveillance',
-    position: 'Regional Admin Officer',
-    status: 'Active',
-    is_locked: false,
-  },
-  {
-    id: 'ra-006',
-    first_name: 'Marc',
-    middle_name: 'Villanueva',
-    last_name: 'Tan',
-    fullname: 'Marc Villanueva Tan',
-    employee_id: 'CIDG-REG-0512',
-    contact_number: '09201122334',
-    email: 'marc.tan@cidg.pnp.gov.ph',
-    agency: 'LEA-CIDG',
-    region: 'Region VI - Western Visayas',
-    department: 'Criminal Investigation Branch',
-    position: 'Agency Admin Specialist',
-    status: 'Link Expired',
-    is_locked: false,
-  },
-  {
-    id: 'ra-007',
-    first_name: 'Angelica',
-    middle_name: 'Torres',
-    last_name: 'Aquino',
-    fullname: 'Angelica Torres Aquino',
-    employee_id: 'FDA-REG-0678',
-    contact_number: '09289900112',
-    email: 'angelica.aquino@fda.gov.ph',
-    agency: 'FDA',
-    region: 'Region I - Ilocos Region',
-    department: 'Inspection and Licensing',
-    position: 'Regional Administrator',
-    status: 'Invited',
-    is_locked: false,
-  },
-  {
-    id: 'ra-008',
-    first_name: 'Danilo',
-    middle_name: 'Morales',
-    last_name: 'Gutierrez',
-    fullname: 'Danilo Morales Gutierrez',
-    employee_id: 'FDA-REG-0723',
-    contact_number: '09176667788',
-    email: 'danilo.gutierrez@fda.gov.ph',
-    agency: 'FDA',
-    region: 'Region II - Cagayan Valley',
-    department: 'Field Operations Administration',
-    position: 'Regional Admin Officer',
-    status: 'Pending Approval',
-    is_active: false,
-    is_locked: false,
-  },
+function extractErrorMessage(errorData, fallback) {
+    const detail = errorData?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+        return detail.map(d => d?.msg || JSON.stringify(d)).join(' ');
+    }
+    if (detail && typeof detail === 'object') {
+        return detail.msg || detail.message || JSON.stringify(detail);
+    }
+    return fallback;
+}
+
+const KNOWN_ADMIN_STATUSES = [
+  'Pending Approval',
+  'Locked',
+  'Suspended',
+  'Active',
+  'Invited',
+  'Resend Requested',
+  'Link Expired',
 ];
 
 export function computeAdminStatus(admin) {
   if (!admin) return '';
-  const rawStatus = (admin.status || '').toString().trim().toLowerCase();
-
-  // 1. Pending Approval check (must be recognized before generic active/inactive logic)
-  if (rawStatus === 'pending_approval' || rawStatus === 'pending approval') {
-    return 'Pending Approval';
-  }
-
-  // 2. Locked must take precedence over Active
-  // Condition: status == active && is_active == true && is_locked == true
-  if (
-    (rawStatus === 'active' && admin.is_active === true && admin.is_locked === true) ||
-    rawStatus === 'locked' ||
-    (admin.is_locked === true && rawStatus === 'active' && admin.is_active !== false)
-  ) {
-    return 'Locked';
-  }
-
-  // 3. Suspended: status == active && is_active == false
-  if (
-    (rawStatus === 'active' && admin.is_active === false) ||
-    rawStatus === 'suspended' ||
-    rawStatus === 'suspend'
-  ) {
-    return 'Suspended';
-  }
-
-  // 4. Active: status == active && is_active == true && is_locked != true
-  if (
-    rawStatus === 'active' ||
-    (!rawStatus && admin.is_active === true && !admin.is_locked)
-  ) {
-    return 'Active';
-  }
-
-  // 5. Invited / Resend Requested / Link Expired
-  if (
-    rawStatus === 'invited' ||
-    rawStatus === 'resend requested' ||
-    rawStatus === 'resend_requested' ||
-    rawStatus === 'link expired' ||
-    rawStatus === 'link_expired'
-  ) {
-    let isExpired = false;
-    if (typeof admin.is_token_expired === 'boolean') {
-      isExpired = admin.is_token_expired;
-    } else if (typeof admin.token_expired === 'boolean') {
-      isExpired = admin.token_expired;
-    } else if (admin.expiration_date || admin.expires_at) {
-      const expDate = new Date(admin.expiration_date || admin.expires_at);
-      if (!isNaN(expDate.getTime())) {
-        isExpired = expDate.getTime() < Date.now();
-      }
-    } else if (
-      rawStatus === 'link expired' ||
-      rawStatus === 'link_expired' ||
-      rawStatus === 'resend requested' ||
-      rawStatus === 'resend_requested'
-    ) {
-      isExpired = true;
-    }
-
-    const hasResendRequest =
-      admin.resend_requested_at !== null && admin.resend_requested_at !== undefined;
-
-    if (hasResendRequest && isExpired) {
-      return 'Resend Requested';
-    }
-    if (!hasResendRequest && isExpired) {
-      return 'Link Expired';
-    }
-    return 'Invited';
-  }
-
-  return admin.status || 'Active';
+  const raw = (admin.status || '').toString().trim();
+  const match = KNOWN_ADMIN_STATUSES.find((s) => s.toLowerCase() === raw.toLowerCase());
+  return match || admin.status || '';
 }
 
 const REGIONAL_ADMIN_STATUS_META = {
@@ -280,6 +78,8 @@ function RegionalAdminStatusBadge({ status }) {
 
 function RegionalAdminActionDropdown({
   regionalAdmin,
+  isSelf,
+  canManage,
   isOpen,
   toggleDropdown,
   onAction,
@@ -287,23 +87,82 @@ function RegionalAdminActionDropdown({
 }) {
   const status = computeAdminStatus(regionalAdmin);
   const [openUpward, setOpenUpward] = useState(false);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [menuStyle, setMenuStyle] = useState({});
   const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const updateMenuPosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const upward = spaceBelow < 220 && spaceAbove > spaceBelow;
+    const right = Math.max(8, window.innerWidth - rect.right);
+
+    if (upward) {
+      setMenuStyle({
+        position: 'fixed',
+        bottom: `${Math.max(8, window.innerHeight - rect.top + 4)}px`,
+        top: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '165px',
+        maxHeight: `${Math.max(120, rect.top - 16)}px`,
+        overflowY: 'auto',
+      });
+    } else {
+      setMenuStyle({
+        position: 'fixed',
+        top: `${rect.bottom + 4}px`,
+        bottom: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '165px',
+        maxHeight: `${Math.max(120, spaceBelow - 16)}px`,
+        overflowY: 'auto',
+      });
+    }
+    setOpenUpward(upward);
+  }, []);
 
   const handleToggle = (e) => {
     e.stopPropagation();
-    if (!isOpen && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const upward = spaceBelow < 180;
-      setOpenUpward(upward);
-      setMenuPos({
-        top: upward ? Math.max(8, rect.top - 160) : rect.bottom + 4,
-        left: Math.max(8, rect.right - 190),
-      });
+    if (!isOpen) {
+      updateMenuPosition();
     }
     toggleDropdown();
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    updateMenuPosition();
+
+    function handleOutsideClick(event) {
+      if (
+        menuRef.current && !menuRef.current.contains(event.target) &&
+        triggerRef.current && !triggerRef.current.contains(event.target)
+      ) {
+        toggleDropdown();
+      }
+    }
+
+    function handleScrollOrResize(event) {
+      if (menuRef.current && menuRef.current.contains(event.target)) return;
+      toggleDropdown();
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [isOpen, toggleDropdown, updateMenuPosition]);
 
   return (
     <div className={`NAMDropdownWrapper ${isOpen ? 'active-open' : ''}`}>
@@ -320,14 +179,9 @@ function RegionalAdminActionDropdown({
       {isOpen &&
         createPortal(
           <div
+            ref={menuRef}
             className={`NAMDropdownMenu ${openUpward ? 'open-upward' : ''}`}
-            style={{
-              position: 'fixed',
-              top: `${menuPos.top}px`,
-              left: `${menuPos.left}px`,
-              zIndex: 9999,
-              width: '165px',
-            }}
+            style={menuStyle}
           >
             <button
               className="NAMDropdownItem"
@@ -339,7 +193,7 @@ function RegionalAdminActionDropdown({
               <Eye size={14} /> View Details
             </button>
 
-            {status === 'Active' && (
+            {status === 'Active' && !isSelf && canManage && (
               <>
                 <div className="NAMDropdownDivider" />
                 <button
@@ -354,7 +208,7 @@ function RegionalAdminActionDropdown({
               </>
             )}
 
-            {status === 'Suspended' && (
+            {status === 'Suspended' && !isSelf && canManage && (
               <>
                 <div className="NAMDropdownDivider" />
                 <button
@@ -366,20 +220,10 @@ function RegionalAdminActionDropdown({
                 >
                   <RotateCcw size={14} /> Reactivate Account
                 </button>
-                <div className="NAMDropdownDivider" />
-                <button
-                  className="NAMDropdownItem danger"
-                  onClick={() => {
-                    onAction('delete');
-                    toggleDropdown();
-                  }}
-                >
-                  <Trash2 size={14} /> Delete Account
-                </button>
               </>
             )}
 
-            {['Resend Requested', 'Link Expired'].includes(status) && (
+            {['Resend Requested', 'Link Expired'].includes(status) && canManage && (
               <button
                 className="NAMDropdownItem"
                 onClick={() => {
@@ -391,7 +235,7 @@ function RegionalAdminActionDropdown({
               </button>
             )}
 
-            {status === 'Pending Approval' && (
+            {status === 'Pending Approval' && canManage && (
               <button
                 className="NAMDropdownItem"
                 onClick={() => {
@@ -403,7 +247,7 @@ function RegionalAdminActionDropdown({
               </button>
             )}
 
-            {status === 'Link Expired' && (
+            {status === 'Link Expired' && canManage && (
               <>
                 <div className="NAMDropdownDivider" />
                 <button
@@ -418,7 +262,7 @@ function RegionalAdminActionDropdown({
               </>
             )}
 
-            {status === 'Locked' && (
+            {status === 'Locked' && canManage &&(
               <button
                 className="NAMDropdownItem"
                 onClick={() => {
@@ -512,7 +356,7 @@ function RegionalAdminConfirmModal({ open, actionType, onConfirm, onCancel }) {
   );
 }
 
-function AddRegionalAdminModal({ open, onClose, onAddSuccess }) {
+function AddRegionalAdminModal({ open, onClose, onAddSuccess, regions, regionsLoading, regionsError }) {
   const [formData, setFormData] = useState({
     firstName: '',
     middleName: '',
@@ -521,7 +365,7 @@ function AddRegionalAdminModal({ open, onClose, onAddSuccess }) {
     contactNumber: '',
     email: '',
     agency: '',
-    region: '',
+    regionId: '',
     department: '',
     position: '',
   });
@@ -529,6 +373,7 @@ function AddRegionalAdminModal({ open, onClose, onAddSuccess }) {
   const [formErrors, setFormErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState('');
   const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   function resetForm() {
     setFormData({
@@ -539,13 +384,14 @@ function AddRegionalAdminModal({ open, onClose, onAddSuccess }) {
       contactNumber: '',
       email: '',
       agency: '',
-      region: '',
+      regionId: '',
       department: '',
       position: '',
     });
     setFormErrors({});
     setSuccessMsg('');
     setSending(false);
+    setSubmitError('');
   }
 
   function handleClose() {
@@ -593,12 +439,12 @@ function AddRegionalAdminModal({ open, onClose, onAddSuccess }) {
     }
 
     if (!formData.agency) errors.agency = 'Agency is required. Please select FDA or LEA-CIDG.';
-    if (!formData.region) errors.region = 'Region is required. Please select an agency region.';
+    if (!formData.regionId) errors.regionId = 'Region is required. Please select an agency region.';
 
     return errors;
   }
 
-  function handleSend() {
+  async function handleSend() {
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setFormErrors(validationErrors);
@@ -606,37 +452,37 @@ function AddRegionalAdminModal({ open, onClose, onAddSuccess }) {
     }
 
     setSending(true);
+    setSubmitError('');
 
-    // Simulate account creation & invite dispatch with state update
-    setTimeout(() => {
-      setSending(false);
-      setSuccessMsg(
-        `Administrator account created! Invitation has been sent to ${formData.email.trim()}`
-      );
-
-      const parts = [
-        formData.firstName.trim(),
-        formData.middleName.trim(),
-        formData.lastName.trim(),
-      ].filter(Boolean);
-
-      onAddSuccess({
-        id: `ra-${Date.now()}`,
-        first_name: formData.firstName.trim(),
-        middle_name: formData.middleName.trim() || null,
-        last_name: formData.lastName.trim(),
-        fullname: parts.join(' '),
-        employee_id: formData.employeeId.trim(),
-        contact_number: formData.contactNumber.trim(),
-        email: formData.email.trim(),
-        agency: formData.agency,
-        region: formData.region,
-        department: formData.department.trim(),
-        position: formData.position.trim(),
-        status: 'Active',
-        is_locked: false,
+    try {
+      const res = await apiFetch('/admin-management/by-national-admin', {
+        method: 'POST',
+        body: JSON.stringify({
+          first_name: formData.firstName.trim(),
+          middle_name: formData.middleName.trim() || null,
+          last_name: formData.lastName.trim(),
+          email: formData.email.trim(),
+          contact_number: formData.contactNumber.trim() || null,
+          employee_id: formData.employeeId.trim() || null,
+          position: formData.position.trim() || null,
+          department: formData.department.trim() || null,
+          region_id: formData.regionId,
+          agency: formData.agency,
+        }),
       });
-    }, 600);
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(extractErrorMessage(errData, 'Failed to create administrator account.'));
+      }
+
+      setSuccessMsg(`Invitation has been sent to ${formData.email.trim()}`);
+      onAddSuccess(); // triggers a refetch of the real list
+    } catch (err) {
+      setSubmitError(err.message || 'Something went wrong.');
+    } finally {
+      setSending(false);
+    }
   }
 
   function handleDone() {
@@ -829,23 +675,30 @@ function AddRegionalAdminModal({ open, onClose, onAddSuccess }) {
                 <div className="NAMInputWrapper">
                   <MapPin className="NAMInputIcon" size={16} />
                   <select
-                    name="region"
-                    className={`NAMSelect with-icon ${formErrors.region ? 'input-error' : ''}`}
-                    value={formData.region}
+                    name="regionId"
+                    className={`NAMSelect with-icon ${formErrors.regionId ? 'input-error' : ''}`}
+                    value={formData.regionId}
                     onChange={handleInputChange}
-                    disabled={sending}
+                    disabled={sending || regionsLoading}
                   >
-                    <option value="">Select Region</option>
-                    {PHILIPPINE_REGIONS.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
+                    <option value="">
+                      {regionsLoading ? 'Loading regions…' : 'Select Region'}
+                    </option>
+                    {regions.map((r) => (
+                      <option key={r.region_id} value={r.region_id}>
+                        {r.region_name}
                       </option>
                     ))}
                   </select>
                 </div>
-                {formErrors.region && (
+                {formErrors.regionId && (
                   <span className="NAMFieldError">
-                    <AlertCircle size={12} /> {formErrors.region}
+                    <AlertCircle size={12} /> {formErrors.regionId}
+                  </span>
+                )}
+                {regionsError && (
+                  <span className="NAMFieldError">
+                    <AlertCircle size={12} /> {regionsError}
                   </span>
                 )}
               </div>
@@ -896,6 +749,12 @@ function AddRegionalAdminModal({ open, onClose, onAddSuccess }) {
               </div>
             </div>
 
+            {submitError && (
+              <span className="NAMFieldError">
+                <AlertCircle size={12} /> {submitError}
+              </span>
+            )}
+
             <div className="NAMModalFooter">
               <button className="NAMCancelBtn" onClick={handleClose} disabled={sending}>
                 Cancel
@@ -905,7 +764,7 @@ function AddRegionalAdminModal({ open, onClose, onAddSuccess }) {
                 onClick={handleSend}
                 disabled={sending}
               >
-                {sending ? 'Creating Account…' : 'Create Admin Account'}
+                {sending ? 'Sending Invitation…' : 'Send Invitation'}
               </button>
             </div>
           </>
@@ -1030,8 +889,21 @@ function RegionalAdminViewModal({ open, regionalAdmin, onClose }) {
 
 
 export default function NationalAdminRegionalAdminManagement() {
-  const [regionalAdmins, setRegionalAdmins] = useState(INITIAL_REGIONAL_ADMINS);
-  const [regionalAdminLoading, setRegionalAdminLoading] = useState(false);
+  const [regionalAdmins, setRegionalAdmins] = useState([]);
+  const [regionalAdminLoading, setRegionalAdminLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
+  const [myUserId, setMyUserId] = useState(null);
+
+  function showToast(msg) {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 4000);
+  }
+
+  const [regions, setRegions] = useState([]);
+  const [regionsLoading, setRegionsLoading] = useState(true);
+  const [regionsError, setRegionsError] = useState('');
+
   const [regionalAdminStatusFilter, setRegionalAdminStatusFilter] = useState('All');
   const [regionalAdminAgencyFilter, setRegionalAdminAgencyFilter] = useState('All');
   const [regionalAdminSearchQuery, setRegionalAdminSearchQuery] = useState('');
@@ -1046,6 +918,82 @@ export default function NationalAdminRegionalAdminManagement() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(10);
+
+  // fetchRegionalAdmins — add the silent param
+  const fetchRegionalAdmins = useCallback(async (silent = false) => {
+    if (!silent) setRegionalAdminLoading(true);
+    setFetchError('');
+    try {
+      console.log('[DEBUG fetchRegionalAdmins START]', { silent });
+      const res = await apiFetch('/admin-management');
+      console.log('[DEBUG fetchRegionalAdmins response]', { status: res.status, ok: res.ok });
+      if (!res.ok) throw new Error('Failed to load administrator records.');
+      const data = await res.json();
+      setRegionalAdmins((current) => {
+        const currentMap = new Map(current.map((item) => [item.id, item]));
+        const mapped = data.map((a) => {
+          const prev = currentMap.get(a.user_id);
+          return {
+            id: a.user_id,
+            first_name: a.first_name,
+            middle_name: a.middle_name,
+            last_name: a.last_name,
+            fullname: [a.first_name, a.middle_name, a.last_name].filter(Boolean).join(' '),
+            email: a.email,
+            agency: a.agency,
+            region: a.region,
+            department: a.department,
+            position: a.position,
+            employee_id: a.employee_id,
+            contact_number: a.contact_number,
+            invitation_date: a.invitation_date,
+            expiration_date: a.expiration_date,
+            status: a.status,
+            is_locked: a.is_locked,
+            is_active: a.is_active !== undefined ? a.is_active : prev?.is_active,
+            created_by_is_national_admin: a.created_by_is_national_admin,
+          };
+        });
+        return mapped;
+      });
+    } catch (err) {
+      setFetchError(err.message || 'Something went wrong.');
+    } finally {
+      if (!silent) setRegionalAdminLoading(false);
+    }
+  }, []);
+
+  const fetchRegions = useCallback(async () => {
+    setRegionsLoading(true);
+    setRegionsError('');
+    try {
+      const res = await apiFetch('/regions');
+      if (!res.ok) throw new Error('Failed to load regions.');
+      const data = await res.json();
+      setRegions(data);
+    } catch (err) {
+      setRegionsError(err.message || 'Failed to load regions.');
+    } finally {
+      setRegionsLoading(false);
+    }
+  }, []);
+
+  const fetchMyProfile = useCallback(async () => {  // ⬅️ ADD
+    try {
+      const res = await apiFetch('/profile');
+      if (!res.ok) return;
+      const data = await res.json();
+      setMyUserId(data.user_id);
+    } catch (err) {
+      console.error('Failed to fetch current admin profile:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRegionalAdmins();
+    fetchRegions();
+    fetchMyProfile();
+  }, [fetchRegionalAdmins, fetchRegions, fetchMyProfile]);
 
   // Outside click listener for dropdown close
   useEffect(() => {
@@ -1067,40 +1015,130 @@ export default function NationalAdminRegionalAdminManagement() {
     setRegionalAdminAddModalOpen(true);
   }
 
-  function handleAddSuccess(newAdmin) {
-    setRegionalAdmins((prev) => [newAdmin, ...prev]);
+  function handleAddSuccess() {
+    showToast('Administrator invited successfully.');
+    fetchRegionalAdmins(true);
   }
 
   function openConfirm(actionType, adminId) {
     setRegionalAdminConfirmModal({ open: true, actionType, targetId: adminId });
   }
 
-  function handleConfirmAction() {
+  async function handleConfirmAction() {
     const { actionType, targetId } = regionalAdminConfirmModal;
-
-    setRegionalAdmins((prev) =>
-      prev
-        .map((admin) => {
-          if (admin.id !== targetId) return admin;
-
-          switch (actionType) {
-            case 'suspend':
-              return { ...admin, status: 'Suspended', is_active: false };
-            case 'reactivate':
-            case 'activate':
-              return { ...admin, status: 'Active', is_active: true, is_locked: false };
-            case 'unlock':
-              return { ...admin, status: 'Active', is_active: true, is_locked: false };
-            case 'resend':
-              return { ...admin, status: 'Invited' };
-            default:
-              return admin;
-          }
-        })
-        .filter((admin) => (actionType === 'delete' ? admin.id !== targetId : true))
-    );
+    const actionPathMap = {
+      suspend: 'suspend',
+      reactivate: 'reactivate',
+      activate: 'activate',
+      unlock: 'unlock',
+      resend: 'resend-link',
+    };
 
     setRegionalAdminConfirmModal({ open: false, actionType: '', targetId: null });
+
+    const path = actionPathMap[actionType];
+    const fullUrl = actionType === 'delete'
+      ? `/admin-management/${targetId}`
+      : `/admin-management/${targetId}/${path}`;
+
+    console.log('[DEBUG handleConfirmAction START]', {
+      actionType,
+      targetId,
+      path,
+      fullUrl,
+      targetIdType: typeof targetId,
+    });
+
+    try {
+      if (actionType === 'delete') {
+        const res = await apiFetch(`/admin-management/${targetId}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const httpErr = new Error(extractErrorMessage(errData, 'Delete failed.'));
+          httpErr.isHttpError = true;
+          throw httpErr;
+        }
+        setRegionalAdmins((prev) => prev.filter((a) => a.id !== targetId));
+        showToast('Admin entry deleted.');
+      } else {
+        if (!path) return;
+        const res = await apiFetch(`/admin-management/${targetId}/${path}`, { method: 'POST' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const httpErr = new Error(extractErrorMessage(errData, 'Action failed.'));
+          httpErr.isHttpError = true;
+          throw httpErr;
+        }
+        setRegionalAdmins((prev) =>
+          prev.map((a) => {
+            if (a.id !== targetId) return a;
+            if (actionType === 'suspend') {
+              return { ...a, status: 'Suspended', is_active: false };
+            }
+            if (actionType === 'reactivate' || actionType === 'activate') {
+              return { ...a, status: 'Active', is_active: true };
+            }
+            if (actionType === 'unlock') {
+              return { ...a, status: 'Active', is_locked: false };
+            }
+            return a;
+          })
+        );
+        showToast(actionType === 'resend' ? 'Invitation link resent.' : 'Account updated.');
+      }
+    } catch (err) {
+      // For network-level fetch failures (e.g. connection dropped right as commit finished):
+      // Verify actual status on the server before displaying a false failure.
+      if (!err.isHttpError) {
+        try {
+          const checkRes = await apiFetch('/admin-management');
+          if (checkRes.ok) {
+            const list = await checkRes.json();
+            const record = list.find((a) => (a.user_id || a.id) === targetId);
+            const expectedStatusMap = {
+              suspend: 'suspended',
+              reactivate: 'active',
+              activate: 'active',
+              unlock: 'active',
+            };
+            const expected = expectedStatusMap[actionType];
+            const recordStatus = (record?.status || '').toString().trim().toLowerCase();
+
+            const isDeleteSuccess = actionType === 'delete' && !record;
+            const isStatusSuccess = expected && recordStatus === expected;
+
+            if (isDeleteSuccess || isStatusSuccess) {
+              if (actionType === 'delete') {
+                setRegionalAdmins((prev) => prev.filter((a) => a.id !== targetId));
+                showToast('Admin entry deleted.');
+              } else {
+                setRegionalAdmins((prev) =>
+                  prev.map((a) => {
+                    if (a.id !== targetId) return a;
+                    if (actionType === 'suspend') {
+                      return { ...a, status: 'Suspended', is_active: false };
+                    }
+                    if (actionType === 'reactivate' || actionType === 'activate') {
+                      return { ...a, status: 'Active', is_active: true };
+                    }
+                    if (actionType === 'unlock') {
+                      return { ...a, status: 'Active', is_locked: false };
+                    }
+                    return a;
+                  })
+                );
+                showToast(actionType === 'resend' ? 'Invitation link resent.' : 'Account updated.');
+              }
+              return;
+            }
+          }
+        } catch (verifyErr) {
+          console.warn('Status re-check failed:', verifyErr);
+        }
+      }
+
+      showToast(err.message || 'Something went wrong.');
+    }
   }
 
   function handleCancelConfirm() {
@@ -1127,7 +1165,7 @@ export default function NationalAdminRegionalAdminManagement() {
     const query = regionalAdminSearchQuery.toLowerCase().trim();
     const matchesSearch =
       !query ||
-      a.email.toLowerCase().includes(query) ||
+      (a.email && a.email.toLowerCase().includes(query)) ||
       (a.fullname && a.fullname.toLowerCase().includes(query)) ||
       (a.region && a.region.toLowerCase().includes(query)) ||
       (a.department && a.department.toLowerCase().includes(query)) ||
@@ -1163,6 +1201,12 @@ export default function NationalAdminRegionalAdminManagement() {
                 Add Inter-Agency Admin
               </button>
             </div>
+
+            {fetchError && (
+              <div className="NAMFieldError" style={{ marginBottom: '12px' }}>
+                <AlertCircle size={12} /> {fetchError}
+              </div>
+            )}
 
             {/* Statistics Cards (Required: Active, Suspended, Locked) */}
             <div className="NAMStatsRow">
@@ -1306,17 +1350,23 @@ export default function NationalAdminRegionalAdminManagement() {
                           <RegionalAdminStatusBadge status={admin} />
                         </td>
                         <td>
-                          <RegionalAdminActionDropdown
-                            regionalAdmin={admin}
-                            isOpen={regionalAdminActiveDropdownId === admin.id}
-                            toggleDropdown={() =>
-                              setRegionalAdminActiveDropdownId(
-                                regionalAdminActiveDropdownId === admin.id ? null : admin.id
-                              )
-                            }
-                            onAction={(type) => openConfirm(type, admin.id)}
-                            onView={() => setRegionalAdminViewAdmin(admin)}
-                          />
+                          {myUserId !== null ? (
+                            <RegionalAdminActionDropdown
+                              regionalAdmin={admin}
+                              isSelf={admin.id === myUserId}
+                              canManage={admin.created_by_is_national_admin}
+                              isOpen={regionalAdminActiveDropdownId === admin.id}
+                              toggleDropdown={() =>
+                                setRegionalAdminActiveDropdownId(
+                                  regionalAdminActiveDropdownId === admin.id ? null : admin.id
+                                )
+                              }
+                              onAction={(type) => openConfirm(type, admin.id)}
+                              onView={() => setRegionalAdminViewAdmin(admin)}
+                            />
+                          ) : (
+                            <span className="NAMActionsPlaceholder">—</span>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -1374,6 +1424,9 @@ export default function NationalAdminRegionalAdminManagement() {
         open={regionalAdminAddModalOpen}
         onClose={() => setRegionalAdminAddModalOpen(false)}
         onAddSuccess={handleAddSuccess}
+        regions={regions}
+        regionsLoading={regionsLoading}
+        regionsError={regionsError}
       />
 
       {/* Confirmation Modal */}
@@ -1390,6 +1443,31 @@ export default function NationalAdminRegionalAdminManagement() {
         regionalAdmin={regionalAdminViewAdmin}
         onClose={() => setRegionalAdminViewAdmin(null)}
       />
+
+      {toastMessage && (
+        <div
+          className="NAMToast"
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            background: '#0D9488',
+            color: '#ffffff',
+            padding: '12px 20px',
+            borderRadius: '10px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontSize: '13.5px',
+            fontWeight: 500,
+            zIndex: 100000,
+          }}
+        >
+          <CircleCheckBig size={18} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }

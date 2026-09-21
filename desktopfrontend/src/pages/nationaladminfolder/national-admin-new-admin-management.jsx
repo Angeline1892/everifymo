@@ -1,5 +1,6 @@
 import './national-admin-css.css';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { apiFetch } from '../../utils/apiFetch';
 import { createPortal } from 'react-dom';
 import {
   Send,
@@ -22,183 +23,48 @@ import {
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
 
-// Initial realistic mock accounts for National Admin
-const INITIAL_NATIONAL_ADMINS = [
-  {
-    id: 'na-001',
-    first_name: 'Kristine',
-    last_name: 'Santos',
-    fullname: 'Kristine Santos',
-    email: 'kristine.santos@everifymo.gov.ph',
-    invitation_date: '2026-01-15',
-    expiration_date: '2026-01-17',
-    status: 'Active',
-    is_locked: false,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-002',
-    first_name: 'Alexander',
-    last_name: 'Reyes',
-    fullname: 'Alexander Reyes',
-    email: 'alex.reyes@everifymo.gov.ph',
-    invitation_date: '2026-02-01',
-    expiration_date: '2026-02-03',
-    status: 'Active',
-    is_locked: false,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-003',
-    first_name: 'Maria Elena',
-    last_name: 'Bautista',
-    fullname: 'Maria Elena Bautista',
-    email: 'maria.bautista@everifymo.gov.ph',
-    invitation_date: '2026-02-14',
-    expiration_date: '2026-02-16',
-    status: 'Suspended',
-    is_locked: false,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-004',
-    first_name: 'Jonathan',
-    last_name: 'Cruz',
-    fullname: 'Jonathan Cruz',
-    email: 'jonathan.cruz@everifymo.gov.ph',
-    invitation_date: '2026-02-20',
-    expiration_date: '2026-02-22',
-    status: 'Locked',
-    is_locked: true,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-005',
-    first_name: 'Patricia',
-    last_name: 'Villanueva',
-    fullname: 'Patricia Villanueva',
-    email: 'patricia.villanueva@everifymo.gov.ph',
-    invitation_date: '2026-02-28',
-    expiration_date: '2026-03-02',
-    status: 'Active',
-    is_locked: false,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-006',
-    first_name: 'Eduardo',
-    last_name: 'Mendoza',
-    fullname: 'Eduardo Mendoza',
-    email: 'eduardo.mendoza@everifymo.gov.ph',
-    invitation_date: '2026-03-01',
-    expiration_date: '2026-03-03',
-    status: 'Invited',
-    is_locked: false,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-007',
-    first_name: 'Corazon',
-    last_name: 'Aquino',
-    fullname: 'Corazon Aquino',
-    email: 'cory.aquino@everifymo.gov.ph',
-    invitation_date: '2026-02-10',
-    expiration_date: '2026-02-12',
-    status: 'Link Expired',
-    is_locked: false,
-    role: 'National Administrator',
-  },
-  {
-    id: 'na-008',
-    first_name: 'Danilo',
-    last_name: 'Gutierrez',
-    fullname: 'Danilo Gutierrez',
-    email: 'danilo.gutierrez@everifymo.gov.ph',
-    invitation_date: '2026-03-04',
-    expiration_date: '2026-03-06',
-    status: 'Pending Approval',
-    is_active: false,
-    is_locked: false,
-    role: 'National Administrator',
-  },
+
+function extractErrorMessage(errorData, fallback) {
+    const detail = errorData?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+        return detail.map(d => d?.msg || JSON.stringify(d)).join(' ');
+    }
+    if (detail && typeof detail === 'object') {
+        return detail.msg || detail.message || JSON.stringify(detail);
+    }
+    return fallback;
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr; // fallback if unparseable
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+const KNOWN_ADMIN_STATUSES = [
+  'Pending Approval',
+  'Locked',
+  'Suspended',
+  'Active',
+  'Invited',
+  'Resend Requested',
+  'Link Expired',
 ];
 
 export function computeAdminStatus(admin) {
   if (!admin) return '';
-  const rawStatus = (admin.status || '').toString().trim().toLowerCase();
-
-  // 1. Pending Approval check (must be recognized before generic active/inactive logic)
-  if (rawStatus === 'pending_approval' || rawStatus === 'pending approval') {
-    return 'Pending Approval';
-  }
-
-  // 2. Locked must take precedence over Active
-  // Condition: status == active && is_active == true && is_locked == true
-  if (
-    (rawStatus === 'active' && admin.is_active === true && admin.is_locked === true) ||
-    rawStatus === 'locked' ||
-    (admin.is_locked === true && rawStatus === 'active' && admin.is_active !== false)
-  ) {
-    return 'Locked';
-  }
-
-  // 3. Suspended: status == active && is_active == false
-  if (
-    (rawStatus === 'active' && admin.is_active === false) ||
-    rawStatus === 'suspended' ||
-    rawStatus === 'suspend'
-  ) {
-    return 'Suspended';
-  }
-
-  // 4. Active: status == active && is_active == true && is_locked != true
-  if (
-    rawStatus === 'active' ||
-    (!rawStatus && admin.is_active === true && !admin.is_locked)
-  ) {
-    return 'Active';
-  }
-
-  // 5. Invited / Resend Requested / Link Expired
-  if (
-    rawStatus === 'invited' ||
-    rawStatus === 'resend requested' ||
-    rawStatus === 'resend_requested' ||
-    rawStatus === 'link expired' ||
-    rawStatus === 'link_expired'
-  ) {
-    let isExpired = false;
-    if (typeof admin.is_token_expired === 'boolean') {
-      isExpired = admin.is_token_expired;
-    } else if (typeof admin.token_expired === 'boolean') {
-      isExpired = admin.token_expired;
-    } else if (admin.expiration_date || admin.expires_at) {
-      const expDate = new Date(admin.expiration_date || admin.expires_at);
-      if (!isNaN(expDate.getTime())) {
-        isExpired = expDate.getTime() < Date.now();
-      }
-    } else if (
-      rawStatus === 'link expired' ||
-      rawStatus === 'link_expired' ||
-      rawStatus === 'resend requested' ||
-      rawStatus === 'resend_requested'
-    ) {
-      isExpired = true;
-    }
-
-    const hasResendRequest =
-      admin.resend_requested_at !== null && admin.resend_requested_at !== undefined;
-
-    if (hasResendRequest && isExpired) {
-      return 'Resend Requested';
-    }
-    if (!hasResendRequest && isExpired) {
-      return 'Link Expired';
-    }
-    return 'Invited';
-  }
-
-  return admin.status || 'Active';
+  const raw = (admin.status || '').toString().trim();
+  const match = KNOWN_ADMIN_STATUSES.find((s) => s.toLowerCase() === raw.toLowerCase());
+  return match || admin.status || '';
 }
 
 const NATIONAL_ADMIN_STATUS_META = {
@@ -228,23 +94,82 @@ function NationalAdminActionDropdown({
 }) {
   const status = computeAdminStatus(nationalAdmin);
   const [openUpward, setOpenUpward] = useState(false);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [menuStyle, setMenuStyle] = useState({});
   const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const updateMenuPosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const upward = spaceBelow < 220 && spaceAbove > spaceBelow;
+    const right = Math.max(8, window.innerWidth - rect.right);
+
+    if (upward) {
+      setMenuStyle({
+        position: 'fixed',
+        bottom: `${Math.max(8, window.innerHeight - rect.top + 4)}px`,
+        top: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '165px',
+        maxHeight: `${Math.max(120, rect.top - 16)}px`,
+        overflowY: 'auto',
+      });
+    } else {
+      setMenuStyle({
+        position: 'fixed',
+        top: `${rect.bottom + 4}px`,
+        bottom: 'auto',
+        right: `${right}px`,
+        left: 'auto',
+        zIndex: 9999,
+        minWidth: '165px',
+        maxHeight: `${Math.max(120, spaceBelow - 16)}px`,
+        overflowY: 'auto',
+      });
+    }
+    setOpenUpward(upward);
+  }, []);
 
   const handleToggle = (e) => {
     e.stopPropagation();
-    if (!isOpen && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const upward = spaceBelow < 170;
-      setOpenUpward(upward);
-      setMenuPos({
-        top: upward ? Math.max(8, rect.top - 150) : rect.bottom + 4,
-        left: Math.max(8, rect.right - 190),
-      });
+    if (!isOpen) {
+      updateMenuPosition();
     }
     toggleDropdown();
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    updateMenuPosition();
+
+    function handleOutsideClick(event) {
+      if (
+        menuRef.current && !menuRef.current.contains(event.target) &&
+        triggerRef.current && !triggerRef.current.contains(event.target)
+      ) {
+        toggleDropdown();
+      }
+    }
+
+    function handleScrollOrResize(event) {
+      if (menuRef.current && menuRef.current.contains(event.target)) return;
+      toggleDropdown();
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [isOpen, toggleDropdown, updateMenuPosition]);
 
   return (
     <div className={`NAMDropdownWrapper ${isOpen ? 'active-open' : ''}`}>
@@ -261,14 +186,9 @@ function NationalAdminActionDropdown({
       {isOpen &&
         createPortal(
           <div
+            ref={menuRef}
             className={`NAMDropdownMenu ${openUpward ? 'open-upward' : ''}`}
-            style={{
-              position: 'fixed',
-              top: `${menuPos.top}px`,
-              left: `${menuPos.left}px`,
-              zIndex: 9999,
-              width: '165px',
-            }}
+            style={menuStyle}
           >
             <button
               className="NAMDropdownItem"
@@ -358,16 +278,6 @@ function NationalAdminActionDropdown({
                 >
                   <RotateCcw size={14} /> Reactivate Account
                 </button>
-                <div className="NAMDropdownDivider" />
-                <button
-                  className="NAMDropdownItem danger"
-                  onClick={() => {
-                    onAction('delete');
-                    toggleDropdown();
-                  }}
-                >
-                  <Trash2 size={14} /> Delete Account
-                </button>
               </>
             )}
           </div>,
@@ -455,7 +365,6 @@ function NationalAdminConfirmModal({ open, actionType, onConfirm, onCancel }) {
 
 function AddNationalAdminModal({ open, onClose, onAddSuccess }) {
   const [firstName, setFirstName] = useState('');
-  const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [firstNameError, setFirstNameError] = useState('');
@@ -466,7 +375,6 @@ function AddNationalAdminModal({ open, onClose, onAddSuccess }) {
 
   function handleClose() {
     setFirstName('');
-    setMiddleName('');
     setLastName('');
     setEmail('');
     setFirstNameError('');
@@ -477,57 +385,48 @@ function AddNationalAdminModal({ open, onClose, onAddSuccess }) {
     onClose();
   }
 
-  function handleSend() {
-    let hasError = false;
-    setFirstNameError('');
-    setLastNameError('');
-    setEmailError('');
+  async function handleSend() {
+  let hasError = false;
+  setFirstNameError('');
+  setLastNameError('');
+  setEmailError('');
 
-    if (!firstName.trim()) {
-      setFirstNameError('First Name is required.');
+  if (!firstName.trim()) { setFirstNameError('First Name is required.'); hasError = true; }
+  if (!lastName.trim()) { setLastNameError('Last Name is required.'); hasError = true; }
+  if (!email.trim()) {
+    setEmailError('Email address is required.');
+    hasError = true;
+  } else {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setEmailError('Please enter a valid email address.');
       hasError = true;
     }
-
-    if (!lastName.trim()) {
-      setLastNameError('Last Name is required.');
-      hasError = true;
-    }
-
-    if (!email.trim()) {
-      setEmailError('Email address is required.');
-      hasError = true;
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.trim())) {
-        setEmailError('Please enter a valid email address.');
-        hasError = true;
-      }
-    }
-
-    if (hasError) return;
-
-    setSending(true);
-
-    // Simulate sending invitation with interactive state update
-    setTimeout(() => {
-      setSending(false);
-      setSuccessMsg(`National Admin invitation email has been sent to ${email.trim()}`);
-      const parts = [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean);
-      onAddSuccess({
-        id: `na-${Date.now()}`,
-        first_name: firstName.trim(),
-        middle_name: middleName.trim() || null,
-        last_name: lastName.trim(),
-        fullname: parts.join(' '),
-        email: email.trim(),
-        invitation_date: new Date().toISOString().split('T')[0],
-        expiration_date: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString().split('T')[0],
-        status: 'Invited',
-        is_locked: false,
-        role: 'National Administrator',
-      });
-    }, 600);
   }
+  if (hasError) return;
+
+  setSending(true);
+  try {
+    const res = await apiFetch('/national-admin-management', {
+      method: 'POST',
+      body: JSON.stringify({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        email: email.trim(),
+      }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(extractErrorMessage(errData, 'Failed to send invitation.'));
+    }
+    setSuccessMsg(`National Admin invitation email has been sent to ${email.trim()}`);
+    onAddSuccess(); // now just triggers a refetch, see below
+  } catch (err) {
+    setEmailError(err.message);
+  } finally {
+    setSending(false);
+  }
+}
 
   function handleDone() {
     handleClose();
@@ -548,8 +447,8 @@ function AddNationalAdminModal({ open, onClose, onAddSuccess }) {
 
         {!successMsg ? (
           <>
-            {/* Row 1: Name Fields (3 columns) */}
-            <div className="NAMFieldRow3">
+            {/* Row 1: Name Fields */}
+            <div className="NAMFieldRow">
               <div className="NAMFormGroup">
                 <label className="NAMLabel">
                   First Name <span className="NAMRequired">*</span>
@@ -570,21 +469,6 @@ function AddNationalAdminModal({ open, onClose, onAddSuccess }) {
                   />
                 </div>
                 {firstNameError && <span className="NAMFieldError">{firstNameError}</span>}
-              </div>
-
-              <div className="NAMFormGroup">
-                <label className="NAMLabel">Middle Name</label>
-                <div className="NAMInputWrapper">
-                  <User className="NAMInputIcon" size={16} />
-                  <input
-                    type="text"
-                    className="NAMInput with-icon"
-                    placeholder="Optional"
-                    value={middleName}
-                    onChange={(e) => setMiddleName(e.target.value)}
-                    disabled={sending}
-                  />
-                </div>
               </div>
 
               <div className="NAMFormGroup">
@@ -735,12 +619,16 @@ function NationalAdminViewModal({ open, nationalAdmin, onClose }) {
 
               <div className="NAMVDField">
                 <span className="NAMVDLabel">Invitation Date</span>
-                <span className="NAMVDValue">{nationalAdmin.invitation_date || '-'}</span>
+                <span className="NAMVDValue">
+                  {nationalAdmin.invitation_date
+                    ? formatDate(nationalAdmin.invitation_date)
+                    : <span className="NAMSystemCreatedTag">System Created</span>}
+                </span>
               </div>
               {showExpiration && (
                 <div className="NAMVDField">
                   <span className="NAMVDLabel">Expiration Date</span>
-                  <span className="NAMVDValue">{nationalAdmin.expiration_date || '-'}</span>
+                  <span className="NAMVDValue">{formatDate(nationalAdmin.expiration_date)}</span>
                 </div>
               )}
             </div>
@@ -759,8 +647,16 @@ function NationalAdminViewModal({ open, nationalAdmin, onClose }) {
 
 
 export default function NationalAdminNewAdminManagement() {
-  const [nationalAdmins, setNationalAdmins] = useState(INITIAL_NATIONAL_ADMINS);
-  const [nationalAdminLoading, setNationalAdminLoading] = useState(false);
+  const [nationalAdmins, setNationalAdmins] = useState([]);
+  const [nationalAdminLoading, setNationalAdminLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
+  const [myUserId, setMyUserId] = useState(null); 
+
+  function showToast(msg) {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 4000);
+  }
   const [nationalAdminStatusFilter, setNationalAdminStatusFilter] = useState('All');
   const [nationalAdminSearchQuery, setNationalAdminSearchQuery] = useState('');
   const [nationalAdminViewAdmin, setNationalAdminViewAdmin] = useState(null);
@@ -772,8 +668,59 @@ export default function NationalAdminNewAdminManagement() {
     targetId: null,
   });
 
+
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(10);
+
+  const fetchNationalAdmins = useCallback(async (silent = false) => {
+    if (!silent) setNationalAdminLoading(true);
+    setFetchError('');
+    try {
+      const res = await apiFetch('/national-admin-management');
+      if (!res.ok) throw new Error('Failed to load national admins.');
+      const data = await res.json();
+      setNationalAdmins((current = []) => {
+        const currentMap = new Map((Array.isArray(current) ? current : []).map((item) => [item.id, item]));
+        return data.map((a) => {
+          const prev = currentMap.get(a.user_id);
+          return {
+            id: a.user_id,
+            first_name: a.first_name,
+            middle_name: a.middle_name,
+            last_name: a.last_name,
+            fullname: [a.first_name, a.middle_name, a.last_name].filter(Boolean).join(' '),
+            email: a.email,
+            invitation_date: a.invitation_date,
+            expiration_date: a.expiration_date,
+            status: a.status,
+            is_locked: a.is_locked,
+            is_active: a.is_active !== undefined ? a.is_active : prev?.is_active,
+            role: 'National Administrator',
+          };
+        });
+      });
+    } catch (err) {
+      setFetchError(err.message || 'Something went wrong.');
+    } finally {
+      if (!silent) setNationalAdminLoading(false);
+    }
+  }, []);
+
+    const fetchMyProfile = useCallback(async () => {  // ⬅️ ADD
+    try {
+      const res = await apiFetch('/profile');
+      if (!res.ok) return;
+      const data = await res.json();
+      setMyUserId(data.user_id);
+    } catch (err) {
+      console.error('Failed to fetch current admin profile:', err);
+    }
+  }, []);
+
+useEffect(() => {
+  fetchNationalAdmins();
+  fetchMyProfile();
+}, [fetchNationalAdmins, fetchMyProfile]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -795,46 +742,65 @@ export default function NationalAdminNewAdminManagement() {
     setNationalAdminAddModalOpen(true);
   }
 
-  function handleAddSuccess(newAdmin) {
-    setNationalAdmins((prev) => [newAdmin, ...prev]);
+  function handleAddSuccess() {
+    showToast('Administrator invited successfully.');
+    fetchNationalAdmins(true);
   }
 
   function openConfirm(actionType, adminId) {
     setNationalAdminConfirmModal({ open: true, actionType, targetId: adminId });
   }
 
-  function handleConfirmAction() {
+  async function handleConfirmAction() {
     const { actionType, targetId } = nationalAdminConfirmModal;
-
-    setNationalAdmins((prev) =>
-      prev
-        .map((admin) => {
-          if (admin.id !== targetId) return admin;
-
-          switch (actionType) {
-            case 'suspend':
-              return { ...admin, status: 'Suspended', is_active: false };
-            case 'reactivate':
-            case 'activate':
-              return { ...admin, status: 'Active', is_active: true, is_locked: false };
-            case 'unlock':
-              return { ...admin, status: 'Active', is_active: true, is_locked: false };
-            case 'resend':
-              return {
-                ...admin,
-                status: 'Invited',
-                invitation_date: new Date().toISOString().split('T')[0],
-              };
-            default:
-              return admin;
-          }
-        })
-        .filter((admin) => (actionType === 'delete' ? admin.id !== targetId : true))
-    );
+    const actionPathMap = {
+      suspend: 'suspend',
+      reactivate: 'reactivate',
+      activate: 'activate',
+      unlock: 'unlock',
+      resend: 'resend-link',
+    };
 
     setNationalAdminConfirmModal({ open: false, actionType: '', targetId: null });
-  }
 
+    try {
+      if (actionType === 'delete') {
+        const res = await apiFetch(`/national-admin-management/${targetId}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(extractErrorMessage(errData, 'Delete failed.'));
+        }
+        setNationalAdmins((prev) => prev.filter((a) => a.id !== targetId));
+        showToast('Admin entry deleted.');
+      } else {
+        const path = actionPathMap[actionType];
+        if (!path) return;
+        const res = await apiFetch(`/national-admin-management/${targetId}/${path}`, { method: 'POST' });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(extractErrorMessage(errData, 'Action failed.'));
+        }
+        setNationalAdmins((prev) =>
+          prev.map((a) => {
+            if (a.id !== targetId) return a;
+            if (actionType === 'suspend') {
+              return { ...a, status: 'Suspended', is_active: false };
+            }
+            if (actionType === 'reactivate' || actionType === 'activate') {
+              return { ...a, status: 'Active', is_active: true };
+            }
+            if (actionType === 'unlock') {
+              return { ...a, status: 'Active', is_locked: false };
+            }
+            return a;
+          })
+        );
+        showToast(actionType === 'resend' ? 'Invitation link resent.' : 'Account updated.');
+      }
+    } catch (err) {
+      showToast(err.message || 'Something went wrong.');
+    }
+  }
   function handleCancelConfirm() {
     setNationalAdminConfirmModal({ open: false, actionType: '', targetId: null });
   }
@@ -1000,14 +966,19 @@ export default function NationalAdminNewAdminManagement() {
                         <td className="NAMTdCenter">{startIndex + idx + 1}</td>
                         <td>{admin.fullname || <span className="NAMEmpty">-</span>}</td>
                         <td className="NAMEmailCell">{admin.email}</td>
-                        <td>{admin.invitation_date || <span className="NAMEmpty">-</span>}</td>
+                        <td>
+                          {admin.invitation_date
+                            ? formatDate(admin.invitation_date)
+                            : <span className="NAMSystemCreatedTag">System Created</span>}
+                        </td>
                         <td>
                           <NationalAdminStatusBadge status={admin} />
                         </td>
                         <td>
+                          {myUserId !== null ? (
                           <NationalAdminActionDropdown
                             nationalAdmin={admin}
-                            isSelf={false}
+                            isSelf={admin.id === myUserId} 
                             isOpen={nationalAdminActiveDropdownId === admin.id}
                             toggleDropdown={() =>
                               setNationalAdminActiveDropdownId(
@@ -1017,6 +988,9 @@ export default function NationalAdminNewAdminManagement() {
                             onAction={(type) => openConfirm(type, admin.id)}
                             onView={() => setNationalAdminViewAdmin(admin)}
                           />
+                           ) : (
+                            <span className="NAMActionsPlaceholder">—</span>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -1090,6 +1064,31 @@ export default function NationalAdminNewAdminManagement() {
         nationalAdmin={nationalAdminViewAdmin}
         onClose={() => setNationalAdminViewAdmin(null)}
       />
+
+      {toastMessage && (
+        <div
+          className="NAMToast"
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            background: '#0D9488',
+            color: '#ffffff',
+            padding: '12px 20px',
+            borderRadius: '10px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontSize: '13.5px',
+            fontWeight: 500,
+            zIndex: 100000,
+          }}
+        >
+          <CircleCheckBig size={18} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }

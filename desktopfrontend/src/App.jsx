@@ -23,6 +23,7 @@ import AllNotifications from './pages/component/all-notifications.jsx';
 {/* NATIONAL ADMIN PAGES */ }
 import NationalAdminNewAdminManagement from './pages/nationaladminfolder/national-admin-new-admin-management.jsx';
 import NationalAdminInteragencyAdminManagement from './pages/nationaladminfolder/national-admin-interagency-admin-management.jsx';
+import NationalAdminAuditLogs from './pages/nationaladminfolder/national-admin-audit-logs.jsx';
 
 {/* SUPERADMIN PAGES */ }
 import SuperAdminLogin from './pages/superadminfolder/superadmin-login.jsx';
@@ -68,24 +69,19 @@ function DeepLinkListener() {
     const unsubscribe = window.electronAPI.onDeepLinkToken((token) => {
       console.log('Token received:', token);
 
-      fetch(`${API_BASE_URL}/registration/validate/${token}`)
+      fetch(`${API_BASE_URL}/registration/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invite_token: token }),
+      })
         .then((res) => res.json())
         .then((data) => {
           console.log('Validate response:', data);
 
-          if (data.role === 'superadmin') {
-            if (data.status === 'valid') {
-              navigate('/create-new-password', { state: { token } });
-            } else {
-              navigate('/superadmin-invite-status', {
-                state: { ...data, token },
-              });
-            }
-            return;
-          }
-
+          // All roles now go through the same flow: valid token -> set password,
+          // anything else (expired/invalid/used) -> the status page.
           if (data.status === 'valid') {
-            navigate('/user-registration', { state: { ...data, invite_token: token } });
+            navigate('/create-new-password', { state: { ...data, token } });
           } else {
             navigate('/invitation-status', { state: { ...data, invite_token: token } });
           }
@@ -126,6 +122,7 @@ export default function App() {
         {/* NATIONAL ADMIN ROUTES */}
         <Route path='/nationaladminfolder/national-admin-new-admin-management' element={<NationalAdminNewAdminManagement />} />
         <Route path='/nationaladminfolder/national-admin-interagency-admin-management' element={<NationalAdminInteragencyAdminManagement />} />
+        <Route path='/nationaladminfolder/national-admin-audit-logs' element={<NationalAdminAuditLogs />} />
 
         {/* SUPERADMIN ROUTES */}
         <Route path='/superadminfolder/superadmin-user-management' element={<SuperAdminUserManagement />} />
