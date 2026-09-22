@@ -18,7 +18,6 @@
   "permissions": [
     "activeTab",
     "storage",
-    "scripting",
     "identity"
   ],
 
@@ -65,12 +64,17 @@
         "pages/report-status.html",
         "css/*.css",
         "js/*.js",
-        "assets/fonts/*.woff2",
+        "assests/fonts/*.woff2",
         "assets/fonts/*.ttf",
         "assets/icons/*.png",
         "assets/images/*"
       ],
-      "matches": ["<all_urls>"]
+      "matches": [
+        "https://*.shopee.ph/*",
+        "https://*.lazada.com.ph/*",
+        "https://*.tiktok.com/*",
+        "https://*.facebook.com/*"
+      ]
     }
   ]
 }

@@ -1147,6 +1147,7 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
         localStorage.setItem('agency', personnelAgency);
+        localStorage.setItem('role', 'personnel');
 
         if (data.force_password_change) {
           navigate('/change-password');
@@ -1596,7 +1597,8 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
         localStorage.removeItem('user_name');
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
-        localStorage.setItem('agency', 'superadmin');
+        localStorage.setItem('agency', 'national_admin');   // CHANGED from 'superadmin'
+        localStorage.setItem('role', 'national_admin'); 
 
         navigate('/nationaladminfolder/national-admin-interagency-admin-management');
       } catch (err) {
@@ -1996,6 +1998,7 @@ function InteragencyAdminLoginForm({ navigate, onOtpStateChange }) {
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
       localStorage.setItem('agency', agency);
+      localStorage.setItem('role', `${agency}_admin`); 
 
       if (data.force_password_change) {
         navigate('/change-password');

@@ -158,10 +158,16 @@ def update_profile(
             message=f"{current_user.email} updated their profile information.",
         )
 
+        profile_action = (
+            AuditAction.UPDATE_NATIONAL_ADMIN_INFORMATION
+            if current_user.role == Role.NATIONAL_ADMIN
+            else AuditAction.UPDATE_REGIONAL_ADMIN_INFORMATION
+        )
+
         write_audit_log(
             db,
             user=current_user,
-            action=AuditAction.UPDATE_USER_PROFILE,
+            action=profile_action,
             target_table="users",
             target_id=current_user.user_id,
             target_reference=f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email,
@@ -210,9 +216,9 @@ def change_password(
     )
 
     password_action = (
-        AuditAction.UPDATE_SUPERADMIN_PASSWORD
+        AuditAction.UPDATE_NATIONAL_ADMIN_PASSWORD
         if current_user.role == Role.NATIONAL_ADMIN
-        else AuditAction.UPDATE_USER_PASSWORD
+        else AuditAction.UPDATE_REGIONAL_ADMIN_PASSWORD
     )
 
     write_audit_log(
@@ -251,10 +257,11 @@ def request_password_reset(
             detail="This action is only available to personnel accounts.",
         )
 
+
     write_audit_log(
         db,
         user=current_user,
-        action=AuditAction.PERSONNEL_REQUEST_PASSWORD_RESET,
+        action=AuditAction.PERSONNEL_REQUEST_PASSWORD_UPDATE,
         target_table="users",
         target_id=current_user.user_id,
         target_reference=current_user.email,
