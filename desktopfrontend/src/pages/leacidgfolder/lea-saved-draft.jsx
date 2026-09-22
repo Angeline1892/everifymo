@@ -7,7 +7,7 @@ import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
 import { PenLine, Trash2, Info, Eye, MoreVertical, X, Inbox } from 'lucide-react';
 
-const API_BASE = 'http://127.0.0.1:8000'
+const API_BASE = 'https://everify.store';
 
 // CHANGED — checks real backend values now ("draft"/"incomplete",
 // lowercase), not the old mock-data capitalized strings

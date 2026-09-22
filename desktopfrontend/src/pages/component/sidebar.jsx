@@ -13,6 +13,7 @@ import {
   UsersRound, // user management icon
   UserCog, // admin management icon
   ScrollText, // audit logs icon
+  MapPin, // workspace location icon
   Menu, // hamburger icon (NEW - responsive sidebar)
 } from "lucide-react";
 
@@ -33,12 +34,14 @@ const SuperAdminMenuItems = NationalAdminMenuItems
 const FDAAdminMenuItems = [
     { icon: UsersRound, label: 'User Management', path: '/fdaadminfolder/fda-admin-user-management' },
     { icon: UserCog, label: 'Admin Management', path: '/fdaadminfolder/fda-admin-admin-management' },
+    { icon: MapPin, label: 'Workspace Location', path: '/fdaadminfolder/fda-admin-workspace-location' },
     { icon: ScrollText, label: 'Audit Logs', path: '/fdaadminfolder/fda-admin-audit-logs' },
 ]
 
 const LeaAdminMenuItems = [
     { icon: UsersRound, label: 'User Management', path: '/leaadminfolder/lea-admin-user-management' },
     { icon: UserCog, label: 'Admin Management', path: '/leaadminfolder/lea-admin-admin-management' },
+    { icon: MapPin, label: 'Workspace Location', path: '/leaadminfolder/lea-admin-workspace-location' },
     { icon: ScrollText, label: 'Audit Logs', path: '/leaadminfolder/lea-admin-audit-logs' },
 ]
 

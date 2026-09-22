@@ -95,7 +95,7 @@ function formatTimestamp(iso) {
 const ADMIN_TAB_ACTION_OPTIONS = REGIONAL_ADMIN_ACTIONS;
 const PERSONNEL_TAB_ACTION_OPTIONS = PERSONNEL_ACTIONS;
 const SYSTEM_TAB_ACTION_OPTIONS = [
-  'PENDING_NATIONAL_ADMIN_ACCOUNT', 'LOCK_PERSONNEL_ACCOUNT', 'LOCK_NATIONAL_ADMIN_ACCOUNT', 'LOCK_REGIONAL_ADMIN_ACCOUNT',
+  'LOCK_PERSONNEL_ACCOUNT', 'LOCK_REGIONAL_ADMIN_ACCOUNT', 'PENDING_REGIONAL_ADMIN_ACCOUNT',
 ];
 
 export default function FDAAdminAuditLogs() {
@@ -144,8 +144,11 @@ export default function FDAAdminAuditLogs() {
 
   const adminRows = fdaRows.filter((row) => getRowTab(row) === 'admin');
   const personnelRows = fdaRows.filter((row) => getRowTab(row) === 'personnel');
+  // Backend returns every system action code together, unscoped by agency —
+  // restrict to just the codes that belong on this page's System tab.
+  const scopedSystemRows = systemRows.filter((row) => SYSTEM_TAB_ACTION_OPTIONS.includes(row.action));
 
-  const rawLogs = activeTab === 'admin' ? adminRows : activeTab === 'personnel' ? personnelRows : systemRows;
+  const rawLogs = activeTab === 'admin' ? adminRows : activeTab === 'personnel' ? personnelRows : scopedSystemRows;
 
   const actionOptions =
     activeTab === 'admin' ? ADMIN_TAB_ACTION_OPTIONS
@@ -157,9 +160,9 @@ export default function FDAAdminAuditLogs() {
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
-      (log.user_name && log.user_name.toLowerCase().includes(q)) ||
       (log.user_email && log.user_email.toLowerCase().includes(q)) ||
-      (log.action && log.action.toLowerCase().includes(q)) ||
+      (log.user_name && log.user_name.toLowerCase().includes(q)) ||
+      (log.target_id && String(log.target_id).toLowerCase().includes(q)) ||
       (log.target_table && log.target_table.toLowerCase().includes(q)) ||
       (log.target_reference && log.target_reference.toLowerCase().includes(q));
 
@@ -229,7 +232,7 @@ export default function FDAAdminAuditLogs() {
                   onClick={() => switchTab('system')}
                 >
                   System Events
-                  <span className="FDAAdminAuditTabBadge">{systemRows.length}</span>
+                  <span className="FDAAdminAuditTabBadge">{scopedSystemRows.length}</span>
                 </button>
               </div>
             </div>
@@ -240,7 +243,7 @@ export default function FDAAdminAuditLogs() {
                 <input
                   type="text"
                   className="FDAAdminSearchInput"
-                  placeholder="Search user, action, target table..."
+                  placeholder="Search by email, name, target ID, table, or reference..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -432,6 +435,12 @@ export default function FDAAdminAuditLogs() {
             <div className="FDAAdminModalBody">
               <div className="FDAAdminSummaryBox">
                 <div className="FDAAdminSummaryRow">
+                  <span className="FDAAdminSummaryLabel">Log ID:</span>
+                  <span className="FDAAdminSummaryValue" style={{ fontFamily: 'monospace' }}>
+                    {selectedLog.log_id}
+                  </span>
+                </div>
+                <div className="FDAAdminSummaryRow">
                   <span className="FDAAdminSummaryLabel">Timestamp:</span>
                   <span className="FDAAdminSummaryValue">{formatTimestamp(selectedLog.timestamp)}</span>
                 </div>
@@ -439,6 +448,18 @@ export default function FDAAdminAuditLogs() {
                   <span className="FDAAdminSummaryLabel">Actor:</span>
                   <span className="FDAAdminSummaryValue">
                     {selectedLog.user_name || selectedLog.user_email || 'Automated System Service'} ({humanizeRole(selectedLog.user_role)})
+                  </span>
+                </div>
+                <div className="FDAAdminSummaryRow">
+                  <span className="FDAAdminSummaryLabel">User ID:</span>
+                  <span className="FDAAdminSummaryValue" style={{ fontFamily: 'monospace' }}>
+                    {selectedLog.user_id || '—'}
+                  </span>
+                </div>
+                <div className="FDAAdminSummaryRow">
+                  <span className="FDAAdminSummaryLabel">Email:</span>
+                  <span className="FDAAdminSummaryValue">
+                    {selectedLog.user_email || '—'}
                   </span>
                 </div>
                 <div className="FDAAdminSummaryRow">
@@ -454,6 +475,10 @@ export default function FDAAdminAuditLogs() {
                 <div className="FDAAdminSummaryRow">
                   <span className="FDAAdminSummaryLabel">Target Reference:</span>
                   <span className="FDAAdminSummaryValue">{selectedLog.target_reference || '—'}</span>
+                </div>
+                <div className="FDAAdminSummaryRow">
+                  <span className="FDAAdminSummaryLabel">Record / Target ID:</span>
+                  <span className="FDAAdminSummaryValue" style={{ fontFamily: 'monospace' }}>{selectedLog.target_id || '—'}</span>
                 </div>
                 <div className="FDAAdminSummaryRow">
                   <span className="FDAAdminSummaryLabel">IP Address:</span>
