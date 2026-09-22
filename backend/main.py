@@ -24,6 +24,7 @@ from app.desktop.routers.profile_setting import profile as profile_router
 from app.desktop.routers.admin_notifications.admin_notifications import router as admin_notifications_router
 from app.desktop.routers.audit_logs.audit_logs import router as audit_logs_router  
 from app.desktop.routers.notifications.notifications import router as notifications_router  # ADDED     
+from app.desktop.routers.workspace_locations.workspace_location import router as workspace_location_router     
 
 
 from app.database.base import Base
@@ -73,7 +74,7 @@ from app.desktop.routers.drafts.fda_verification_drafts import router as fda_ver
 from app.desktop.routers.verification.verification_response import fda_response_router
 
 # Title Extaction Retrieved from the Chrome Extension to NLP
-#from app.extension.routers.retrieval import router as retrieval_router
+from app.extension.routers.retrieval import router as retrieval_router
 
 #for verification history in extension
 from app.extension.routers import verification
@@ -153,6 +154,7 @@ app.include_router(profile_router.router)
 app.include_router(admin_notifications_router)
 app.include_router(audit_logs_router)
 app.include_router(notifications_router)  # ADDED
+app.include_router(workspace_location_router)
 
 # @app.get("/", status_code=status.HTTP_200_OK)
 # async def user(consumer: consumer_dependency):
@@ -163,7 +165,7 @@ app.include_router(notifications_router)  # ADDED
 #         "User": consumer
 #     }
 
-#app.include_router(retrieval_router)
+app.include_router(retrieval_router)
 
 app.include_router(verification.router)
 

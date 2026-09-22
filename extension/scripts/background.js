@@ -20,7 +20,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       try {
         const { access_token } = await chrome.storage.local.get(['access_token']);
 
-        const response = await fetch('http://localhost:8001/verify', {
+        const response = await fetch('https://everify.store/verify', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -49,7 +49,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         
         sendResponse({ status: 'success', data: data });
 
-        const res = await fetch('http://localhost:8001/submitVerification', {
+        const res = await fetch('https://everify.store/submitVerification', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       try {
         const { access_token } = await chrome.storage.local.get(['access_token']);
 
-        const res = await fetch('http://localhost:8001/submitComplaint', {
+        const res = await fetch('https://everify.store/submitComplaint', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

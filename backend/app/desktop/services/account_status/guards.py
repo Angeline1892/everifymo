@@ -1,3 +1,4 @@
+# backend/app/desktop/services/account_status/guards.py
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
@@ -14,8 +15,27 @@ def agency_of(role: str) -> str | None:
     return None
 
 
-def assert_same_agency_and_region(actor: User, target: User):
+def assert_same_agency_and_region(db: Session, actor: User, target: User):
     if actor.role == Role.NATIONAL_ADMIN:
+        # National Admin has unrestricted reach over other National Admins
+        # (that's a separate peer-management flow, unchanged here). For
+        # Interagency Admin targets, National Admin may act on them ONLY
+        # if a National Admin (any of them) originally created the
+        # account. Agency Admins invited by a FELLOW Agency Admin
+        # (by-fellow-admin path) are out of National Admin's reach
+        # entirely — view-only in the frontend; this 403 is the real
+        # enforcement since the API can be called directly.
+        if target.role in Role.ADMIN_ROLES:
+            creator = (
+                db.query(User).filter(User.user_id == target.created_by).first()
+                if target.created_by else None
+            )
+            created_by_national_admin = creator is not None and creator.role == Role.NATIONAL_ADMIN
+            if not created_by_national_admin:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You can only manage interagency admin accounts that were added by a National Admin.",
+                )
         return
     if actor.region_id != target.region_id or agency_of(actor.role) != agency_of(target.role):
         raise HTTPException(status_code=403, detail="You can only manage accounts in your own agency and region.")
@@ -36,24 +56,20 @@ def get_target(db: Session, user_id) -> User:
 # Maps (role, verb) -> the correct AuditAction constant, so every action
 # function can log correctly for personnel/admin/national_admin without
 # repeating a role-check ladder in each one.
-#
-# National Admin reuses the old SUPERADMIN_* constants — national_admin is
-# a 1:1 successor to superadmin, so no new NATIONAL_ADMIN_* constants were
-# added (same call made in registration.py's audit helpers).
 _ACTION_TABLE = {
     Role.NATIONAL_ADMIN: {
-        "SUSPEND": AuditAction.SUSPEND_SUPERADMIN_ACCOUNT,
-        "REACTIVATE": AuditAction.REACTIVATE_SUPERADMIN_ACCOUNT,
-        "UNLOCK": AuditAction.UNLOCK_SUPERADMIN_ACCOUNT,
-        "DELETE": AuditAction.DELETE_SUPERADMIN_ACCOUNT,
-        "INVITE_RESENT": AuditAction.INVITE_SUPERADMIN_RESENT,
+        "SUSPEND": AuditAction.SUSPEND_NATIONAL_ADMIN_ACCOUNT,
+        "REACTIVATE": AuditAction.REACTIVATE_NATIONAL_ADMIN_ACCOUNT,
+        "UNLOCK": AuditAction.UNLOCK_NATIONAL_ADMIN_ACCOUNT,
+        "DELETE": AuditAction.DELETE_NATIONAL_ADMIN_ACCOUNT,
+        "INVITE_RESENT": AuditAction.INVITE_NATIONAL_ADMIN_RESENT,
     },
     "ADMIN": {
-        "SUSPEND": AuditAction.SUSPEND_ADMIN_ACCOUNT,
-        "REACTIVATE": AuditAction.REACTIVATE_ADMIN_ACCOUNT,
-        "UNLOCK": AuditAction.UNLOCK_ADMIN_ACCOUNT,
-        "DELETE": AuditAction.DELETE_ADMIN_ACCOUNT,
-        "INVITE_RESENT": AuditAction.INVITE_ADMIN_RESENT,
+        "SUSPEND": AuditAction.SUSPEND_REGIONAL_ADMIN_ACCOUNT,
+        "REACTIVATE": AuditAction.REACTIVATE_REGIONAL_ADMIN_ACCOUNT,
+        "UNLOCK": AuditAction.UNLOCK_REGIONAL_ADMIN_ACCOUNT,
+        "DELETE": AuditAction.DELETE_REGIONAL_ADMIN_ACCOUNT,
+        "INVITE_RESENT": AuditAction.INVITE_REGIONAL_ADMIN_RESENT,
     },
     "PERSONNEL": {
         "SUSPEND": AuditAction.SUSPEND_PERSONNEL_ACCOUNT,
@@ -61,8 +77,8 @@ _ACTION_TABLE = {
         "UNLOCK": AuditAction.UNLOCK_PERSONNEL_ACCOUNT,
         "DELETE": AuditAction.DELETE_PERSONNEL_ACCOUNT,
         "INVITE_RESENT": AuditAction.INVITE_PERSONNEL_RESENT,
-        "EDIT_INFO": AuditAction.EDIT_PERSONNEL_INFO,
-        "RESET_PASSWORD": AuditAction.RESET_PERSONNEL_PASSWORD,
+        "EDIT_INFO": AuditAction.UPDATE_PERSONNEL_INFORMATION,
+        "RESET_PASSWORD": AuditAction.UPDATE_PERSONNEL_PASSWORD,
     },
 }
 
@@ -73,8 +89,6 @@ def action_for_role(role: str, verb: str) -> str:
     if role in Role.ADMIN_ROLES:
         return _ACTION_TABLE["ADMIN"][verb]
     return _ACTION_TABLE["PERSONNEL"][verb]
-
-
 
 
 def assert_employee_id_available(db: Session, employee_id: str | None, exclude_user_id=None):

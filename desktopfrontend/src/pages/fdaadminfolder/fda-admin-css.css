@@ -1301,3 +1301,471 @@
     gap: 12px 16px;
   }
 }
+
+/* ==========================================================================
+   FDA ADMIN WORKSPACE LOCATION STYLES
+   Scoped strictly with .FdaWsLoc- prefix.
+   ========================================================================== */
+
+.FdaWsLoc-PageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.FdaWsLoc-Eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  color: #047857;
+  letter-spacing: 0.3px;
+}
+
+.FdaWsLoc-PageTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.FdaWsLoc-Card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  max-width: 480px;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+.FdaWsLoc-CardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.FdaWsLoc-OfficeInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.FdaWsLoc-OfficeIconBox {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.FdaWsLoc-OfficeName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.FdaWsLoc-Badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.FdaWsLoc-Badge.is-set {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.FdaWsLoc-Badge.not-set {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+
+.FdaWsLoc-CardRows {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.FdaWsLoc-Row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13.5px;
+  gap: 12px;
+}
+
+.FdaWsLoc-Row:last-child {
+  border-bottom: none;
+}
+
+.FdaWsLoc-RowLabel {
+  color: #64748b;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.FdaWsLoc-RowValue {
+  color: #0f172a;
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+.FdaWsLoc-ErrorBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.FdaWsLoc-CardActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.FdaWsLoc-LocateBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  color: #1e293b;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.FdaWsLoc-LocateBtn:hover:not(:disabled) {
+  border-color: #047857;
+  color: #047857;
+  background: #f0fdf4;
+}
+
+.FdaWsLoc-LocateBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.FdaWsLoc-EditBtn {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.FdaWsLoc-EditBtn:hover {
+  border-color: #047857;
+  color: #047857;
+  background: #f0fdf4;
+}
+
+/* Modal styling additions */
+.FdaWsLoc-Modal {
+  max-width: 480px;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.FdaWsLoc-ModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.FdaWsLoc-HelperText {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.FdaWsLoc-Notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 9px;
+  box-sizing: border-box;
+}
+
+.FdaWsLoc-NoticeIcon {
+  color: #047857;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.FdaWsLoc-NoticeContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.FdaWsLoc-NoticeTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #065f46;
+  margin: 0;
+}
+
+.FdaWsLoc-NoticeText {
+  font-size: 12px;
+  color: #047857;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.FdaWsLoc-ModalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+  border-radius: 0 0 14px 14px;
+}
+
+.FdaWsLoc-ModalLocateBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  color: #1e293b;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.FdaWsLoc-ModalLocateBtn:hover:not(:disabled) {
+  border-color: #047857;
+  color: #047857;
+  background: #f0fdf4;
+}
+
+.FdaWsLoc-ModalLocateBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.FdaWsLoc-ModalSaveBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: #1B4332;
+  color: #ffffff;
+  border: none;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.FdaWsLoc-ModalSaveBtn:hover {
+  background: #143326;
+}
+
+/* Confirmation Modal - FDA */
+.FdaWsLoc-ConfirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.68);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  padding: 16px;
+  animation: FDAAdminFadeIn 0.2s ease;
+}
+
+.FdaWsLoc-ConfirmModal {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 440px;
+  padding: 28px 24px;
+  box-sizing: border-box;
+  animation: FDAAdminSlideUp 0.22s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.FdaWsLoc-ConfirmIconBox {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.FdaWsLoc-ConfirmTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+  line-height: 1.35;
+}
+
+.FdaWsLoc-ConfirmBody {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 18px 0;
+  line-height: 1.5;
+}
+
+.FdaWsLoc-ConfirmSummary {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 22px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.FdaWsLoc-ConfirmSummaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.FdaWsLoc-ConfirmSummaryLabel {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.FdaWsLoc-ConfirmSummaryValue {
+  color: #0f172a;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.FdaWsLoc-ConfirmFooter {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.FdaWsLoc-ConfirmCancelBtn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  color: #475569;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.FdaWsLoc-ConfirmCancelBtn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+.FdaWsLoc-ConfirmSaveBtn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #1B4332;
+  border: none;
+  border-radius: 9px;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.FdaWsLoc-ConfirmSaveBtn:hover:not(:disabled) {
+  background: #143326;
+}
+
+.FdaWsLoc-ConfirmSaveBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+

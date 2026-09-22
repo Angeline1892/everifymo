@@ -1,4 +1,4 @@
-# app/core/dependencies.py
+# backdend/app/core/dependencies.py
 from fastapi import Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 

@@ -10,7 +10,7 @@ from app.models.account_invitation_tokens import AccountInvitationToken
 from app.models.regions import Region
 
 from app.desktop.schemas.auth.registration import (
-    ValidateTokenResponse, TokenStatus,
+    ValidateTokenResponse, TokenStatus, ValidateTokenRequest,
     RegistrationCompleteRequest, RegistrationCompleteResponse,
     ResendInviteRequest, ResendInviteResponse,
     RequestResendRequest, RequestResendResponse,
@@ -23,6 +23,7 @@ from app.desktop.services.auth.email import (
     send_personnel_invite_email,
     send_admin_invite_email,
     send_national_admin_invite_email,
+    send_personnel_activation_email, 
 )
 
 import secrets
@@ -36,12 +37,12 @@ from app.core.audit import write_audit_log, get_user_region_code
 router = APIRouter(prefix="/registration", tags=["Registration"])
 
 
-@router.get("/validate/{invite_token}", response_model=ValidateTokenResponse)
-def validate_token(invite_token: str, db: Session = Depends(get_db)):
+@router.post("/validate", response_model=ValidateTokenResponse)
+def validate_token(data: ValidateTokenRequest, db: Session = Depends(get_db)):
     set_bypass_rls(db, True)
 
     token_row = db.query(AccountInvitationToken).filter(
-        AccountInvitationToken.invite_token == invite_token
+        AccountInvitationToken.invite_token == data.invite_token
     ).first()
 
     if not token_row:
@@ -77,7 +78,7 @@ def validate_token(invite_token: str, db: Session = Depends(get_db)):
 
 
 @router.post("/complete", response_model=RegistrationCompleteResponse)
-def complete_registration(data: RegistrationCompleteRequest, http_request: Request, db: Session = Depends(get_db)):
+def complete_registration(data: RegistrationCompleteRequest, http_request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db),):
     set_bypass_rls(db, True)
 
     token_row = db.query(AccountInvitationToken).filter(
@@ -125,6 +126,13 @@ def complete_registration(data: RegistrationCompleteRequest, http_request: Reque
     region_code = get_user_region_code(db, user_row) if user_row.region_id else None
 
     if is_personnel:
+        full_name = f"{user_row.first_name} {user_row.last_name}".strip()
+        background_tasks.add_task(
+            send_personnel_activation_email,
+            user_email,
+            full_name,
+        )
+
         notification_service.notify_self_service_account_event(
             db=db, target=user_row,
             event_type=NotificationEventType.ACCOUNT_ACTIVATED,
@@ -135,7 +143,7 @@ def complete_registration(data: RegistrationCompleteRequest, http_request: Reque
         write_audit_log(
             db,
             user=user_row,
-            action=AuditAction.PERSONNEL_SELF_ACTIVATED,
+            action=AuditAction.PERSONNEL_SELF_ACTIVATE,
             target_table="users",
             target_id=user_id,
             target_reference=user_email,
@@ -286,16 +294,20 @@ def request_resend(data: RequestResendRequest, http_request: Request, db: Sessio
 def _pending_approval_action_for_role(role: str) -> str:
     from app.core.constants import AuditAction, Role
     if role == Role.NATIONAL_ADMIN:
-        return AuditAction.SUPERADMIN_PENDING_APPROVAL  # national_admin is a 1:1 successor to superadmin; no new constant added
+        return AuditAction.PENDING_NATIONAL_ADMIN_ACCOUNT
     if role in Role.ADMIN_ROLES:
-        return AuditAction.ADMIN_PENDING_APPROVAL
-    return AuditAction.PERSONNEL_PENDING_APPROVAL
+        return AuditAction.PENDING_REGIONAL_ADMIN_ACCOUNT
+    # Personnel no longer reach this helper (see complete_registration —
+    # personnel go straight to ACTIVE, not PENDING_APPROVAL), so this
+    # branch should be unreachable in practice. Left in for safety in
+    # case something upstream changes.
+    raise ValueError(f"Unexpected role reached _pending_approval_action_for_role: {role}")
 
 
 def _request_invite_action_for_role(role: str) -> str:
     from app.core.constants import AuditAction, Role
     if role == Role.NATIONAL_ADMIN:
-        return AuditAction.SUPERADMIN_REQUEST_INVITE  # same reuse as above
+        return AuditAction.NATIONAL_ADMIN_REQUEST_INVITE
     if role in Role.ADMIN_ROLES:
-        return AuditAction.ADMIN_REQUEST_INVITE
+        return AuditAction.REGIONAL_ADMIN_REQUEST_INVITE
     return AuditAction.PERSONNEL_REQUEST_INVITE

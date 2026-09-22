@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 // ADDED — API_BASE, parseBackendError, formatDateTime helpers
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = 'https://everify.store';
 
 // Helper: reads a FastAPI error response body and returns a single readable string.
 // Handles both { "detail": "string" } and { "detail": [{ "msg": "...", ... }, ...] }

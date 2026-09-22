@@ -1129,12 +1129,33 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
 
 
 
+      // Get device coordinates if available (with graceful timeout fallback)
+      let coords = null;
+      if (navigator.geolocation) {
+        try {
+          coords = await new Promise((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, source: 'gps' }),
+              () => resolve(null),
+              { enableHighAccuracy: true, timeout: 4000 }
+            );
+          });
+        } catch {
+          coords = null;
+        }
+      }
+
       // REAL BACKEND OTP VERIFICATION
       try {
+        const verifyPayload = {
+          email: personnelEmail.trim(),
+          otp: otpCode,
+          ...(coords || {}),
+        };
         const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: personnelEmail.trim(), otp: otpCode }),
+          body: JSON.stringify(verifyPayload),
         });
 
         if (!response.ok) {
@@ -1147,6 +1168,7 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
         localStorage.setItem('agency', personnelAgency);
+        localStorage.setItem('role', 'personnel');
 
         if (data.force_password_change) {
           navigate('/change-password');
@@ -1596,7 +1618,8 @@ function SuperAdminLoginForm({ navigate, onOtpStateChange }) {
         localStorage.removeItem('user_name');
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
-        localStorage.setItem('agency', 'superadmin');
+        localStorage.setItem('agency', 'national_admin');   // CHANGED from 'superadmin'
+        localStorage.setItem('role', 'national_admin'); 
 
         navigate('/nationaladminfolder/national-admin-interagency-admin-management');
       } catch (err) {
@@ -1996,6 +2019,7 @@ function InteragencyAdminLoginForm({ navigate, onOtpStateChange }) {
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
       localStorage.setItem('agency', agency);
+      localStorage.setItem('role', `${agency}_admin`); 
 
       if (data.force_password_change) {
         navigate('/change-password');
