@@ -135,7 +135,7 @@ function FDADashboard() {
             "Cosmetics": 0,
             "Food": 0,
             "Drugs": 0,
-            "Medical Devices": 0
+            "Devices": 0
         };
 
         completedUnregisteredProducts.forEach(item => {
@@ -147,7 +147,7 @@ function FDADashboard() {
             } else if (cat === "Pharmaceutical" || cat === "Drugs") {
                 categoryCounts["Drugs"] += 1;
             } else if (cat === "Medical Device" || cat === "Med Device" || cat === "Devices" || cat === "Medical Devices") {
-                categoryCounts["Medical Devices"] += 1;
+                categoryCounts["Devices"] += 1;
             }
         });
 
@@ -155,7 +155,7 @@ function FDADashboard() {
             { label: 'Cosmetics', value: categoryCounts['Cosmetics'], color: '#2563eb' },
             { label: 'Food', value: categoryCounts['Food'], color: '#10b981' },
             { label: 'Drugs', value: categoryCounts['Drugs'], color: '#06b6d4' },
-            { label: 'Medical Devices', value: categoryCounts['Medical Devices'], color: '#f59e0b' }
+            { label: 'Devices', value: categoryCounts['Devices'], color: '#f59e0b' }
         ];
 
         return {
