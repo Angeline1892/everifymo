@@ -257,10 +257,11 @@ def request_password_reset(
             detail="This action is only available to personnel accounts.",
         )
 
+
     write_audit_log(
         db,
         user=current_user,
-        action=AuditAction.PERSONNEL_REQUEST_PASSWORD_RESET,
+        action=AuditAction.PERSONNEL_REQUEST_PASSWORD_UPDATE,
         target_table="users",
         target_id=current_user.user_id,
         target_reference=current_user.email,

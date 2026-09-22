@@ -951,6 +951,7 @@ export default function NationalAdminRegionalAdminManagement() {
             status: a.status,
             is_locked: a.is_locked,
             is_active: a.is_active !== undefined ? a.is_active : prev?.is_active,
+            created_by_is_national_admin: a.created_by_is_national_admin,
           };
         });
         return mapped;

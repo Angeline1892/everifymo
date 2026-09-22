@@ -41,6 +41,7 @@ TEMPLATE_PATH_NATIONAL_ADMIN_ACTIVATION = TEMPLATES_DIR / "national_admin_activa
 
 TEMPLATE_PATH_PERSONNEL_RESET_PASSWORD = TEMPLATES_DIR / "personnel_reset_password_email.html"
 TEMPLATE_PATH_PERSONNEL_INFO_UPDATED = TEMPLATES_DIR / "personnel_info_updated_email.html"
+TEMPLATE_PATH_LOCATION_ANOMALY = TEMPLATES_DIR / "location_email_template.html"
 
 AGENCY_DISPLAY_NAMES = {
     "fda_personnel": "FDA",
@@ -49,6 +50,31 @@ AGENCY_DISPLAY_NAMES = {
     "lea_admin": "LEA-CIDG",
     "FDA": "FDA",
     "LEA-CIDG": "LEA-CIDG",
+}
+
+LOCATION_THEMES = {
+    "FDA": {
+        "system_name": "EVerifyMo · FDA Admin",
+        "display_name": "Food and Drug Administration",
+        "header_bg": "linear-gradient(135deg, #1f2937 0%, #1B4332 100%)",
+        "header_border": "#065f46",
+        "badge_bg": "#ecfdf5",
+        "badge_text": "#065f46",
+        "badge_border": "#a7f3d0",
+        "logo_src": "https://raw.githubusercontent.com/everifymo/assets/main/FDA.png",
+        "logo_alt": "FDA Logo",
+    },
+    "LEA": {
+        "system_name": "EVerifyMo · LEA Admin",
+        "display_name": "PNP Criminal Investigation and Detection Group",
+        "header_bg": "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+        "header_border": "#1d4ed8",
+        "badge_bg": "#eff6ff",
+        "badge_text": "#1e40af",
+        "badge_border": "#bfdbfe",
+        "logo_src": "https://raw.githubusercontent.com/everifymo/assets/main/pnp-cidg.jpg",
+        "logo_alt": "PNP-CIDG Logo",
+    },
 }
 
 TEMPLATE_PATH_CONVERTED_PRODUCT = Path(__file__).parent / "templates" / "converted_product_email.html"
@@ -333,4 +359,85 @@ async def send_converted_product_email(
         print(f"Successfully sent conversion notice email to {to_email}")
     except Exception as e:
         print(f"Warning: Failed to send conversion email to {to_email}: {e}")
+
+
+def render_location_anomaly_email(
+    agency: str,
+    personnel_name: str,
+    personnel_email: str,
+    login_at: str,
+    distance: str,
+    workspace_name: str,
+    radius_meters: int = 500,
+    detection_source: str = "device GPS",
+    footer_agency_region: str = "Regional Office",
+) -> str:
+    agency_key = "LEA" if ("lea" in str(agency).lower() or "cidg" in str(agency).lower()) else "FDA"
+    theme = LOCATION_THEMES.get(agency_key, LOCATION_THEMES["FDA"])
+
+    is_ip = "ip" in str(detection_source).lower()
+    ip_note_html = ""
+    if is_ip:
+        ip_note_html = f'<p style="margin: 6px 0 0 0; font-size: 11.5px; font-style: italic; color: {theme["badge_text"]}; opacity: 0.85;">Note: Location is approximate when determined via IP address.</p>'
+
+    html_text = TEMPLATE_PATH_LOCATION_ANOMALY.read_text(encoding="utf-8")
+    html_text = html_text.replace("{{HEADER_BG}}", theme["header_bg"])
+    html_text = html_text.replace("{{HEADER_BORDER}}", theme["header_border"])
+    html_text = html_text.replace("{{SYSTEM_NAME}}", theme["system_name"])
+    html_text = html_text.replace("{{DISPLAY_NAME}}", theme["display_name"])
+    html_text = html_text.replace("{{BADGE_BG}}", theme["badge_bg"])
+    html_text = html_text.replace("{{BADGE_TEXT}}", theme["badge_text"])
+    html_text = html_text.replace("{{BADGE_BORDER}}", theme["badge_border"])
+    html_text = html_text.replace("{{LOGO_SRC}}", theme["logo_src"])
+    html_text = html_text.replace("{{LOGO_ALT}}", theme["logo_alt"])
+    html_text = html_text.replace("{{PERSONNEL_NAME}}", html.escape(str(personnel_name)))
+    html_text = html_text.replace("{{PERSONNEL_EMAIL}}", html.escape(str(personnel_email)))
+    html_text = html_text.replace("{{LOGIN_AT}}", html.escape(str(login_at)))
+    html_text = html_text.replace("{{DISTANCE}}", html.escape(str(distance)))
+    html_text = html_text.replace("{{WORKSPACE_NAME}}", html.escape(str(workspace_name)))
+    html_text = html_text.replace("{{RADIUS_METERS}}", str(radius_meters))
+    html_text = html_text.replace("{{DETECTION_SOURCE}}", html.escape(str(detection_source)))
+    html_text = html_text.replace("{{FOOTER_AGENCY_REGION}}", html.escape(str(footer_agency_region)))
+    html_text = html_text.replace("{{IP_NOTE_HTML}}", ip_note_html)
+
+    return html_text
+
+
+async def send_location_anomaly_email(
+    to_email: str,
+    agency: str,
+    personnel_name: str,
+    personnel_email: str,
+    login_at: str,
+    distance: str,
+    workspace_name: str,
+    radius_meters: int = 500,
+    detection_source: str = "device GPS",
+    footer_agency_region: str = "Regional Office",
+) -> None:
+    html_body = render_location_anomaly_email(
+        agency=agency,
+        personnel_name=personnel_name,
+        personnel_email=personnel_email,
+        login_at=login_at,
+        distance=distance,
+        workspace_name=workspace_name,
+        radius_meters=radius_meters,
+        detection_source=detection_source,
+        footer_agency_region=footer_agency_region,
+    )
+    subject = f"Location anomaly detected — {personnel_name}"
+    message = MessageSchema(
+        subject=subject,
+        recipients=[to_email],
+        body=html_body,
+        subtype=MessageType.html,
+    )
+    try:
+        fm = FastMail(conf)
+        await fm.send_message(message)
+        print(f"Successfully sent location anomaly alert email to {to_email}")
+    except Exception as exc:
+        print(f"Warning: Failed to send location anomaly email to {to_email}: {exc}")
+
 
