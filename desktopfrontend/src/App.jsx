@@ -102,7 +102,7 @@ export default function App() {
     <HashRouter>
       <DeepLinkListener />
       <Routes>
-        <Route path='/' element={<LocationEmailTemplate />} />
+        <Route path='/' element={<UniversalLogin />} />
 
         {/* AUTH ROUTES */}
         <Route path='/login' element={<Login />} />
