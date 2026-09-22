@@ -1129,12 +1129,33 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
 
 
 
+      // Get device coordinates if available (with graceful timeout fallback)
+      let coords = null;
+      if (navigator.geolocation) {
+        try {
+          coords = await new Promise((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, source: 'gps' }),
+              () => resolve(null),
+              { enableHighAccuracy: true, timeout: 4000 }
+            );
+          });
+        } catch {
+          coords = null;
+        }
+      }
+
       // REAL BACKEND OTP VERIFICATION
       try {
+        const verifyPayload = {
+          email: personnelEmail.trim(),
+          otp: otpCode,
+          ...(coords || {}),
+        };
         const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: personnelEmail.trim(), otp: otpCode }),
+          body: JSON.stringify(verifyPayload),
         });
 
         if (!response.ok) {
