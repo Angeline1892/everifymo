@@ -24,6 +24,50 @@ from app.desktop.services.location.location_service import (
 
 router = APIRouter(prefix="/auth", tags=["personnel-auth"])
 
+def _log_personnel_location_task(
+    db: Session,
+    user: User,
+    session_id,
+    request_latitude,
+    request_longitude,
+    source: str,
+    http_request: Request,
+    background_tasks: BackgroundTasks,
+):
+    """
+    Runs AFTER the login response has already been sent to the client.
+    IP-API lookup + geofence check / audit log / admin email alert —
+    none of this ever gates login, so it must never block the response.
+    """
+    lat = request_latitude
+    lng = request_longitude
+    resolved_source = source
+
+    if lat is None or lng is None:
+        try:
+            client_ip = get_client_ip(http_request)
+            ip_coords = get_coordinates_from_ip(client_ip)
+            if ip_coords:
+                lat, lng = ip_coords
+                resolved_source = "ip"
+        except Exception as ip_exc:
+            print(f"IP geolocation fallback exception: {ip_exc}")
+
+    if lat is not None and lng is not None:
+        try:
+            log_personnel_location_and_check_geofence(
+                db=db,
+                personnel_user=user,
+                latitude=lat,
+                longitude=lng,
+                source=resolved_source,
+                session_id=session_id,
+                background_tasks=background_tasks,
+                http_request=http_request,
+            )
+        except Exception as loc_exc:
+            print(f"Warning: Failed to log personnel location during verify-otp: {loc_exc}")
+
 
 @router.post("/login")
 async def personnel_login(
@@ -123,36 +167,19 @@ def verify_personnel_otp(
         region_code=get_user_region_code(db, user),
     )
 
-    # Log personnel location and evaluate geofence against workspace location
-    lat = request.latitude
-    lng = request.longitude
-    source = request.source or "gps"
-
-    # If device GPS is not provided, fall back to IP-based approximate geolocation
-    if lat is None or lng is None:
-        try:
-            client_ip = get_client_ip(http_request)
-            ip_coords = get_coordinates_from_ip(client_ip)
-            if ip_coords:
-                lat, lng = ip_coords
-                source = "ip"
-        except Exception as ip_exc:
-            print(f"IP geolocation fallback exception: {ip_exc}")
-
-    if lat is not None and lng is not None:
-        try:
-            log_personnel_location_and_check_geofence(
-                db=db,
-                personnel_user=user,
-                latitude=lat,
-                longitude=lng,
-                source=source,
-                session_id=session.session_id,
-                background_tasks=background_tasks,
-                http_request=http_request,
-            )
-        except Exception as loc_exc:
-            print(f"Warning: Failed to log personnel location during verify-otp: {loc_exc}")
+    # Location logging + geofence check are audit/alerting only — they never
+    # gate login, so they run in the background after tokens are returned.
+    background_tasks.add_task(
+        _log_personnel_location_task,
+        db,
+        user,
+        session.session_id,
+        request.latitude,
+        request.longitude,
+        request.source or "gps",
+        http_request,
+        background_tasks,
+    )
 
     return {
         "access_token": access_token,
