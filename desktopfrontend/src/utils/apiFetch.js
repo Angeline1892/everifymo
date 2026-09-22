@@ -34,19 +34,28 @@ async function refreshAccessToken() {
   }
 }
 
+function resolveUrl(path) {
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  return `${BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
 function buildHeaders(token, options) {
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...options.headers,
   };
+  delete headers.authorization;
   if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
 
 export async function apiFetch(path, options = {}) {
   const accessToken = localStorage.getItem('access_token');
-  let response = await fetch(`${BASE_URL}${path}`, {
+  const url = resolveUrl(path);
+  let response = await fetch(url, {
     ...options,
     headers: buildHeaders(accessToken, options),
   });
@@ -58,12 +67,12 @@ export async function apiFetch(path, options = {}) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('agency');
-      window.location.href = agency === 'superadmin'
+      window.location.href = (agency === 'superadmin' || agency === 'national_admin')
       ? '/universal-login?tab=national-admin'
       : '/universal-login';
       throw new Error('Session expired. Please log in again.');
     }
-    response = await fetch(`${BASE_URL}${path}`, {
+    response = await fetch(url, {
       ...options,
       headers: buildHeaders(newToken, options),
     });

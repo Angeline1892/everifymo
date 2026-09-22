@@ -57,7 +57,11 @@ def refresh_token(payload: dict, db: Session = Depends(get_db), request: Request
     session.expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     db.commit()
 
-    access_token = create_desktop_access_token({"sub": str(session.user_id), "role": user.role})
+    access_token = create_desktop_access_token({
+        "sub": str(session.user_id),
+        "role": user.role,
+        "region_id": str(user.region_id) if user.region_id else None,
+    })
 
     return {"access_token": access_token, "token_type": "bearer", "refresh_token": new_refresh}
 

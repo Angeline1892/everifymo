@@ -39,16 +39,16 @@ function createWindow() {
   }
 }
 
-// Register our custom protocol so the OS knows to send everifymo:// links to us
-// Tell the OS: send everifymo:// links to this app
+// Register our custom protocol so the OS knows to send producheck:// links to us
+// Tell the OS: send producheck:// links to this app
 console.log('argv:', process.argv)
 console.log('execPath:', process.execPath)
 
 if (process.env.VITE_DEV_SERVER_URL) {
     // Dev mode needs extra info so Windows knows how to relaunch our dev setup
-  app.setAsDefaultProtocolClient('everifymo', process.execPath, [path.resolve(process.argv[1])])
+  app.setAsDefaultProtocolClient('producheck', process.execPath, [path.resolve(process.argv[1])])
 } else {
-  app.setAsDefaultProtocolClient('everifymo')
+  app.setAsDefaultProtocolClient('producheck')
 }
 
 // Prevent a second copy of the app opening when a link is clicked while we're already running
@@ -60,7 +60,7 @@ if (!gotLock) {
 } else {
   // Windows/Linux: app was already running, link was clicked again
   app.on('second-instance', (event, argv) => {
-    const url = argv.find((arg) => arg.startsWith('everifymo://'))
+    const url = argv.find((arg) => arg.startsWith('producheck://'))
     if (url) handleDeepLink(url)
   })
 
@@ -69,7 +69,7 @@ if (!gotLock) {
     createWindow()
 
     // Windows/Linux: app was fully closed, this link is what launched it
-    const launchUrl = process.argv.find((arg) => arg.startsWith('everifymo://'))
+    const launchUrl = process.argv.find((arg) => arg.startsWith('producheck://'))
     if (launchUrl) handleDeepLink(launchUrl)
   })
 }
@@ -79,7 +79,7 @@ if (!gotLock) {
   createWindow()
 
   setTimeout(() => {
-    handleDeepLink('everifymo://complete-registration?token=EcPq1fqtWgzsHGzoslG_71rue-OzKgkn9WBvrooQ2Ac')
+    handleDeepLink('producheck://complete-registration?token=EcPq1fqtWgzsHGzoslG_71rue-OzKgkn9WBvrooQ2Ac')
   }, 2000)
 }) */
 
