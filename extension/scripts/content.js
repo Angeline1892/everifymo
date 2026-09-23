@@ -523,6 +523,22 @@ function renderResult(status, productTitle, results = []) {
   }
  
   showState(stateId);
+
+  const displayedState = modal.querySelector(`#${stateId}`);
+  const displayedRecordType = displayedState?.id === 'state-registered'
+    ? 'registered'
+    : displayedState?.id === 'state-unregistered'
+      ? 'unregistered'
+      : null;
+  const displayedTitle = nameSpan?.textContent?.trim();
+
+  if (displayedTitle && displayedRecordType) {
+    chrome.runtime.sendMessage({
+      action: 'recordDisplayedDetection',
+      recordType: displayedRecordType,
+      displayedTitle
+    });
+  }
 }
 
 function matchTier(pct) {
