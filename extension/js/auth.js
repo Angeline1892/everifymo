@@ -101,13 +101,13 @@ document.addEventListener('DOMContentLoaded', () => {
       title: 'Signing in is optional',
       text: 'You can still verify products as a guest. Sign in or Sign up to file complaints, and to view your verification history, complaints, and report status.',
       buttonLabel: 'Sign In',
-      documentTitle: 'ProduCheck | Sign In'
+      documentTitle: 'E-VERIFY | Sign In'
     },
     signup: {
       title: 'Signing up is optional',
       text: 'You can still verify products as a guest. Sign in or Sign up to file complaints, and to view your verification history, complaints, and report status.',
       buttonLabel: 'Sign Up',
-      documentTitle: 'ProduCheck | Sign Up'
+      documentTitle: 'E-VERIFY | Sign Up'
     }
   };
 

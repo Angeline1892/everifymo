@@ -12,6 +12,3 @@ class PersonnelLoginRequest(BaseModel):
 class PersonnelOTPVerifyRequest(BaseModel):
     email: EmailStr
     otp: str
-    latitude: float | None = None
-    longitude: float | None = None
-    source: Literal["gps", "ip"] | None = "gps"
