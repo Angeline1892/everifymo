@@ -33,12 +33,12 @@ def change_password(
     current_user.force_password_change = False
     db.commit()
 
-    notification_service.create_notification_for_all_superadmins(
+    notification_service.notify_self_service_account_event(
         db=db,
+        target=current_user,
         event_type=NotificationEventType.PASSWORD_CHANGED,
-        title="First-login password change completed",
-        message=f"{current_user.email} completed the required first-login password change.",
-        related_user_id=current_user.user_id,
+        title="Password changed",
+        message=f"{current_user.email} changed their account password.",
     )
 
     if current_user.role == Role.NATIONAL_ADMIN:

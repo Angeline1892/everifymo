@@ -13,7 +13,7 @@ from .guards import assert_same_agency_and_region, get_target, action_for_role
 
 def resend_invite_link(db: Session, actor, target_id, request=None):
     target = get_target(db, target_id)
-    assert_same_agency_and_region(actor, target)
+    assert_same_agency_and_region(db, actor, target)
 
     old_token = (
         db.query(AccountInvitationToken)
@@ -53,7 +53,7 @@ def resend_invite_link(db: Session, actor, target_id, request=None):
 
 def delete_invited_account(db: Session, actor, target_id, request=None):
     target = get_target(db, target_id)
-    assert_same_agency_and_region(actor, target)
+    assert_same_agency_and_region(db, actor, target)
     if target.status != "invited":
         raise HTTPException(status_code=400, detail="Only pending invitations can be deleted this way.")
 

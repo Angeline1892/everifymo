@@ -39,6 +39,7 @@ import UserEmailActivation from './pages/emailtemplates/user-email-activation.js
 import SuperadminEmailAddAdmin from './pages/emailtemplates/superadmin-email-add-admin.jsx';
 import SuperadminInviteStatus from './pages/emailtemplates/superadmin-invite-status.jsx';
 import ConvertedEmailTemplate from './pages/emailtemplates/converted-email-template.jsx';
+import LocationEmailTemplate from './pages/emailtemplates/location-email-template.jsx';
 
 {/* FDA PAGES */ }
 import FDADashboard from './pages/fdafolder/fda-dashboard.jsx';
@@ -51,11 +52,13 @@ import FDASavedDraft from './pages/fdafolder/fda-saved-draft.jsx';
 {/* FDA ADMIN PAGES */ }
 import FDAAdminUserManagement from './pages/fdaadminfolder/fda-admin-user-management.jsx';
 import FDAAdminAdminManagement from './pages/fdaadminfolder/fda-admin-admin-management.jsx';
+import FDAAdminWorkspaceLocation from './pages/fdaadminfolder/fda-admin-workspace-location.jsx';
 import FDAAdminAuditLogs from './pages/fdaadminfolder/fda-admin-audit-logs.jsx';
 
 {/* LEA ADMIN PAGES */ }
 import LEAAdminUserManagement from './pages/leaadminfolder/lea-admin-user-management.jsx';
 import LEAAdminAdminManagement from './pages/leaadminfolder/lea-admin-admin-management.jsx';
+import LEAAdminWorkspaceLocation from './pages/leaadminfolder/lea-admin-workspace-location.jsx';
 import LEAAdminAuditLogs from './pages/leaadminfolder/lea-admin-audit-logs.jsx';
 
 
@@ -69,12 +72,16 @@ function DeepLinkListener() {
     const unsubscribe = window.electronAPI.onDeepLinkToken((token) => {
       console.log('Token received:', token);
 
-      fetch(`${API_BASE_URL}/registration/validate/${token}`)
+      fetch(`${API_BASE_URL}/registration/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invite_token: token }),
+      })
         .then((res) => res.json())
         .then((data) => {
           console.log('Validate response:', data);
 
-           // All roles now go through the same flow: valid token -> set password,
+          // All roles now go through the same flow: valid token -> set password,
           // anything else (expired/invalid/used) -> the status page.
           if (data.status === 'valid') {
             navigate('/create-new-password', { state: { ...data, token } });
@@ -85,7 +92,7 @@ function DeepLinkListener() {
     });
 
     return unsubscribe;
-  }, [navigate]);
+  }, [navigate]); 
 
   return null;
 }
@@ -134,6 +141,7 @@ export default function App() {
         <Route path='/preview-email/superadmin-otp' element={<SuperadminOtpEmail />} />
         <Route path='/preview-email/superadmin-add-admin' element={<SuperadminEmailAddAdmin />} />
         <Route path='/preview-email/converted-product' element={<ConvertedEmailTemplate />} />
+        <Route path='/preview-email/location-anomaly' element={<LocationEmailTemplate />} />
 
         {/* DEEP LINK ROUTES */}
         <Route path='/invitation-status' element={<DeepLinkStatus />} />
@@ -153,11 +161,13 @@ export default function App() {
         {/* FDA ADMIN ROUTES */}
         <Route path='/fdaadminfolder/fda-admin-user-management' element={<FDAAdminUserManagement />} />
         <Route path='/fdaadminfolder/fda-admin-admin-management' element={<FDAAdminAdminManagement />} />
+        <Route path='/fdaadminfolder/fda-admin-workspace-location' element={<FDAAdminWorkspaceLocation />} />
         <Route path='/fdaadminfolder/fda-admin-audit-logs' element={<FDAAdminAuditLogs />} />
 
         {/* LEA ADMIN ROUTES */}
         <Route path='/leaadminfolder/lea-admin-user-management' element={<LEAAdminUserManagement />} />
         <Route path='/leaadminfolder/lea-admin-admin-management' element={<LEAAdminAdminManagement />} />
+        <Route path='/leaadminfolder/lea-admin-workspace-location' element={<LEAAdminWorkspaceLocation />} />
         <Route path='/leaadminfolder/lea-admin-audit-logs' element={<LEAAdminAuditLogs />} />
       </Routes>
     </HashRouter>

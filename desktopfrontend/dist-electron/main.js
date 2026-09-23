@@ -29,18 +29,18 @@ function createWindow() {
 }
 console.log("argv:", process.argv);
 console.log("execPath:", process.execPath);
-if (process.env.VITE_DEV_SERVER_URL) app.setAsDefaultProtocolClient("everifymo", process.execPath, [path.resolve(process.argv[1])]);
-else app.setAsDefaultProtocolClient("everifymo");
+if (process.env.VITE_DEV_SERVER_URL) app.setAsDefaultProtocolClient("producheck", process.execPath, [path.resolve(process.argv[1])]);
+else app.setAsDefaultProtocolClient("producheck");
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
 	app.on("second-instance", (event, argv) => {
-		const url = argv.find((arg) => arg.startsWith("everifymo://"));
+		const url = argv.find((arg) => arg.startsWith("producheck://"));
 		if (url) handleDeepLink(url);
 	});
 	app.whenReady().then(() => {
 		Menu.setApplicationMenu(null);
 		createWindow();
-		const launchUrl = process.argv.find((arg) => arg.startsWith("everifymo://"));
+		const launchUrl = process.argv.find((arg) => arg.startsWith("producheck://"));
 		if (launchUrl) handleDeepLink(launchUrl);
 	});
 }
