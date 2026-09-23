@@ -65,7 +65,7 @@ function mapTabToSource(tabName) {
 const CATEGORY_LABELS = {
   Cosmetics: 'Cosmetics',
   Food: 'Food',
-  Devices: 'Devices',
+  Devices: 'Medical Devices',
   Drugs: 'Drugs',
 };
 

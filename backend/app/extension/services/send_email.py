@@ -1,4 +1,3 @@
-# backend/app/extension/services/send_email.py
 from pathlib import Path
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from app.core.config import settings
@@ -19,21 +18,17 @@ extension_mail_conf = ConnectionConfig(
     USE_CREDENTIALS=True,
 )
 
-DEFAULT_PURPOSE_TEXT = "Enter this code to verify your email and continue."
-RESET_PASSWORD_PURPOSE_TEXT = "Enter this code to verify your identity and reset your password."
-
-def render_otp_email(otp_code: str, expire_minutes: int, purpose_text: str = DEFAULT_PURPOSE_TEXT) -> str:
+def render_otp_email(otp_code: str, expire_minutes: int) -> str:
     html = TEMPLATE_PATH.read_text(encoding="utf-8")
     html = html.replace("{{OTP_CODE}}", otp_code)
     html = html.replace("{{EXPIRE_MINUTES}}", str(expire_minutes))
-    html = html.replace("{{PURPOSE_TEXT}}", purpose_text)
     return html
 
-async def send_otp_email(to_email: str, otp_code: str, expire_minutes: int = None, purpose_text: str = DEFAULT_PURPOSE_TEXT):
+async def send_otp_email(to_email: str, otp_code: str, expire_minutes: int = None):
     if expire_minutes is None:
         expire_minutes = settings.OTP_EXTENSION_MIN_EXPIRE
 
-    html_body = render_otp_email(otp_code, expire_minutes, purpose_text)
+    html_body = render_otp_email(otp_code, expire_minutes)
 
     message = MessageSchema(
         subject="Your verification code",

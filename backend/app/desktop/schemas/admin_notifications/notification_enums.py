@@ -97,4 +97,3 @@ class NotificationEventType(str, Enum):
     # active once they set their password (see the note on
     # ACCOUNT_ACTIVATED below about where that trigger actually lives).
     PERSONNEL_INVITED = "personnel_invited"
-    LOCATION_ANOMALY_DETECTED = "location_anomaly_detected"
