@@ -92,7 +92,7 @@ function DeepLinkListener() {
     });
 
     return unsubscribe;
-  }, [navigate]);
+  }, [navigate]); 
 
   return null;
 }

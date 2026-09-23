@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Location Anomaly Detected — {{SYSTEM_NAME}}</title>
+</head>
+<body style="margin: 0; padding: 32px 16px; background-color: #f0f4f8; min-height: 100vh; font-family: 'Inter', Arial, sans-serif; color: #333333; box-sizing: border-box;">
+  <center style="width: 100%; table-layout: fixed;">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08); border-collapse: collapse; text-align: left;">
+      <tbody>
+        <!-- ── HEADER ── -->
+        <tr>
+          <td style="background: {{HEADER_BG}}; padding: 24px 28px; border-bottom: 4px solid {{HEADER_BORDER}};">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+              <tbody>
+                <tr>
+                  <!-- Logo cell -->
+                  <td style="width: 64px; vertical-align: middle; padding-right: 16px;">
+                    <div style="width: 64px; height: 64px; border-radius: 50%; background-color: #ffffff; border: 2px solid rgba(255, 255, 255, 0.25); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); overflow: hidden; box-sizing: border-box; text-align: center; line-height: 60px;">
+                      <img src="{{LOGO_SRC}}" alt="{{LOGO_ALT}}" style="width: 46px; height: 46px; object-fit: contain; display: inline-block; vertical-align: middle;" />
+                    </div>
+                  </td>
+
+                  <!-- Header text cell -->
+                  <td style="vertical-align: middle; text-align: left;">
+                    <p style="color: #ffffff; opacity: 0.9; font-size: 11px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; margin: 0 0 4px 0; font-family: 'Poppins', Arial, sans-serif;">
+                      {{SYSTEM_NAME}}
+                    </p>
+
+                    <h2 style="color: #ffffff; font-size: 18px; font-weight: 700; margin: 0; letter-spacing: 0.3px; font-family: 'Poppins', Arial, sans-serif; line-height: 1.3;">
+                      Location Anomaly Detected
+                    </h2>
+
+                    <p style="color: #cbd5e1; font-size: 11.5px; margin: 4px 0 0 0; letter-spacing: 0.4px;">
+                      Automated Security Geofence Alert
+                    </p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ── EMAIL BODY CONTENT ── -->
+        <tr>
+          <td style="padding: 24px 28px 32px 28px;">
+            <!-- ── SUBJECT LINE INSIDE EMAIL CARD ── -->
+            <div style="padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; font-size: 13px; line-height: 1.5; color: #1e293b;">
+              <span style="color: #64748b; font-weight: 500; margin-right: 6px;">
+                Subject:
+              </span>
+              <strong>Location anomaly detected &mdash; {{PERSONNEL_NAME}}</strong>
+            </div>
+
+            <!-- ── ALERT PARAGRAPH (Agency-tinted card with amber warning accent) ── -->
+            <div style="background-color: {{BADGE_BG}}; border: 1px solid {{BADGE_BORDER}}; border-left: 4px solid #d97706; border-radius: 10px; padding: 16px 18px; margin-bottom: 24px; box-sizing: border-box;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%;">
+                <tbody>
+                  <tr>
+                    <td style="width: 24px; vertical-align: top; padding-right: 12px; padding-top: 2px;">
+                      <span style="color: #d97706; font-size: 18px; line-height: 1; font-weight: 700;">
+                        &#9888;
+                      </span>
+                    </td>
+                    <td style="vertical-align: top;">
+                      <p style="margin: 0 0 10px 0; font-size: 13.5px; line-height: 1.65; color: {{BADGE_TEXT}};">
+                        Personnel <strong>{{PERSONNEL_NAME}}</strong> ({{PERSONNEL_EMAIL}}) logged in on <strong>{{LOGIN_AT}}</strong> from a location approximately <strong>{{DISTANCE}}</strong> from the <strong>{{WORKSPACE_NAME}}</strong> &mdash; outside the configured <strong>{{RADIUS_METERS}} m</strong> radius.
+                      </p>
+
+                      <p style="margin: 0; font-size: 12.5px; font-weight: 600; color: {{BADGE_TEXT}};">
+                        Detected via {{DETECTION_SOURCE}}.
+                      </p>
+
+                      {{IP_NOTE_HTML}}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- ── INCIDENT SUMMARY TABLE (Compact Key-Value Rows) ── -->
+            <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 8px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+                <tbody>
+                  <tr>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; color: #64748b; font-weight: 500; width: 40%;">
+                      Personnel
+                    </td>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; color: #0f172a; font-weight: 600; text-align: right;">
+                      {{PERSONNEL_NAME}}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; color: #64748b; font-weight: 500;">
+                      Email
+                    </td>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; color: #0f172a; font-weight: 600; text-align: right;">
+                      {{PERSONNEL_EMAIL}}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; color: #64748b; font-weight: 500;">
+                      Login time
+                    </td>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; color: #0f172a; font-weight: 600; text-align: right;">
+                      {{LOGIN_AT}}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; color: #64748b; font-weight: 500;">
+                      Workspace office
+                    </td>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; color: #0f172a; font-weight: 600; text-align: right;">
+                      {{WORKSPACE_NAME}}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; color: #64748b; font-weight: 500;">
+                      Geofence radius
+                    </td>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; color: #0f172a; font-weight: 600; text-align: right;">
+                      {{RADIUS_METERS}} m
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; color: #64748b; font-weight: 500;">
+                      Distance
+                    </td>
+                    <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; color: #b91c1c; font-weight: 700; text-align: right;">
+                      {{DISTANCE}}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding: 10px 14px; font-size: 12.5px; color: #64748b; font-weight: 500;">
+                      Detection method
+                    </td>
+                    <td style="padding: 10px 14px; font-size: 12.5px; color: #0f172a; font-weight: 600; text-align: right;">
+                      {{DETECTION_SOURCE}}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </td>
+        </tr>
+
+        <!-- ── FOOTER ── -->
+        <tr>
+          <td style="background-color: #f8fafc; border-top: 1px solid #e5e7eb; padding: 18px 24px; text-align: center; font-size: 11.5px; color: #94a3b8; line-height: 1.5;">
+            <p style="margin: 0 0 4px 0; font-weight: 600; color: #64748b;">
+              {{DISPLAY_NAME}} &middot; {{FOOTER_AGENCY_REGION}}
+            </p>
+            <p style="margin: 0; color: #94a3b8;">
+              This is an automated security transmission. Please do not reply directly to this email.
+            </p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </center>
+</body>
+</html>

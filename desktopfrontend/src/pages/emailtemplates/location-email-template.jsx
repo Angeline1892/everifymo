@@ -37,7 +37,7 @@ const THEMES = {
   FDA: {
     agencyKey: 'FDA',
     displayName: 'Food and Drug Administration',
-    systemName: 'EVerifyMo · FDA Admin',
+    systemName: 'ICMDA · FDA Admin',
     headerBg: 'linear-gradient(135deg, #1f2937 0%, #1B4332 100%)',
     headerBorder: '#065f46',
     accentColor: '#065f46',
@@ -50,7 +50,7 @@ const THEMES = {
   LEA: {
     agencyKey: 'LEA',
     displayName: 'PNP Criminal Investigation and Detection Group',
-    systemName: 'EVerifyMo · LEA Admin',
+    systemName: 'ICMDA · LEA Admin',
     headerBg: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
     headerBorder: '#1d4ed8',
     accentColor: '#1d4ed8',
@@ -131,9 +131,7 @@ const LocationEmailTemplate = ({
       }}
     >
       <center style={{ width: '100%', tableLayout: 'fixed' }}>
-        {/* ═══════════════════════════════════════════════════════════════════
-            MOCKUP-ONLY PREVIEW TOOLBAR (Outside email markup)
-            ═══════════════════════════════════════════════════════════════════ */}
+    
         {showPreviewToolbar && (
           <div
             style={{
@@ -241,9 +239,7 @@ const LocationEmailTemplate = ({
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════════
-            EMAIL MAIN CARD (Table-based layout with inline styles)
-            ═══════════════════════════════════════════════════════════════════ */}
+      
         <table
           role="presentation"
           border="0"
