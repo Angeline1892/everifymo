@@ -17,6 +17,7 @@ function createWindow() {
 			preload: path.join(__dirname, "preload.cjs")
 		}
 	});
+	mainWindow.webContents.openDevTools();
 	mainWindow.webContents.on("did-finish-load", () => {
 		if (pendingDeepLink) {
 			mainWindow.webContents.send("deep-link-token", pendingDeepLink);
@@ -24,22 +25,22 @@ function createWindow() {
 		}
 	});
 	if (process.env.VITE_DEV_SERVER_URL) mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-	else mainWindow.loadFile(path.join(__dirname, "../../dist/index.html"));
+	else mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
 }
 console.log("argv:", process.argv);
 console.log("execPath:", process.execPath);
-if (process.env.VITE_DEV_SERVER_URL) app.setAsDefaultProtocolClient("everifymo", process.execPath, [path.resolve(process.argv[1])]);
-else app.setAsDefaultProtocolClient("everifymo");
+if (process.env.VITE_DEV_SERVER_URL) app.setAsDefaultProtocolClient("producheck", process.execPath, [path.resolve(process.argv[1])]);
+else app.setAsDefaultProtocolClient("producheck");
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
 	app.on("second-instance", (event, argv) => {
-		const url = argv.find((arg) => arg.startsWith("everifymo://"));
+		const url = argv.find((arg) => arg.startsWith("producheck://"));
 		if (url) handleDeepLink(url);
 	});
 	app.whenReady().then(() => {
 		Menu.setApplicationMenu(null);
 		createWindow();
-		const launchUrl = process.argv.find((arg) => arg.startsWith("everifymo://"));
+		const launchUrl = process.argv.find((arg) => arg.startsWith("producheck://"));
 		if (launchUrl) handleDeepLink(launchUrl);
 	});
 }

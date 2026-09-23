@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+'''from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from nlp.retrieval.retrieval import evaluate_match
@@ -32,4 +32,4 @@ async def verify(request: RetrievalRequest):
             "verdict": verdict,
         }
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail=str(exc)) from exc'''

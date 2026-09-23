@@ -7,8 +7,7 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import mammoth from 'mammoth'
 import { Eye, MoreVertical, Pencil, Trash2, X, Paperclip, FileText, Image as ImageIcon, Download } from 'lucide-react'
-
-const API_BASE = 'http://127.0.0.1:8000';
+import { apiFetch } from '../../utils/apiFetch'
 
 // BACKEND: Status values must match the backend complaint workflow states exactly.
 function WcGetStatusClass(status) {
@@ -87,13 +86,17 @@ function LeaWalkinComplaints() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        const token = localStorage.getItem('access_token')
         setLoading(true)
-        fetch(`${API_BASE}/complaints/walkin/`, {
-            headers: { authorization: `Bearer ${token}` },
-        })
-            .then((res) => res.json())
+        apiFetch('/complaints/walkin/')
+            .then((res) => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                return res.json()
+            })
             .then((data) => {
+                if (!Array.isArray(data)) {
+                    setComplaints([])
+                    return
+                }
                 setComplaints(data.map((c) => ({
                     id: c.case_reference,
                     complaintId: c.complaint_id,
@@ -104,6 +107,10 @@ function LeaWalkinComplaints() {
                     category: c.product_category,
                     logged: new Date(c.created_at).toLocaleString(),
                 })))
+            })
+            .catch((err) => {
+                console.error('Failed to load complaints:', err)
+                setComplaints([])
             })
             .finally(() => setLoading(false))
     }, [])
@@ -176,10 +183,7 @@ function LeaWalkinComplaints() {
                 return
             }
 
-            const token = localStorage.getItem('access_token')
-            fetch(`${API_BASE}/shared-files/${fileId}/preview`, {
-                headers: { Authorization: `Bearer ${token}` },
-            })
+            apiFetch(`/shared-files/${fileId}/preview`)
                 .then((res) => {
                     if (!res.ok) throw new Error(`HTTP ${res.status}`)
                     return res.arrayBuffer()
@@ -206,10 +210,7 @@ function LeaWalkinComplaints() {
         setDocPreviewLoading(true)
         setDocPreviewError(false)
 
-        const token = localStorage.getItem('access_token')
-        fetch(`${API_BASE}/shared-files/${fileId}/preview`, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
+        apiFetch(`/shared-files/${fileId}/preview`)
             .then((res) => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`)
                 return res.blob()
@@ -248,11 +249,8 @@ function LeaWalkinComplaints() {
         setSelectedComplaint(complaint)
         setViewModal(true)
 
-        const token = localStorage.getItem('access_token')
         setDetailLoading(true)
-        fetch(`${API_BASE}/complaints/${complaint.complaintId}/walkin-detail`, {
-            headers: { authorization: `Bearer ${token}` },
-        })
+        apiFetch(`/complaints/${complaint.complaintId}/walkin-detail`)
             .then((res) => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`)
                 return res.json()
@@ -306,10 +304,8 @@ function LeaWalkinComplaints() {
     }
 
     const handleConfirmSingleDelete = () => {
-        const token = localStorage.getItem('access_token')
-        fetch(`${API_BASE}/complaints/walkin/${singleDeleteTarget.complaintId}`, {
+        apiFetch(`/complaints/walkin/${singleDeleteTarget.complaintId}`, {
             method: 'DELETE',
-            headers: { authorization: `Bearer ${token}` },
         })
             .then((res) => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -430,7 +426,7 @@ function LeaWalkinComplaints() {
                                     <option value="All">All Categories</option>
                                     <option value="Cosmetics">Cosmetics</option>
                                     <option value="Food">Food</option>
-                                    <option value="Devices">Medical Devices</option>
+                                    <option value="Devices">Devices</option>
                                     <option value="Drugs">Drugs</option>
                                 </select>
 
@@ -772,10 +768,7 @@ function LeaWalkinComplaints() {
                                                     return;
                                                 }
                                                 if (!fileId) return;
-                                                const token = localStorage.getItem('access_token');
-                                                fetch(`${API_BASE}/shared-files/${fileId}/download`, {
-                                                    headers: { Authorization: `Bearer ${token}` },
-                                                })
+                                                apiFetch(`/shared-files/${fileId}/download`)
                                                     .then((res) => {
                                                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                                                         return res.blob();

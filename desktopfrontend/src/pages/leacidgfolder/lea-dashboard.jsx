@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import './lea-css.css';
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
+import { apiFetch } from '../../utils/apiFetch';
 import {
   AlertTriangle,
   Footprints
 } from 'lucide-react';
 
-const API_BASE = 'http://127.0.0.1:8000';
+
 
 function LeaDashboard() {
   const navigate = useNavigate();
@@ -37,10 +38,11 @@ function LeaDashboard() {
     const fetchData = async () => {
       try {
         // 1. Fetch awaiting FDA cases
-        const awaitingRes = await fetch(`${API_BASE}/verification-requests/awaiting-fda`, { headers });
+        const awaitingRes = await apiFetch('/verification-requests/awaiting-fda');
         let awaitingData = [];
         if (awaitingRes.ok) {
-          awaitingData = await awaitingRes.json();
+          const raw = await awaitingRes.json();
+          awaitingData = Array.isArray(raw) ? raw : [];
           const mappedAwaiting = awaitingData.map(item => ({
             id: item.request_id,
             product: item.product_name,
@@ -49,30 +51,33 @@ function LeaDashboard() {
             type: item.source === 'walk_in' ? 'Walk-in' : 'Extension'
           }));
           setAwaitingFdaCases(mappedAwaiting);
+        } else {
+          setAwaitingFdaCases([]);
         }
 
         // 2. Fetch all walk-in complaints for count and recent table
-        const complaintsRes = await fetch(`${API_BASE}/complaints/walkin/`, { headers });
+        const complaintsRes = await apiFetch('/complaints/walkin/');
         let complaintsData = [];
         if (complaintsRes.ok) {
-          complaintsData = await complaintsRes.json();
+          const raw = await complaintsRes.json();
+          complaintsData = Array.isArray(raw) ? raw : [];
         }
 
         // 3. Fetch counts
-        const countsRes = await fetch(`${API_BASE}/verification-requests/counts`, { headers });
+        const countsRes = await apiFetch('/verification-requests/counts');
         if (countsRes.ok) {
           const countsData = await countsRes.json();
           setSentCount(countsData.verification_queue_count + countsData.completed_count + countsData.rejected_count);
         }
 
-        const leaCountsRes = await fetch(`${API_BASE}/verification-requests/lea-counts`, { headers });
+        const leaCountsRes = await apiFetch('/verification-requests/lea-counts');
         if (leaCountsRes.ok) {
           const leaCountsData = await leaCountsRes.json();
           setTakedownsCount(leaCountsData.completed_count);
         }
 
         // 4. Fetch trends data
-        const trendsRes = await fetch(`${API_BASE}/complaints/trends`, { headers });
+        const trendsRes = await apiFetch('/complaints/trends');
         if (trendsRes.ok) {
           const trendsData = await trendsRes.json();
           setIntakeData(trendsData.intake_data);
@@ -83,23 +88,19 @@ function LeaDashboard() {
         }
 
         // Map real walk-in complaints for recent complaints table:
-        const mappedRecent = complaintsData.map(c => {
-          return {
-            id: c.case_reference,
-            product: c.product_title,
-            manufacturer: c.manufacturer || '—',
-            complainant: c.complainant_name || '—',
-            status: c.status,
-            logged: c.created_at ? new Date(c.created_at).toLocaleString() : '—',
-            rawDate: c.created_at ? new Date(c.created_at) : new Date(0)
-          };
-        })
+        const mappedRecent = complaintsData.map(c => ({
+          id: c.case_reference,
+          product: c.product_title,
+          manufacturer: c.manufacturer || '—',
+          complainant: c.complainant_name || '—',
+          status: c.status,
+          logged: c.created_at ? new Date(c.created_at).toLocaleString() : '—',
+          rawDate: c.created_at ? new Date(c.created_at) : new Date(0)
+        }))
         .sort((a, b) => b.rawDate - a.rawDate)
         .slice(0, 4);
 
         setRecentComplaints(mappedRecent);
-
-        // Walk-in intakes total count:
         setWalkinCount(complaintsData.length);
 
       } catch (err) {

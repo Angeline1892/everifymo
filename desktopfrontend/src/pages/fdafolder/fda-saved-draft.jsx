@@ -19,10 +19,7 @@ import {
   X,
   Clock,
 } from "lucide-react";
-
-// ADDED — base URL for all API calls in this file. Mirrors the same constant
-// declared in fda-verification.jsx so the host can be updated from one place.
-const API_BASE = "http://localhost:8000";
+import { apiFetch } from "../../utils/apiFetch";
 
 // CHANGED — was a client-side page size of 5; now 10 to match the server's
 // default page_size sent in every GET /drafts/fda-verification/ request.
@@ -131,11 +128,7 @@ function FDASavedDraft() {
       params.set("page", String(currentPage));
       params.set("page_size", String(ITEMS_PER_PAGE));
 
-      fetch(`${API_BASE}/drafts/fda-verification/?${params.toString()}`, {
-        // ADDED — Bearer token auth, same pattern as every other fetch in
-        // fda-verification.jsx (localStorage 'access_token').
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      apiFetch(`/drafts/fda-verification/?${params.toString()}`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
@@ -143,8 +136,8 @@ function FDASavedDraft() {
         .then((data) => {
           // CHANGED — was setDrafts(dummyArray); now sets the real items
           // returned by the server and stores the server-reported total.
-          setDrafts(data.items);
-          setDraftsTotal(data.total);
+          setDrafts(Array.isArray(data.items) ? data.items : []);
+          setDraftsTotal(data.total || 0);
           // ADDED — mark that at least one real response has arrived.
           // Subsequent calls to doFetch will skip setDraftsLoading(true)
           // and the skeleton will never render again, even when the result
@@ -299,24 +292,17 @@ function FDASavedDraft() {
   // it via showToast (not a generic message), matching the task spec.
   const handleConfirmDelete = () => {
     if (!draftToDelete) return;
-    const token = localStorage.getItem("access_token");
     setDeleteLoading(true);
 
-    fetch(`${API_BASE}/drafts/fda-verification/${draftToDelete.draft_id}`, {
+    apiFetch(`/drafts/fda-verification/${draftToDelete.draft_id}`, {
       method: "DELETE",
-      // ADDED — Bearer token auth, same pattern as the list fetch above.
-      headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
         if (!res.ok) {
-          // ADDED — parse error detail from the response body so the
-          // toast shows the backend's actual error message, not a generic one.
           return res.json().then((body) => {
             throw new Error(body?.detail || `HTTP ${res.status}`);
           });
         }
-        // CHANGED — was prev.filter(d => d.caseId !== draftToDelete.caseId);
-        // now filters by draft_id (the real primary key from the backend).
         setDrafts((prev) =>
           prev.filter((d) => d.draft_id !== draftToDelete.draft_id)
         );
@@ -433,7 +419,7 @@ function FDASavedDraft() {
                   <option value="">All Categories</option>
                   <option value="Cosmetics">Cosmetics</option>
                   <option value="Food">Food</option>
-                  <option value="Devices">Medical Devices</option>
+                  <option value="Devices">Devices</option>
                   <option value="Drugs">Drugs</option>
                 </select>
               </div>

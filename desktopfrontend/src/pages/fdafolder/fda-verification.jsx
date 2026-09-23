@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from "../component/sidebar";
 import TopBar from "../component/top-bar";
+import { apiFetch } from "../../utils/apiFetch";
 import './fda-css.css';
 import {
   Clock,
@@ -244,11 +245,7 @@ const dummyRejectedRequests = [
   }
 ];
 
-// ADDED — base URL for all FDA backend API calls; mirrors the same constant
-// used in the LEA pages (e.g. lea-saved-draft.jsx) so the host is easy to
-// update from one place.
-const API_BASE = 'http://localhost:8000';
-
+// ADDED — base URL resolved by apiFetch automatically.
 function FDAVerification() {
 
 
@@ -388,10 +385,7 @@ function FDAVerification() {
     setFdaDocPreviewLoading(true);
     setFdaDocPreviewError(false);
 
-    const token = localStorage.getItem('access_token');
-    fetch(`${API_BASE}/shared-files/${fdaDocPreviewModal.file_id}/preview`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    apiFetch(`/shared-files/${fdaDocPreviewModal.file_id}/preview`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.blob();
@@ -424,7 +418,6 @@ function FDAVerification() {
 
     const requestId = incoming.openVerificationRequestId;
     const draftId = incoming.draftId;
-    const token = localStorage.getItem('access_token');
 
     // If this request is already sitting in the currently loaded queue
     // list, select it directly. Otherwise, set just the ID — the existing
@@ -442,9 +435,7 @@ function FDAVerification() {
     if (draftId) {
       // Arrived from a saved draft — fetch its actual values and restore
       // them into the determination form.
-      fetch(`${API_BASE}/drafts/fda-verification/${draftId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      apiFetch(`/drafts/fda-verification/${draftId}`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
@@ -609,11 +600,8 @@ function FDAVerification() {
   // card click, and from a useEffect that watches selectedQueueItem so the
   // detail panel is also populated on the initial auto-select after page load.
   const fetchDetail = (requestId) => {
-    const token = localStorage.getItem('access_token');
     setDetailLoading(true);
-    fetch(`${API_BASE}/verification-requests/${requestId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    apiFetch(`/verification-requests/${requestId}`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -633,10 +621,7 @@ function FDAVerification() {
   // ADDED — helper function to fetch badge counts from the backend endpoint.
   // Called on component mount and after successful submit or reject actions.
   const fetchCounts = () => {
-    const token = localStorage.getItem('access_token');
-    fetch(`${API_BASE}/verification-requests/counts`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    apiFetch('/verification-requests/counts')
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -664,8 +649,6 @@ function FDAVerification() {
   // request; if priority is 'all' the parameter is omitted entirely.
   // SMOOTH LOADING — only triggers full loading state if list is currently empty.
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-
     const timer = setTimeout(() => {
       if (fdaQueueList.length === 0) {
         setQueueLoading(true);
@@ -676,21 +659,20 @@ function FDAVerification() {
       if (fdaPriorityFilter !== 'all') params.set('priority', fdaPriorityFilter);
       const qs = params.toString() ? `?${params.toString()}` : '';
 
-      fetch(`${API_BASE}/verification-requests/awaiting-fda${qs}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      apiFetch(`/verification-requests/awaiting-fda${qs}`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
         })
         .then((data) => {
-          setFdaQueueList(data);
+          const list = Array.isArray(data) ? data : [];
+          setFdaQueueList(list);
           // Preserve currently selected card if it still exists in the new result
           setSelectedQueueItem((prev) => {
-            if (prev && data.some((item) => item.request_id === prev.request_id)) {
+            if (prev && list.some((item) => item.request_id === prev.request_id)) {
               return prev;
             }
-            return data[0] ?? null;
+            return list[0] ?? null;
           });
         })
         .catch(() => {
@@ -724,8 +706,6 @@ function FDAVerification() {
   // trigger immediately since they come from dropdowns/date pickers, not typing.
   // SMOOTH LOADING — only triggers full loading state if list is currently empty.
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-
     const doFetch = () => {
       if (fdaCompletedList.length === 0) {
         setCompletedLoading(true);
@@ -741,16 +721,14 @@ function FDAVerification() {
       params.set('page', String(completedPage));
       params.set('page_size', '25');
 
-      fetch(`${API_BASE}/verification-requests/completed?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      apiFetch(`/verification-requests/completed?${params.toString()}`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
         })
         .then((data) => {
-          setFdaCompletedList(data.items);
-          setCompletedTotal(data.total);
+          setFdaCompletedList(Array.isArray(data?.items) ? data.items : []);
+          setCompletedTotal(data?.total || 0);
         })
         .catch(() => {
           triggerAlert('Could not load completed verification records from the server.', 'danger');
@@ -770,8 +748,6 @@ function FDAVerification() {
   // trigger immediately since they come from dropdowns/date pickers, not typing.
   // SMOOTH LOADING — only triggers full loading state if list is currently empty.
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-
     const doFetch = () => {
       if (fdaRejectedList.length === 0) {
         setRejectedLoading(true);
@@ -784,16 +760,14 @@ function FDAVerification() {
       params.set('page', String(rejectedPage));
       params.set('page_size', '25');
 
-      fetch(`${API_BASE}/verification-requests/rejected?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      apiFetch(`/verification-requests/rejected?${params.toString()}`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
         })
         .then((data) => {
-          setFdaRejectedList(data.items);
-          setRejectedTotal(data.total);
+          setFdaRejectedList(Array.isArray(data?.items) ? data.items : []);
+          setRejectedTotal(data?.total || 0);
         })
         .catch(() => {
           triggerAlert('Could not load rejected verification records from the server.', 'danger');
@@ -901,11 +875,10 @@ function FDAVerification() {
           draft_unregistered_reason: fdaUnregisteredReason.trim() || null,
         };
 
-        const res = await fetch(`${API_BASE}/drafts/fda-verification/${currentItem.request_id}`, {
+        const res = await apiFetch(`/drafts/fda-verification/${currentItem.request_id}`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify(payload)
         });
@@ -948,11 +921,10 @@ function FDAVerification() {
           unregistered_reason: fdaUnregisteredReason.trim() || null
         };
 
-        const res = await fetch(`${API_BASE}/verification-requests/${currentItem.request_id}/fda-response`, {
+        const res = await apiFetch(`/verification-requests/${currentItem.request_id}/fda-response`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify(payload)
         });
@@ -1003,11 +975,10 @@ function FDAVerification() {
           rejection_reason: fdaRejectionReason.trim()
         };
 
-        const res = await fetch(`${API_BASE}/verification-requests/${currentItem.request_id}/fda-reject`, {
+        const res = await apiFetch(`/verification-requests/${currentItem.request_id}/fda-reject`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify(payload)
         });
@@ -1060,10 +1031,7 @@ function FDAVerification() {
   // the existing Verification Record modal with real API field names.
   // Endpoint: GET /verification-requests/completed/{request_id}
   const handleViewCompletedRecord = (requestId) => {
-    const token = localStorage.getItem('access_token');
-    fetch(`${API_BASE}/verification-requests/completed/${requestId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    apiFetch(`/verification-requests/completed/${requestId}`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -1080,10 +1048,7 @@ function FDAVerification() {
   // the existing Record modal with _type: 'rejected'.
   // Endpoint: GET /verification-requests/rejected/{request_id}
   const handleViewRejectedRecord = (requestId) => {
-    const token = localStorage.getItem('access_token');
-    fetch(`${API_BASE}/verification-requests/rejected/${requestId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    apiFetch(`/verification-requests/rejected/${requestId}`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -1944,7 +1909,7 @@ function FDAVerification() {
                         <option value="">All Categories</option>
                         <option value="Cosmetics">Cosmetics</option>
                         <option value="Food">Food</option>
-                        <option value="Devices">Medical Devices</option>
+                        <option value="Devices">Devices</option>
                         <option value="Drugs">Drugs</option>
                       </select>
                     </div>
@@ -2189,7 +2154,7 @@ function FDAVerification() {
                         <option value="All">All Categories</option>
                         <option value="Cosmetics">Cosmetics</option>
                         <option value="Food">Food</option>
-                        <option value="Devices">Medical Devices</option>
+                        <option value="Devices">Devices</option>
                         <option value="Drugs">Drugs</option>
                       </select>
                     </div>
@@ -2597,12 +2562,11 @@ function FDAVerification() {
                   <button
                     className="FdaVerifBtnOutline"
                     onClick={() => {
-                      const token = localStorage.getItem('access_token');
                       const endpoint = fdaRecordModalData._type === 'completed'
-                        ? `${API_BASE}/verification-requests/completed/${fdaRecordModalData.request_id}/export-pdf`
-                        : `${API_BASE}/verification-requests/rejected/${fdaRecordModalData.request_id}/export-pdf`;
+                        ? `/verification-requests/completed/${fdaRecordModalData.request_id}/export-pdf`
+                        : `/verification-requests/rejected/${fdaRecordModalData.request_id}/export-pdf`;
 
-                      fetch(endpoint, { headers: { Authorization: `Bearer ${token}` } })
+                      apiFetch(endpoint)
                         .then((res) => {
                           if (!res.ok) throw new Error(`HTTP ${res.status}`);
                           return res.blob();
@@ -2722,10 +2686,7 @@ function FDAVerification() {
                   <button
                     className="FdaVerifBtnDownloadAttachment"
                     onClick={() => {
-                      const token = localStorage.getItem('access_token');
-                      fetch(`${API_BASE}/shared-files/${fdaDocPreviewModal.file_id}/download`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                      })
+                      apiFetch(`/shared-files/${fdaDocPreviewModal.file_id}/download`)
                         .then((res) => {
                           if (!res.ok) throw new Error(`HTTP ${res.status}`);
                           return res.blob();

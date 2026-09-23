@@ -86,7 +86,7 @@ function createModal() {
  
   modal.innerHTML = `
     <header class="mo-header">
-      <img src="${chrome.runtime.getURL('assets/images/extension_icon.png')}" alt="E-Verify Logo" class="mo-logo" />
+      <img src="${chrome.runtime.getURL('assets/images/extension_icon.png')}" alt="ProduCheck Logo" class="mo-logo" />
       <h1 class="mo-extension-name">E-Verify</h1>
       <button id="mo-close-x" class="mo-close-x" type="button" aria-label="Close">✕</button>
     </header>

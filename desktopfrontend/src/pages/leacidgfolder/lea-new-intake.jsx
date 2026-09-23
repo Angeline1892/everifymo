@@ -4,12 +4,12 @@ import Sidebar from '../component/sidebar'
 import TopBar from '../component/top-bar'
 import { AlertCircle, CheckCircle, AlertTriangle, Info, XCircle, X, Image as ImageIcon, FileText, Eye, Download, Paperclip } from 'lucide-react'
 import mammoth from 'mammoth'
+import { apiFetch } from '../../utils/apiFetch';
 
 import { useState, useEffect } from 'react' // ADDED useEffect: runs code on page load
 import { useLocation, useNavigate } from 'react-router-dom' // ADDED: read nav data + redirect
 
-// ADDED — backend URL in one place, so it's easy to update later
-const API_BASE = 'http://127.0.0.1:8000'
+
 
 function LeaNewIntake() {
   const location = useLocation()  // ADDED
@@ -22,41 +22,37 @@ function LeaNewIntake() {
   // ADDED — on page load, if editing an already-submitted complaint,
   // fetch its full detail and fill every field
   useEffect(() => {
-    if (!editingComplaintId) return  // brand new intake or draft edit — nothing to fetch
+    if (!editingComplaintId) return;
+    setLoading(true);
 
-    const token = localStorage.getItem('access_token')
-    setLoading(true)
-
-    fetch(`${API_BASE}/complaints/${editingComplaintId}/walkin-detail`, {
-      headers: { authorization: `Bearer ${token}` },
-    })
+    apiFetch(`/complaints/${editingComplaintId}/walkin-detail`)
       .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json()
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
       })
       .then((data) => {
-        setFullName(data.full_name ?? '')
-        setContactNumber(data.contact_number ?? '')
-        setEmail(data.email ?? '')
-        setIdType(data.id_type ?? '')
-        setAddress(data.address ?? '')
-        setProductName(data.product_title ?? '')
-        setManufacturer(data.manufacturer ?? '')
-        setProductCategory(data.product_category ?? '')
-        setPlaceOfPurchase(data.place_of_purchase ?? '')
-        setDateOfPurchase(data.date_of_purchase ?? '')
-        setAmountPaid(data.amount_paid ?? '')
-        setNatureOfComplaint(data.nature_of_complaint ?? '')
+        setFullName(data.full_name ?? '');
+        setContactNumber(data.contact_number ?? '');
+        setEmail(data.email ?? '');
+        setIdType(data.id_type ?? '');
+        setAddress(data.address ?? '');
+        setProductName(data.product_title ?? '');
+        setManufacturer(data.manufacturer ?? '');
+        setProductCategory(data.product_category ?? '');
+        setPlaceOfPurchase(data.place_of_purchase ?? '');
+        setDateOfPurchase(data.date_of_purchase ?? '');
+        setAmountPaid(data.amount_paid ?? '');
+        setNatureOfComplaint(data.nature_of_complaint ?? '');
         setExistingAttachments(
           (data.attached_files ?? []).map((f) => ({
             attachment_id: f.file_id,
             file_name: f.file_name,
           }))
-        )
+        );
       })
       .catch(() => showToast('Could not load this complaint.'))
-      .finally(() => setLoading(false))
-  }, [editingComplaintId])
+      .finally(() => setLoading(false));
+  }, [editingComplaintId]);
 
 
 
@@ -371,33 +367,29 @@ function LeaNewIntake() {
 
   // ADDED — on page load, if editing a draft, fetch it and fill every field
   useEffect(() => {
-    if (!editingDraftId) return  // brand new intake — nothing to fetch
+    if (!editingDraftId) return;
+    setLoading(true);
 
-    const token = localStorage.getItem('access_token')
-    setLoading(true)
-
-    fetch(`${API_BASE}/drafts/walkin/${editingDraftId}`, {
-      headers: { authorization: `Bearer ${token}` },
-    })
+    apiFetch(`/drafts/walkin/${editingDraftId}`)
       .then((res) => res.json())
       .then((data) => {
-        setFullName(data.full_name ?? '')
-        setContactNumber(data.contact_number ?? '')
-        setEmail(data.email ?? '')
-        setIdType(data.id_type ?? '')
-        setAddress(data.address ?? '')
-        setProductName(data.product_name ?? '')
-        setManufacturer(data.manufacturer ?? '')
-        setProductCategory(data.product_category ?? '')
-        setPlaceOfPurchase(data.place_of_purchase ?? '')
-        setDateOfPurchase(data.date_of_purchase ?? '')
-        setAmountPaid(data.amount_paid ?? '')
-        setNatureOfComplaint(data.nature_of_complaint ?? '')
-        setExistingAttachments(data.attachments ?? [])
+        setFullName(data.full_name ?? '');
+        setContactNumber(data.contact_number ?? '');
+        setEmail(data.email ?? '');
+        setIdType(data.id_type ?? '');
+        setAddress(data.address ?? '');
+        setProductName(data.product_name ?? '');
+        setManufacturer(data.manufacturer ?? '');
+        setProductCategory(data.product_category ?? '');
+        setPlaceOfPurchase(data.place_of_purchase ?? '');
+        setDateOfPurchase(data.date_of_purchase ?? '');
+        setAmountPaid(data.amount_paid ?? '');
+        setNatureOfComplaint(data.nature_of_complaint ?? '');
+        setExistingAttachments(data.attachments ?? []);
       })
       .catch(() => showToast('Could not load this draft.'))
-      .finally(() => setLoading(false))
-  }, [editingDraftId])
+      .finally(() => setLoading(false));
+  }, [editingDraftId]);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -500,111 +492,82 @@ function LeaNewIntake() {
 
   const handleSaveAsDraft = async () => {
     if (editingComplaintId) {
-      showToast('This complaint is already submitted and cannot be saved as a draft.')
-      return
+      showToast('This complaint is already submitted and cannot be saved as a draft.');
+      return;
     }
-
     if (!validateFormatForDraft()) {
-      showToast('Please fix the validation errors before saving.')
-      return
+      showToast('Please fix the validation errors before saving.');
+      return;
     }
 
-    setLoading(true)
-    const token = localStorage.getItem('access_token')
-    const formData = buildFormData()
-
+    setLoading(true);
+    const formData = buildFormData();
     if (editingDraftId) {
-      attachmentIdsToRemove.forEach((id) => formData.append('remove_attachment_ids', id))
+      attachmentIdsToRemove.forEach((id) => formData.append('remove_attachment_ids', id));
     }
 
-    const url = editingDraftId
-      ? `${API_BASE}/drafts/walkin/${editingDraftId}`
-      : `${API_BASE}/drafts/walkin/`
-    const method = editingDraftId ? 'PUT' : 'POST'
+    const url = editingDraftId ? `/drafts/walkin/${editingDraftId}` : `/drafts/walkin/`;
+    const method = editingDraftId ? 'PUT' : 'POST';
 
     try {
-      const res = await fetch(url, {
-        method,
-        headers: { authorization: `Bearer ${token}` },
-        body: formData,
-      })
+      const res = await apiFetch(url, { method, body: formData });
       if (!res.ok) {
-        showToast(await parseBackendError(res))
-        return
+        showToast(await parseBackendError(res));
+        return;
       }
-      showToast('Draft saved successfully.', 'success')
-      navigate('/leacidgfolder/lea-saved-draft')
+      showToast('Draft saved successfully.', 'success');
+      navigate('/leacidgfolder/lea-saved-draft');
     } catch (err) {
-      showToast(err.message)
+      showToast(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleLogComplaint = async (e) => {
-    e.preventDefault()
-
+    e.preventDefault();
     if (!validateForm()) {
-      showToast('Please fix the validation errors before submitting.')
-      return
+      showToast('Please fix the validation errors before submitting.');
+      return;
     }
 
-    setLoading(true)
-    const token = localStorage.getItem('access_token')
-
+    setLoading(true);
     try {
-      let res
+      let res;
       if (editingComplaintId) {
-        const formData = buildFormData()
-        attachmentIdsToRemove.forEach((id) => formData.append('remove_attachment_ids', id))
+        const formData = buildFormData();
+        attachmentIdsToRemove.forEach((id) => formData.append('remove_attachment_ids', id));
+        res = await apiFetch(`/complaints/walkin/${editingComplaintId}`, { method: 'PUT', body: formData });
 
-        res = await fetch(`${API_BASE}/complaints/walkin/${editingComplaintId}`, {
-          method: 'PUT',
-          headers: { authorization: `Bearer ${token}` },
-          body: formData,
-        })
       } else if (editingDraftId) {
-        const formData = buildFormData()
-        attachmentIdsToRemove.forEach((id) => formData.append('remove_attachment_ids', id))
+        const formData = buildFormData();
+        attachmentIdsToRemove.forEach((id) => formData.append('remove_attachment_ids', id));
 
-        const updateRes = await fetch(`${API_BASE}/drafts/walkin/${editingDraftId}`, {
-          method: 'PUT',
-          headers: { authorization: `Bearer ${token}` },
-          body: formData,
-        })
-
+        const updateRes = await apiFetch(`/drafts/walkin/${editingDraftId}`, { method: 'PUT', body: formData });
         if (!updateRes.ok) {
-          showToast(await parseBackendError(updateRes))
-          setLoading(false)
-          return
+          showToast(await parseBackendError(updateRes));
+          setLoading(false);
+          return;
         }
+        res = await apiFetch(`/drafts/walkin/${editingDraftId}/submit`, { method: 'POST' });
 
-        res = await fetch(`${API_BASE}/drafts/walkin/${editingDraftId}/submit`, {
-          method: 'POST',
-          headers: { authorization: `Bearer ${token}` },
-        })
       } else {
-        const formData = buildFormData()
-        res = await fetch(`${API_BASE}/complaints/walkin/`, {
-          method: 'POST',
-          headers: { authorization: `Bearer ${token}` },
-          body: formData,
-        })
+        const formData = buildFormData();
+        res = await apiFetch(`/complaints/walkin/`, { method: 'POST', body: formData });
       }
 
       if (!res.ok) {
-        showToast(await parseBackendError(res))
-        return
+        showToast(await parseBackendError(res));
+        return;
       }
-      showToast('Complaint logged successfully.', 'success')
-      navigate('/leacidgfolder/lea-walkin-complaints')
+      showToast('Complaint logged successfully.', 'success');
+      navigate('/leacidgfolder/lea-walkin-complaints');
     } catch (err) {
-      showToast(err.message)
+      showToast(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-
-  }
+  };
 
   return ( 
     <div className='LeaDashboardMain'>
@@ -757,7 +720,7 @@ function LeaNewIntake() {
                       <option value="Food">Food</option>
                       <option value="Cosmetics">Cosmetics</option>
                       <option value="Drugs">Drugs</option>
-                      <option value="Devices">Medical Devices</option>
+                      <option value="Devices">Devices</option>
                     </select>
                     {errors.productCategory && (
                       <span className="LoginErrorMsg">

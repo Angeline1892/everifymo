@@ -25,9 +25,7 @@ import {
   CheckCircle,
   AlertTriangle,
 } from 'lucide-react';
-
-// ADDED — API_BASE, parseBackendError, formatDateTime helpers
-const API_BASE = 'http://127.0.0.1:8000';
+import { apiFetch } from '../../utils/apiFetch';
 
 // Helper: reads a FastAPI error response body and returns a single readable string.
 // Handles both { "detail": "string" } and { "detail": [{ "msg": "...", ... }, ...] }
@@ -273,21 +271,18 @@ function LeaVerificationRequest() {
 
   // CHANGED — only shows skeleton loading on first load, not every tab revisit (BUG 1 fix)
   const fetchReadyList = async () => {
-    const token = localStorage.getItem('access_token');
     if (!hasLoadedReadyOnce) {
       setReadyLoading(true);
     }
     try {
-      const res = await fetch(`${API_BASE}/complaints/awaiting-verification-request`, {
-        headers: { authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch('/complaints/awaiting-verification-request');
       if (!res.ok) {
         const msg = await parseBackendError(res);
         showError(msg);
         return;
       }
       const data = await res.json();
-      setReadyList(data);
+      setReadyList(Array.isArray(data) ? data : []);
       setHasLoadedReadyOnce(true);
     } catch {
       showError('Could not load the ready-to-send list.');
@@ -300,8 +295,6 @@ function LeaVerificationRequest() {
   //Fetch: complaint verification detail (right panel) 
   // CHANGED — no longer blanks right panel on every card click (BUG 2 fix)
   const fetchComplaintDetail = async (complaintId) => {
-    const token = localStorage.getItem('access_token');
-
     setProductCode('');
     setPriority('standard');
     setComplaintStatement('');
@@ -311,9 +304,7 @@ function LeaVerificationRequest() {
       setDetailLoading(true);
     }
     try {
-      const res = await fetch(`${API_BASE}/complaints/${complaintId}/verification-detail`, {
-        headers: { authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch(`/complaints/${complaintId}/verification-detail`);
       if (!res.ok) {
         const msg = await parseBackendError(res);
         showError(msg);
@@ -331,21 +322,19 @@ function LeaVerificationRequest() {
   // ADDED — GET /verification-requests/awaiting-fda
   // Fetch: Awaiting FDA list
   const fetchAwaitingList = async () => {
-    const token = localStorage.getItem('access_token');
     setAwaitingLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/verification-requests/awaiting-fda`, {
-        headers: { authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch('/verification-requests/awaiting-fda');
       if (!res.ok) {
         const msg = await parseBackendError(res);
         showError(msg);
         return;
       }
       const data = await res.json();
-      setAwaitingList(data);
-      if (data.length > 0 && !selectedAwaitingFda) {
-        setSelectedAwaitingFda(data[0]);
+      const list = Array.isArray(data) ? data : [];
+      setAwaitingList(list);
+      if (list.length > 0 && !selectedAwaitingFda) {
+        setSelectedAwaitingFda(list[0]);
       }
     } catch {
       showError('Could not load awaiting FDA list.');
@@ -357,27 +346,25 @@ function LeaVerificationRequest() {
   // ADDED — GET /verification-requests/fda-response
   // Fetch: FDA Response list — replaces the old dummy responseCases array
   const fetchFdaResponseList = async () => {
-    const token = localStorage.getItem('access_token');
     if (!hasLoadedFdaResponseOnce) {
       setFdaResponseLoading(true);
     }
     try {
-      const res = await fetch(`${API_BASE}/verification-requests/fda-response`, {
-        headers: { authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch('/verification-requests/fda-response');
       if (!res.ok) {
         const msg = await parseBackendError(res);
         showError(msg);
         return;
       }
       const data = await res.json();
-      setFdaResponseList(data);
+      const list = Array.isArray(data) ? data : [];
+      setFdaResponseList(list);
       setHasLoadedFdaResponseOnce(true);
       // Auto-select the first item if nothing is currently selected, or if
       // the currently selected item no longer exists in the refreshed list.
-      if (data.length > 0 && !data.some((item) => item.request_id === selectedResponseId)) {
-        setSelectedResponseId(data[0].request_id);
-      } else if (data.length === 0) {
+      if (list.length > 0 && !list.some((item) => item.request_id === selectedResponseId)) {
+        setSelectedResponseId(list[0].request_id);
+      } else if (list.length === 0) {
         setSelectedResponseId(null);
         setSelectedResponse(null);
       }
@@ -390,11 +377,8 @@ function LeaVerificationRequest() {
 
   // ADDED — fetches the real counts for the FDA Response / Initiated / Dismissed stat cards
   const fetchLeaCounts = async () => {
-    const token = localStorage.getItem('access_token');
     try {
-      const res = await fetch(`${API_BASE}/verification-requests/lea-counts`, {
-        headers: { authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch('/verification-requests/lea-counts');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setLeaCounts(data);
@@ -414,10 +398,7 @@ function LeaVerificationRequest() {
     if (draftId) {
       setCurrentDraftId(draftId);
       setActiveTab('Ready to Send');
-      const token = localStorage.getItem('access_token');
-      fetch(`${API_BASE}/drafts/verification/${draftId}`, {
-        headers: { authorization: `Bearer ${token}` },
-      })
+      apiFetch(`/drafts/verification/${draftId}`)
         .then(async (res) => {
           if (!res.ok) {
             const msg = await parseBackendError(res);
@@ -438,25 +419,23 @@ function LeaVerificationRequest() {
   // ADDED — GET /complaints/initiated
   // Fetch: Initiated Cases list — replaces the old dummy initiatedCases array
   const fetchInitiatedList = async () => {
-    const token = localStorage.getItem('access_token');
     if (!hasLoadedInitiatedOnce) {
       setInitiatedLoading(true);
     }
     try {
-      const res = await fetch(`${API_BASE}/complaints/initiated`, {
-        headers: { authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch('/complaints/initiated');
       if (!res.ok) {
         const msg = await parseBackendError(res);
         showError(msg);
         return;
       }
       const data = await res.json();
-      setInitiatedList(data);
+      const list = Array.isArray(data) ? data : [];
+      setInitiatedList(list);
       setHasLoadedInitiatedOnce(true);
-      if (data.length > 0 && !data.some((item) => item.complaint_id === selectedInitiatedId)) {
-        setSelectedInitiatedId(data[0].complaint_id);
-      } else if (data.length === 0) {
+      if (list.length > 0 && !list.some((item) => item.complaint_id === selectedInitiatedId)) {
+        setSelectedInitiatedId(list[0].complaint_id);
+      } else if (list.length === 0) {
         setSelectedInitiatedId(null);
         setSelectedInitiatedCase(null);
       }
@@ -489,15 +468,12 @@ function LeaVerificationRequest() {
     // CHANGED (Part 0) — always reset the Initiate Takedown textarea on each new selection;
     // this note is for a brand-new action, not existing saved data.
     setFdaTakedownNotes('');
-    const token = localStorage.getItem('access_token');
     // Only show the loading state if nothing is currently displayed —
     // keep the previous detail visible while the new one loads.
     if (!selectedResponse) {
       setResponseDetailLoading(true);
     }
-    fetch(`${API_BASE}/verification-requests/fda-response/${selectedResponseId}`, {
-      headers: { authorization: `Bearer ${token}` },
-    })
+    apiFetch(`/verification-requests/fda-response/${selectedResponseId}`)
       .then(async (res) => {
         if (!res.ok) {
           const msg = await parseBackendError(res);
@@ -520,13 +496,10 @@ function LeaVerificationRequest() {
   //          Pre-fills fieldOperationNotes with the existing note so the officer can review/append.
   useEffect(() => {
     if (!selectedInitiatedId) return;
-    const token = localStorage.getItem('access_token');
     if (!selectedInitiatedCase) {
       setInitiatedDetailLoading(true);
     }
-    fetch(`${API_BASE}/complaints/initiated/${selectedInitiatedId}`, {
-      headers: { authorization: `Bearer ${token}` },
-    })
+    apiFetch(`/complaints/initiated/${selectedInitiatedId}`)
       .then(async (res) => {
         if (!res.ok) {
           const msg = await parseBackendError(res);
@@ -553,10 +526,7 @@ function LeaVerificationRequest() {
   // can display them. Silently falls back to '—' if the fetch fails.
   useEffect(() => {
     if (!selectedAwaitingFda?.request_id) return;
-    const token = localStorage.getItem('access_token');
-    fetch(`${API_BASE}/verification-requests/${selectedAwaitingFda.request_id}`, {
-      headers: { authorization: `Bearer ${token}` },
-    })
+    apiFetch(`/verification-requests/${selectedAwaitingFda.request_id}`)
       .then(async (res) => {
         if (!res.ok) return;
         return res.json();
@@ -579,7 +549,6 @@ function LeaVerificationRequest() {
   // Only runs when the Closed Cases tab is active.
   useEffect(() => {
     if (activeTab !== 'Closed Cases') return;
-    const token = localStorage.getItem('access_token');
 
     const timer = setTimeout(() => {
       if (!hasLoadedClosedOnce) {
@@ -596,16 +565,14 @@ function LeaVerificationRequest() {
       params.set('page', String(closedPage));
       params.set('page_size', String(CLOSED_PAGE_SIZE));
 
-      fetch(`${API_BASE}/verification-requests/closed-cases?${params.toString()}`, {
-        headers: { authorization: `Bearer ${token}` },
-      })
+      apiFetch(`/verification-requests/closed-cases?${params.toString()}`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
         })
         .then((data) => {
-          setClosedList(data.items);
-          setClosedTotal(data.total);
+          setClosedList(Array.isArray(data.items) ? data.items : []);
+          setClosedTotal(data.total || 0);
           setHasLoadedClosedOnce(true);
         })
         .catch(() => showError('Could not load closed cases.'))
@@ -641,14 +608,11 @@ function LeaVerificationRequest() {
     if (!fileId) return;
 
     let objectUrl = null;
-    const token = localStorage.getItem('access_token');
 
     if (isDocx) {
       setDocxLoading(true);
       setDocxError(false);
-      fetch(`${API_BASE}/shared-files/${fileId}/preview`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      apiFetch(`/shared-files/${fileId}/preview`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.arrayBuffer();
@@ -670,9 +634,7 @@ function LeaVerificationRequest() {
     setDocPreviewLoading(true);
     setDocPreviewError(false);
 
-    fetch(`${API_BASE}/shared-files/${fileId}/preview`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    apiFetch(`/shared-files/${fileId}/preview`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.blob();
@@ -696,30 +658,23 @@ function LeaVerificationRequest() {
       showError('Please select a complaint first.');
       return;
     }
-    const token = localStorage.getItem('access_token');
     const body = JSON.stringify({
       complaint_id: selectedComplaint.complaint_id,
       product_code: productCode || null,
       priority,
       notes_to_fda: complaintStatement,
     });
-    const headers = {
-      authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
 
     try {
       let res;
       if (!currentDraftId) {
-        res = await fetch(`${API_BASE}/drafts/verification/`, {
+        res = await apiFetch('/drafts/verification/', {
           method: 'POST',
-          headers,
           body,
         });
       } else {
-        res = await fetch(`${API_BASE}/drafts/verification/${currentDraftId}`, {
+        res = await apiFetch(`/drafts/verification/${currentDraftId}`, {
           method: 'PUT',
-          headers,
           body,
         });
       }
@@ -753,19 +708,12 @@ function LeaVerificationRequest() {
       return;
     }
 
-    const token = localStorage.getItem('access_token');
-    const headers = {
-      authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-
     try {
       let res;
       if (currentDraftId) {
         // Update the draft first
-        const updateRes = await fetch(`${API_BASE}/drafts/verification/${currentDraftId}`, {
+        const updateRes = await apiFetch(`/drafts/verification/${currentDraftId}`, {
           method: 'PUT',
-          headers,
           body: JSON.stringify({
             complaint_id: selectedComplaint.complaint_id,
             product_code: productCode || null,
@@ -781,14 +729,12 @@ function LeaVerificationRequest() {
         }
 
         // Finish an existing draft → submit it
-        res = await fetch(`${API_BASE}/drafts/verification/${currentDraftId}/submit`, {
+        res = await apiFetch(`/drafts/verification/${currentDraftId}/submit`, {
           method: 'POST',
-          headers: { authorization: `Bearer ${token}` },
         });
       } else {
-        res = await fetch(`${API_BASE}/verification-requests/`, {
+        res = await apiFetch('/verification-requests/', {
           method: 'POST',
-          headers,
           body: JSON.stringify({
             complaint_id: selectedComplaint.complaint_id,
             product_code: productCode || null,
@@ -836,15 +782,12 @@ function LeaVerificationRequest() {
       confirmBg: '#ef4444',
       onConfirm: async () => {
         setModalConfig(null);
-        const token = localStorage.getItem('access_token');
-
         // If a draft exists for this complaint, clean it up first —
         // separate record from the complaint itself
         if (currentDraftId) {
           try {
-            const draftRes = await fetch(`${API_BASE}/drafts/verification/${currentDraftId}`, {
+            const draftRes = await apiFetch(`/drafts/verification/${currentDraftId}`, {
               method: 'DELETE',
-              headers: { authorization: `Bearer ${token}` },
             });
             if (!draftRes.ok) {
               const msg = await parseBackendError(draftRes);
@@ -860,9 +803,8 @@ function LeaVerificationRequest() {
         // Always delete the actual complaint — this is what the
         // officer actually expects when clicking Delete here
         try {
-          const res = await fetch(`${API_BASE}/complaints/walkin/${selectedComplaint.complaint_id}`, {
+          const res = await apiFetch(`/complaints/walkin/${selectedComplaint.complaint_id}`, {
             method: 'DELETE',
-            headers: { authorization: `Bearer ${token}` },
           });
           if (!res.ok) {
             const msg = await parseBackendError(res);
@@ -997,13 +939,11 @@ function LeaVerificationRequest() {
       confirmBg,
       onConfirm: async () => {
         if (actionType === 'Send Reminder' || actionType === 'Recall Request') {
-          const token = localStorage.getItem('access_token');
           const endpoint = actionType === 'Send Reminder' ? 'resend-reminder' : 'recall';
 
           try {
-            const res = await fetch(`${API_BASE}/verification-requests/${id}/${endpoint}`, {
+            const res = await apiFetch(`/verification-requests/${id}/${endpoint}`, {
               method: 'POST',
-              headers: { authorization: `Bearer ${token}` },
             });
 
             if (!res.ok) {
@@ -1036,11 +976,9 @@ function LeaVerificationRequest() {
 
         // ADDED — POST /verification-requests/{id}/acknowledge (handles both Acknowledge + Dismiss Case)
         if (actionType === 'Acknowledge' || actionType === 'Dismiss Case') {
-          const token = localStorage.getItem('access_token');
           try {
-            const res = await fetch(`${API_BASE}/verification-requests/${id}/acknowledge`, {
+            const res = await apiFetch(`/verification-requests/${id}/acknowledge`, {
               method: 'POST',
-              headers: { authorization: `Bearer ${token}` },
             });
             if (!res.ok) {
               const msg = await parseBackendError(res);
@@ -1063,14 +1001,9 @@ function LeaVerificationRequest() {
 
         // ADDED — POST /verification-requests/{id}/initiate-takedown
         if (actionType === 'Initiate Takedown') {
-          const token = localStorage.getItem('access_token');
           try {
-            const res = await fetch(`${API_BASE}/verification-requests/${id}/initiate-takedown`, {
+            const res = await apiFetch(`/verification-requests/${id}/initiate-takedown`, {
               method: 'POST',
-              headers: {
-                authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
               body: JSON.stringify({
                 // CHANGED (Part 0) — uses fdaTakedownNotes, not the old shared fieldOperationNotes
                 field_operation_notes: fdaTakedownNotes.trim() ? fdaTakedownNotes.trim() : null,
@@ -1098,14 +1031,9 @@ function LeaVerificationRequest() {
 
         // ADDED — POST /complaints/{id}/close-case
         if (actionType === 'Close Case') {
-          const token = localStorage.getItem('access_token');
           try {
-            const res = await fetch(`${API_BASE}/complaints/${id}/close-case`, {
+            const res = await apiFetch(`/complaints/${id}/close-case`, {
               method: 'POST',
-              headers: {
-                authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
               body: JSON.stringify({
                 // CHANGED (Part 0) — uses initiatedFieldNotes, not the old shared fieldOperationNotes
                 field_operation_notes: initiatedFieldNotes.trim() ? initiatedFieldNotes.trim() : null,
@@ -1271,7 +1199,7 @@ function LeaVerificationRequest() {
                           <option value="">All Categories</option>
                           <option value="Cosmetics">Cosmetics</option>
                           <option value="Food">Food</option>
-                          <option value="Devices">Medical Devices</option>
+                          <option value="Devices">Devices</option>
                           <option value="Drugs">Drugs</option>
                         </select>
                       </div>
@@ -1507,7 +1435,7 @@ function LeaVerificationRequest() {
                           <option value="">All Categories</option>
                           <option value="Cosmetics">Cosmetics</option>
                           <option value="Food">Food</option>
-                          <option value="Devices">Medical Devices</option>
+                          <option value="Devices">Devices</option>
                           <option value="Drugs">Drugs</option>
                         </select>
                       </div>
@@ -1731,7 +1659,7 @@ function LeaVerificationRequest() {
                           <option value="">All Categories</option>
                           <option value="Cosmetics">Cosmetics</option>
                           <option value="Food">Food</option>
-                          <option value="Devices">Medical Devices</option>
+                          <option value="Devices">Devices</option>
                           <option value="Drugs">Drugs</option>
                         </select>
                       </div>
@@ -2036,7 +1964,7 @@ function LeaVerificationRequest() {
                           <option value="">All Categories</option>
                           <option value="Cosmetics">Cosmetics</option>
                           <option value="Food">Food</option>
-                          <option value="Devices">Medical Devices</option>
+                          <option value="Devices">Devices</option>
                           <option value="Drugs">Drugs</option>
                         </select>
                       </div>
@@ -2216,7 +2144,7 @@ function LeaVerificationRequest() {
                           <option value="Cosmetics">Cosmetics</option>
                           <option value="Food">Food</option>
                           <option value="Drugs">Drugs</option>
-                          <option value="Devices">Medical Devices</option>
+                          <option value="Devices">Devices</option>
                         </select>
                       </div>
                       <div className="LeaFilterGroup">
@@ -2538,10 +2466,7 @@ function LeaVerificationRequest() {
               <button
                 className="LeaVerifBtnPrimary"
                 onClick={() => {
-                  const token = localStorage.getItem('access_token');
-                  fetch(`${API_BASE}/shared-files/${docPreviewModal.file_id}/download`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  })
+                  apiFetch(`/shared-files/${docPreviewModal.file_id}/download`)
                     .then((res) => {
                       if (!res.ok) throw new Error(`HTTP ${res.status}`);
                       return res.blob();

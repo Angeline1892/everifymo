@@ -15,14 +15,14 @@ from app.desktop.schemas.verification.verification import (
 def _base_styles():
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(
-        name="EVerifyTitle", fontSize=16, leading=20, spaceAfter=4,
+        name="ICMDATitle", fontSize=16, leading=20, spaceAfter=4,
         textColor=colors.HexColor("#14532d"),
     ))
     styles.add(ParagraphStyle(
-        name="EVerifySubtitle", fontSize=10, textColor=colors.HexColor("#666666"), spaceAfter=14,
+        name="ICMDASubtitle", fontSize=10, textColor=colors.HexColor("#666666"), spaceAfter=14,
     ))
     styles.add(ParagraphStyle(
-        name="EVerifySectionHeader", fontSize=12, textColor=colors.HexColor("#14532d"),
+        name="ICMDASectionHeader", fontSize=12, textColor=colors.HexColor("#14532d"),
         spaceBefore=16, spaceAfter=6,
     ))
     return styles
@@ -51,16 +51,16 @@ def build_completed_pdf(data: FdaVerificationCompletedDetailResponse) -> bytes:
     doc = SimpleDocTemplate(
         buffer, pagesize=letter, topMargin=0.6 * inch, bottomMargin=0.6 * inch,
         title=f"Verification Record - {data.case_reference}",
-        author="Everify",
+        author="ICMDA",
         subject="FDA Verification Record",
-        creator="Everify",
+        creator="ICMDA",
     )
     styles = _base_styles()
     story = [
-        Paragraph("Everify &mdash; Verification Record", styles["EVerifyTitle"]),
+        Paragraph("Interagency Complaints Management &mdash; Verification Record", styles["ICMDATitle"]),
         Paragraph(
             f"{data.case_reference} &bull; Completed on {_fmt_dt(data.responded_at)}",
-            styles["EVerifySubtitle"],
+            styles["ICMDASubtitle"],
         ),
         _info_table([
             ["Case ID", data.case_reference],
@@ -70,7 +70,7 @@ def build_completed_pdf(data: FdaVerificationCompletedDetailResponse) -> bytes:
             ["Date Received", _fmt_dt(data.requested_at)],
             ["Requesting LEA Officer", data.requested_by_name or "N/A"],
         ]),
-        Paragraph("Official FDA Verification Result", styles["EVerifySectionHeader"]),
+        Paragraph("Official FDA Verification Result", styles["ICMDASectionHeader"]),
     ]
 
     result_label = "Registered" if data.verification_result == "registered" else "Unregistered"
@@ -97,16 +97,16 @@ def build_rejected_pdf(data: FdaVerificationRejectedDetailResponse) -> bytes:
     doc = SimpleDocTemplate(
         buffer, pagesize=letter, topMargin=0.6 * inch, bottomMargin=0.6 * inch,
         title=f"Rejected Record - {data.case_reference}",
-        author="Everify",
+        author="ICMDA",
         subject="FDA Rejected Verification Request",
-        creator="Everify",
+        creator="ICMDA",
     )
     styles = _base_styles()
     story = [
-        Paragraph("Everify &mdash; Rejected Request Record", styles["EVerifyTitle"]),
+        Paragraph("Interagency Complaints Management &mdash; Rejected Request Record", styles["ICMDATitle"]),
         Paragraph(
             f"{data.case_reference} &bull; Rejected on {_fmt_dt(data.responded_at)}",
-            styles["EVerifySubtitle"],
+            styles["ICMDASubtitle"],
         ),
         _info_table([
             ["Case ID", data.case_reference],
@@ -116,11 +116,11 @@ def build_rejected_pdf(data: FdaVerificationRejectedDetailResponse) -> bytes:
             ["Date Received", _fmt_dt(data.requested_at)],
             ["Requesting LEA Officer", data.requested_by_name or "N/A"],
         ]),
-        Paragraph("Rejection Details", styles["EVerifySectionHeader"]),
+        Paragraph("Rejection Details", styles["ICMDASectionHeader"]),
         _info_table([
             ["Rejected By", data.rejected_by_name or "N/A"],
             ["Date Rejected", _fmt_dt(data.responded_at)],
-            ["Rejection Rationale (Sent to LEA)", data.rejection_reason],
+            ["Rejection Rationale", data.rejection_reason],
         ]),
     ]
 
