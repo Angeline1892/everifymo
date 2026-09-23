@@ -1306,3 +1306,471 @@
     gap: 12px 16px;
   }
 }
+
+/* ==========================================================================
+   LEA ADMIN WORKSPACE LOCATION STYLES
+   Scoped strictly with .LeaWsLoc- prefix.
+   ========================================================================== */
+
+.LeaWsLoc-PageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.LeaWsLoc-Eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d4ed8;
+  letter-spacing: 0.3px;
+}
+
+.LeaWsLoc-PageTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.LeaWsLoc-Card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  max-width: 480px;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+.LeaWsLoc-CardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.LeaWsLoc-OfficeInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.LeaWsLoc-OfficeIconBox {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.LeaWsLoc-OfficeName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.LeaWsLoc-Badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.LeaWsLoc-Badge.is-set {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.LeaWsLoc-Badge.not-set {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+
+.LeaWsLoc-CardRows {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.LeaWsLoc-Row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13.5px;
+  gap: 12px;
+}
+
+.LeaWsLoc-Row:last-child {
+  border-bottom: none;
+}
+
+.LeaWsLoc-RowLabel {
+  color: #64748b;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.LeaWsLoc-RowValue {
+  color: #0f172a;
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+.LeaWsLoc-ErrorBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.LeaWsLoc-CardActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.LeaWsLoc-LocateBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  color: #1e293b;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.LeaWsLoc-LocateBtn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.LeaWsLoc-LocateBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.LeaWsLoc-EditBtn {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.LeaWsLoc-EditBtn:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+/* Modal styling additions */
+.LeaWsLoc-Modal {
+  max-width: 480px;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.LeaWsLoc-ModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.LeaWsLoc-HelperText {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.LeaWsLoc-Notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 9px;
+  box-sizing: border-box;
+}
+
+.LeaWsLoc-NoticeIcon {
+  color: #1d4ed8;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.LeaWsLoc-NoticeContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.LeaWsLoc-NoticeTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e40af;
+  margin: 0;
+}
+
+.LeaWsLoc-NoticeText {
+  font-size: 12px;
+  color: #1e3a8a;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.LeaWsLoc-ModalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+  border-radius: 0 0 14px 14px;
+}
+
+.LeaWsLoc-ModalLocateBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  color: #1e293b;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.LeaWsLoc-ModalLocateBtn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.LeaWsLoc-ModalLocateBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.LeaWsLoc-ModalSaveBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.LeaWsLoc-ModalSaveBtn:hover {
+  opacity: 0.92;
+}
+
+/* Confirmation Modal - LEA */
+.LeaWsLoc-ConfirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.68);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  padding: 16px;
+  animation: LEAAdminFadeIn 0.2s ease;
+}
+
+.LeaWsLoc-ConfirmModal {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 440px;
+  padding: 28px 24px;
+  box-sizing: border-box;
+  animation: LEAAdminSlideUp 0.22s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.LeaWsLoc-ConfirmIconBox {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.LeaWsLoc-ConfirmTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+  line-height: 1.35;
+}
+
+.LeaWsLoc-ConfirmBody {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 18px 0;
+  line-height: 1.5;
+}
+
+.LeaWsLoc-ConfirmSummary {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 22px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.LeaWsLoc-ConfirmSummaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.LeaWsLoc-ConfirmSummaryLabel {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.LeaWsLoc-ConfirmSummaryValue {
+  color: #0f172a;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.LeaWsLoc-ConfirmFooter {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.LeaWsLoc-ConfirmCancelBtn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  color: #475569;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.LeaWsLoc-ConfirmCancelBtn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+.LeaWsLoc-ConfirmSaveBtn {
+  flex: 1;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: none;
+  border-radius: 9px;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.LeaWsLoc-ConfirmSaveBtn:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.LeaWsLoc-ConfirmSaveBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+

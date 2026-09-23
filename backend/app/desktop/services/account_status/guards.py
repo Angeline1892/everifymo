@@ -15,8 +15,27 @@ def agency_of(role: str) -> str | None:
     return None
 
 
-def assert_same_agency_and_region(actor: User, target: User):
+def assert_same_agency_and_region(db: Session, actor: User, target: User):
     if actor.role == Role.NATIONAL_ADMIN:
+        # National Admin has unrestricted reach over other National Admins
+        # (that's a separate peer-management flow, unchanged here). For
+        # Interagency Admin targets, National Admin may act on them ONLY
+        # if a National Admin (any of them) originally created the
+        # account. Agency Admins invited by a FELLOW Agency Admin
+        # (by-fellow-admin path) are out of National Admin's reach
+        # entirely — view-only in the frontend; this 403 is the real
+        # enforcement since the API can be called directly.
+        if target.role in Role.ADMIN_ROLES:
+            creator = (
+                db.query(User).filter(User.user_id == target.created_by).first()
+                if target.created_by else None
+            )
+            created_by_national_admin = creator is not None and creator.role == Role.NATIONAL_ADMIN
+            if not created_by_national_admin:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You can only manage interagency admin accounts that were added by a National Admin.",
+                )
         return
     if actor.region_id != target.region_id or agency_of(actor.role) != agency_of(target.role):
         raise HTTPException(status_code=403, detail="You can only manage accounts in your own agency and region.")
@@ -70,8 +89,6 @@ def action_for_role(role: str, verb: str) -> str:
     if role in Role.ADMIN_ROLES:
         return _ACTION_TABLE["ADMIN"][verb]
     return _ACTION_TABLE["PERSONNEL"][verb]
-
-
 
 
 def assert_employee_id_available(db: Session, employee_id: str | None, exclude_user_id=None):

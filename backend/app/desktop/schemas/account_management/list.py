@@ -19,6 +19,9 @@ class AccountListItem(BaseModel):
     expiration_date: datetime | None = None
     status: str
     is_locked: bool
+    is_active: bool 
+    created_by: str | None = None
+    created_by_is_national_admin: bool = False
 
 
 class AccountSummary(BaseModel):

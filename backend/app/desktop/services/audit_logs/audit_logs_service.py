@@ -21,7 +21,7 @@ def get_fda_audit_logs(
         select(AuditLog, User)
         .outerjoin(User, AuditLog.user_id == User.user_id)
         .where(AuditLog.user_role.in_(["fda_personnel", "fda_admin"]))
-        .where(AuditLog.action != "PERSONNEL_REQUEST_INVITE")
+        .where(AuditLog.action.notin_(SYSTEM_ACTION_CODES))
     )
 
     if action:
@@ -68,7 +68,7 @@ def get_lea_audit_logs(
         select(AuditLog, User)
         .outerjoin(User, AuditLog.user_id == User.user_id)
         .where(AuditLog.user_role.in_(["lea_personnel", "lea_admin"]))
-        .where(AuditLog.action != "PERSONNEL_REQUEST_INVITE")
+        .where(AuditLog.action.notin_(SYSTEM_ACTION_CODES))
     )
 
     if action:
@@ -166,6 +166,7 @@ def get_national_admin_audit_logs(
 # not a generic "System" badge, even inside this tab).
 SYSTEM_ACTION_CODES = [
     "PENDING_NATIONAL_ADMIN_ACCOUNT",
+    "PENDING_REGIONAL_ADMIN_ACCOUNT",
     "LOCK_PERSONNEL_ACCOUNT",
     "LOCK_NATIONAL_ADMIN_ACCOUNT",
     "LOCK_REGIONAL_ADMIN_ACCOUNT",
@@ -178,6 +179,7 @@ def get_system_audit_logs(
     limit: int,
     action: str | None = None,
     region_code: str | None = None,
+    agency_roles: list[str] | None = None,
     date_from=None,
     date_to=None,
     search: str | None = None,
@@ -187,6 +189,14 @@ def get_system_audit_logs(
         .outerjoin(User, AuditLog.user_id == User.user_id)
         .where(AuditLog.action.in_(SYSTEM_ACTION_CODES))
     )
+
+    # Regional Admin viewers only see system events for their own agency's
+    # roles (fda_personnel/fda_admin or lea_personnel/lea_admin) — without
+    # this, an FDA admin's LOCK_PERSONNEL_ACCOUNT row and an LEA admin's
+    # otherwise-identical row (same action, same region) are indistinguishable
+    # unless filtered by user_role too.
+    if agency_roles:
+        query = query.where(AuditLog.user_role.in_(agency_roles))
 
     if action:
         query = query.where(AuditLog.action == action)

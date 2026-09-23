@@ -1,6 +1,7 @@
 // desktopfrontend/src/pages/leaadminfolder/lea-admin-audit-logs.jsx
 import './lea-admin-css.css';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '../../utils/apiFetch';
 import {
   Search,
   ChevronLeft,
@@ -12,182 +13,54 @@ import {
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
 
-const MOCK_LEA_AUDIT_LOGS = [
-  {
-    log_id: 'lea-log-001',
-    timestamp: '2026-07-15 15:45:20',
-    user_name: 'Cardo Santos Dalisay',
-    user_role: 'LEA Personnel',
-    agency: 'LEA-CIDG',
-    region: 'NCR',
-    action_type: 'create',
-    action_code: 'LOG_WALKIN_COMPLAINT',
-    target_table: 'walkin_complaints',
-    target_id: 'COMP-2026-0044',
-    ip_address: '192.168.35.10',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EverifyMoDesktop/2.0',
-    old_value: null,
-    new_value: {
-      complainant: 'Rodrigo B. Santos',
-      product_reported: 'Counterfeit Antibiotic Ointment',
-      batch_id: 'BATCH-FAKE-091',
-      status: 'Open for Investigation',
-    },
-  },
-  {
-    log_id: 'lea-log-002',
-    timestamp: '2026-07-15 13:20:10',
-    user_name: 'Dominic Cruz Valdez',
-    user_role: 'LEA Admin',
-    agency: 'LEA-CIDG',
-    region: 'Region 3',
-    action_type: 'update',
-    action_code: 'DISPATCH_VERIFICATION_REQUEST',
-    target_table: 'verification_requests',
-    target_id: 'VR-2026-00045',
-    ip_address: '192.168.22.45',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EverifyMoDesktop/2.0',
-    old_value: { status: 'Draft', priority: 'standard' },
-    new_value: { status: 'Sent to FDA', priority: 'high' },
-  },
-  {
-    log_id: 'lea-log-003',
-    timestamp: '2026-07-15 11:05:32',
-    user_name: 'Ramon Alvarez Magsaysay',
-    user_role: 'LEA Personnel',
-    agency: 'LEA-CIDG',
-    region: 'Region 7',
-    action_type: 'create',
-    action_code: 'CREATE_INTAKE_REPORT',
-    target_table: 'intake_reports',
-    target_id: 'INTK-2026-019',
-    ip_address: '192.168.77.104',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    old_value: null,
-    new_value: {
-      location: 'Cebu Seaport Terminal 2',
-      alleged_violation: 'Smuggled Unregistered Supplements',
-      seizure_quantity: '45 cartons',
-    },
-  },
-  {
-    log_id: 'lea-log-004',
-    timestamp: '2026-07-14 14:18:00',
-    user_name: 'Dominic Cruz Valdez',
-    user_role: 'LEA Admin',
-    agency: 'LEA-CIDG',
-    region: 'Region 3',
-    action_type: 'update',
-    action_code: 'UPDATE_OFFICER_STATUS',
-    target_table: 'users',
-    target_id: 'CIDG-REG6-2024-051',
-    ip_address: '192.168.22.45',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    old_value: { status: 'Pending Approval' },
-    new_value: { status: 'Active' },
-  },
-  {
-    log_id: 'lea-log-005',
-    timestamp: '2026-07-14 09:30:15',
-    user_name: 'Marc Villanueva Tan',
-    user_role: 'LEA Personnel',
-    agency: 'LEA-CIDG',
-    region: 'Region 6',
-    action_type: 'login',
-    action_code: 'USER_LOGIN_SUCCESS',
-    target_table: 'sessions',
-    target_id: 'SESS-LEA-4402',
-    ip_address: '192.168.61.12',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    old_value: null,
-    new_value: null,
-  },
-  {
-    log_id: 'lea-log-006',
-    timestamp: '2026-07-13 16:40:00',
-    user_name: 'Renato Perez Soriano',
-    user_role: 'LEA Admin',
-    agency: 'LEA-CIDG',
-    region: 'Region 11',
-    action_type: 'delete',
-    action_code: 'REMOVE_CANCELLED_COMPLAINT',
-    target_table: 'walkin_complaints',
-    target_id: 'COMP-2026-0012',
-    ip_address: '192.168.91.14',
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    old_value: { complaint_id: 'COMP-2026-0012', reason: 'Filed in Error by Complainant' },
-    new_value: null,
-  },
+// Action codes an LEA Admin can trigger — their own account lifecycle, plus
+// every account-management action they perform on personnel accounts.
+const REGIONAL_ADMIN_ACTIONS = [
+  'LOGIN', 'LOGOUT', 'LOGIN_FAILED',
+  'INVITE_REGIONAL_ADMIN', 'INVITE_REGIONAL_ADMIN_RESENT', 'REGIONAL_ADMIN_REQUEST_INVITE',
+  'DELETE_REGIONAL_ADMIN_ACCOUNT', 'UNLOCK_REGIONAL_ADMIN_ACCOUNT', 'UPDATE_REGIONAL_ADMIN_PASSWORD',
+  'UPDATE_REGIONAL_ADMIN_INFORMATION', 'APPROVE_REGIONAL_ADMIN_ACCOUNT', 'SUSPEND_REGIONAL_ADMIN_ACCOUNT',
+  'REACTIVATE_REGIONAL_ADMIN_ACCOUNT',
+  'INVITE_PERSONNEL', 'INVITE_PERSONNEL_RESENT', 'SUSPEND_PERSONNEL_ACCOUNT', 'REACTIVATE_PERSONNEL_ACCOUNT',
+  'DELETE_PERSONNEL_ACCOUNT', 'UNLOCK_PERSONNEL_ACCOUNT', 'UPDATE_PERSONNEL_PASSWORD', 'UPDATE_PERSONNEL_INFORMATION',
 ];
 
-const MOCK_SYSTEM_AUDIT_LOGS = [
-  {
-    log_id: 'sys-log-101',
-    timestamp: '2026-07-15 16:30:00',
-    user_name: null,
-    user_role: 'system',
-    agency: 'System',
-    region: 'NCR',
-    action_type: 'update',
-    action_code: 'SYSTEM_INTAKE_INDEXING',
-    target_table: 'case_indices',
-    target_id: 'IDX-TASK-902',
-    ip_address: '10.0.4.1',
-    user_agent: 'EverifyMo-InternalScheduler/1.0',
-    old_value: { indexed_cases: 890 },
-    new_value: { indexed_cases: 896, newly_indexed: 6 },
-  },
-  {
-    log_id: 'sys-log-102',
-    timestamp: '2026-07-15 04:00:00',
-    user_name: null,
-    user_role: 'system',
-    agency: 'System',
-    region: 'NCR',
-    action_type: 'delete',
-    action_code: 'EXPIRE_STALE_INVITATIONS',
-    target_table: 'invitations',
-    target_id: 'BATCH-EXP-02',
-    ip_address: '10.0.4.1',
-    user_agent: 'EverifyMo-InternalScheduler/1.0',
-    old_value: { expired: 2 },
-    new_value: { tokens_invalidated: 2 },
-  },
-  {
-    log_id: 'sys-log-103',
-    timestamp: '2026-07-14 23:59:59',
-    user_name: null,
-    user_role: 'system',
-    agency: 'System',
-    region: 'NCR',
-    action_type: 'update',
-    action_code: 'DATABASE_BACKUP_SNAPSHOT',
-    target_table: 'database_snapshots',
-    target_id: 'SNAP-LEA-20260714',
-    ip_address: '10.0.4.2',
-    user_agent: 'PostgreSQL-Backup-Service',
-    old_value: null,
-    new_value: { snapshot_size: '1.2GB', verification: 'Valid' },
-  },
-  {
-    log_id: 'sys-log-104',
-    timestamp: '2026-07-13 14:22:00',
-    user_name: null,
-    user_role: 'system',
-    agency: 'System',
-    region: 'Region 3',
-    action_type: 'update',
-    action_code: 'AUTO_DISMISS_INCOMPLETE_VERIFICATION',
-    target_table: 'verification_requests',
-    target_id: 'VR-2026-00041',
-    ip_address: '10.0.4.18',
-    user_agent: 'VerificationTimeoutWorker',
-    old_value: { status: 'Pending Intake Verification' },
-    new_value: { status: 'Auto-Dismissed', reason: 'SLA Exceeded' },
-  },
+// Action codes an LEA Personnel account triggers themselves.
+const PERSONNEL_ACTIONS = [
+  'LOGIN', 'LOGOUT', 'LOGIN_FAILED',
+'PERSONNEL_REQUEST_INVITE', 'PERSONNEL_REQUEST_PASSWORD_UPDATE', 'PERSONNEL_SELF_ACTIVATE',
+  'CREATE_COMPLAINT_LOG', 'DELETE_COMPLAINT_LOG', 'UPDATE_COMPLAINT_LOG',
+  'DELETE_VERIFICATION_REQUEST', 'CREATE_VERIFICATION_REQUEST', 'UPDATE_COMPLAINT_STATUS',
 ];
 
-function ActionBadge({ actionType, actionCode }) {
+const SHARED_LOGIN_ACTIONS = ['LOGIN', 'LOGOUT', 'LOGIN_FAILED'];
+
+// Split is purely by who performed the action.
+function getRowTab(row) {
+  return row.user_role === 'lea_admin' ? 'admin' : 'personnel';
+}
+
+const ROLE_LABELS = {
+  lea_admin: 'LEA Admin',
+  lea_personnel: 'LEA Personnel',
+  system: 'System',
+};
+
+function humanizeRole(role) {
+  return ROLE_LABELS[role] || role;
+}
+
+function deriveActionType(action) {
+  if (!action) return 'neutral';
+  if (action.startsWith('DELETE') || action.startsWith('SUSPEND') || action.startsWith('LOCK')) return 'delete';
+  if (action.startsWith('CREATE') || action.startsWith('INVITE') || action.startsWith('APPROVE') || action.startsWith('REACTIVATE') || action.startsWith('UNLOCK') || action.startsWith('PERSONNEL_SELF_ACTIVATE')) return 'create';
+  if (action.startsWith('UPDATE') || action.startsWith('CONVERT')) return 'update';
+  if (SHARED_LOGIN_ACTIONS.includes(action)) return 'login';
+  return 'neutral';
+}
+
+function ActionBadge({ action }) {
+  const actionType = deriveActionType(action);
   const badgeClass =
     actionType === 'create'
       ? 'badge-action-create'
@@ -197,11 +70,24 @@ function ActionBadge({ actionType, actionCode }) {
       ? 'badge-action-delete'
       : 'badge-action-neutral';
 
-  return <span className={badgeClass}>{actionCode || actionType}</span>;
+  return <span className={badgeClass}>{action}</span>;
 }
 
+function formatTimestamp(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString('en-PH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+const ADMIN_TAB_ACTION_OPTIONS = REGIONAL_ADMIN_ACTIONS;
+const PERSONNEL_TAB_ACTION_OPTIONS = PERSONNEL_ACTIONS;
+const SYSTEM_TAB_ACTION_OPTIONS = [
+  'LOCK_PERSONNEL_ACCOUNT', 'LOCK_REGIONAL_ADMIN_ACCOUNT', 'PENDING_REGIONAL_ADMIN_ACCOUNT',
+];
+
 export default function LEAAdminAuditLogs() {
-  const [activeTab, setActiveTab] = useState('LEA'); // Exactly 'LEA' | 'System' (NO FDA!)
+  const [activeTab, setActiveTab] = useState('admin'); // 'admin' | 'personnel' | 'system'
   const [searchQuery, setSearchQuery] = useState('');
   const [actionFilter, setActionFilter] = useState('All');
   const [dateFrom, setDateFrom] = useState('');
@@ -211,20 +97,64 @@ export default function LEAAdminAuditLogs() {
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(8);
 
-  // Active dataset according to tab
-  const rawLogs = activeTab === 'LEA' ? MOCK_LEA_AUDIT_LOGS : MOCK_SYSTEM_AUDIT_LOGS;
+  const [leaRows, setLeaRows] = useState([]);
+  const [systemRows, setSystemRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+
+  const fetchLogs = useCallback(async () => {
+    setLoading(true);
+    setFetchError('');
+    try {
+      const [leaRes, systemRes] = await Promise.all([
+        apiFetch('/admin/audit-logs/lea?limit=500'),
+        apiFetch('/admin/audit-logs/system?limit=500'),
+      ]);
+
+      if (!leaRes.ok) throw new Error('Failed to load LEA audit logs.');
+      if (!systemRes.ok) throw new Error('Failed to load system audit logs.');
+
+      const leaData = await leaRes.json();
+      const systemData = await systemRes.json();
+
+      setLeaRows(leaData.items || []);
+      setSystemRows(systemData.items || []);
+    } catch (err) {
+      setFetchError(err.message || 'Something went wrong.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+
+  const adminRows = leaRows.filter((row) => getRowTab(row) === 'admin');
+  const personnelRows = leaRows.filter((row) => getRowTab(row) === 'personnel');
+  // Backend returns every system action code together, unscoped by agency —
+  // restrict to just the codes that belong on this page's System tab.
+  const scopedSystemRows = systemRows.filter((row) => SYSTEM_TAB_ACTION_OPTIONS.includes(row.action));
+
+  const rawLogs = activeTab === 'admin' ? adminRows : activeTab === 'personnel' ? personnelRows : scopedSystemRows;
+
+  const actionOptions =
+    activeTab === 'admin' ? ADMIN_TAB_ACTION_OPTIONS
+    : activeTab === 'personnel' ? PERSONNEL_TAB_ACTION_OPTIONS
+    : SYSTEM_TAB_ACTION_OPTIONS;
 
   const filteredLogs = rawLogs.filter((log) => {
-    const matchesAction = actionFilter === 'All' ? true : log.action_type === actionFilter;
+    const matchesAction = actionFilter === 'All' ? true : log.action === actionFilter;
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
+      (log.user_email && log.user_email.toLowerCase().includes(q)) ||
       (log.user_name && log.user_name.toLowerCase().includes(q)) ||
-      (log.action_code && log.action_code.toLowerCase().includes(q)) ||
+      (log.target_id && String(log.target_id).toLowerCase().includes(q)) ||
       (log.target_table && log.target_table.toLowerCase().includes(q)) ||
-      (log.target_id && log.target_id.toLowerCase().includes(q));
+      (log.target_reference && log.target_reference.toLowerCase().includes(q));
 
-    const logDate = log.timestamp.split(' ')[0];
+    const logDate = log.timestamp ? log.timestamp.split('T')[0] : '';
     const matchesDateFrom = !dateFrom || logDate >= dateFrom;
     const matchesDateTo = !dateTo || logDate <= dateTo;
 
@@ -238,6 +168,12 @@ export default function LEAAdminAuditLogs() {
   const endIndex = Math.min(startIndex + limit, totalItems);
   const displayedLogs = filteredLogs.slice(startIndex, startIndex + limit);
 
+  function switchTab(tab) {
+    setActiveTab(tab);
+    setCurrentPage(1);
+    setActionFilter('All');
+  }
+
   return (
     <div className="LEAAdminMainContainer">
       <Sidebar sidebarType="LEA_ADMIN" />
@@ -245,7 +181,6 @@ export default function LEAAdminAuditLogs() {
         <TopBar topbarType="LEA_ADMIN" />
         <div className="LEAAdminMainfeed">
           <div className="LEAAdminPageContainer">
-            {/* Header */}
             <div className="LEAAdminPageHeader">
               <div className="LEAAdminPageTitleBlock">
                 <h1 className="LEAAdminPageTitle">
@@ -258,42 +193,45 @@ export default function LEAAdminAuditLogs() {
               </div>
             </div>
 
-            {/* Exactly LEA | System Tabs (NO FDA) */}
+            {fetchError && (
+              <div className="LEAAdminFieldError" style={{ marginBottom: '12px' }}>
+                {fetchError}
+              </div>
+            )}
+
             <div className="LEAAdminAuditTabsRow">
               <div className="LEAAdminAuditTabsWrapper">
                 <button
-                  className={`LEAAdminAuditTabBtn ${activeTab === 'LEA' ? 'active' : ''}`}
-                  onClick={() => {
-                    setActiveTab('LEA');
-                    setCurrentPage(1);
-                    setActionFilter('All');
-                  }}
+                  className={`LEAAdminAuditTabBtn ${activeTab === 'admin' ? 'active' : ''}`}
+                  onClick={() => switchTab('admin')}
                 >
-                  LEA-CIDG Activity
-                  <span className="LEAAdminAuditTabBadge">{MOCK_LEA_AUDIT_LOGS.length}</span>
+                  Regional Admin Activity
+                  <span className="LEAAdminAuditTabBadge">{adminRows.length}</span>
                 </button>
                 <button
-                  className={`LEAAdminAuditTabBtn ${activeTab === 'System' ? 'active' : ''}`}
-                  onClick={() => {
-                    setActiveTab('System');
-                    setCurrentPage(1);
-                    setActionFilter('All');
-                  }}
+                  className={`LEAAdminAuditTabBtn ${activeTab === 'personnel' ? 'active' : ''}`}
+                  onClick={() => switchTab('personnel')}
+                >
+                  Personnel Activity
+                  <span className="LEAAdminAuditTabBadge">{personnelRows.length}</span>
+                </button>
+                <button
+                  className={`LEAAdminAuditTabBtn ${activeTab === 'system' ? 'active' : ''}`}
+                  onClick={() => switchTab('system')}
                 >
                   System Events
-                  <span className="LEAAdminAuditTabBadge">{MOCK_SYSTEM_AUDIT_LOGS.length}</span>
+                  <span className="LEAAdminAuditTabBadge">{scopedSystemRows.length}</span>
                 </button>
               </div>
             </div>
 
-            {/* Filter Bar */}
             <div className="LEAAdminFiltersContainer">
               <div className="LEAAdminSearchGroup">
                 <Search size={16} className="LEAAdminSearchIcon" />
                 <input
                   type="text"
                   className="LEAAdminSearchInput"
-                  placeholder="Search officer, action, target table..."
+                  placeholder="Search by email, name, target ID, table, or reference..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -314,10 +252,9 @@ export default function LEAAdminAuditLogs() {
                     }}
                   >
                     <option value="All">All Actions</option>
-                    <option value="create">Create</option>
-                    <option value="update">Update</option>
-                    <option value="delete">Delete</option>
-                    <option value="login">Login / Session</option>
+                    {actionOptions.map((code) => (
+                      <option key={code} value={code}>{code}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -365,7 +302,6 @@ export default function LEAAdminAuditLogs() {
               </div>
             </div>
 
-            {/* Table */}
             <div className="LEAAdminTableWrapper">
               <table className="LEAAdminTable">
                 <thead>
@@ -380,15 +316,17 @@ export default function LEAAdminAuditLogs() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayedLogs.length > 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="LEAAdminEmpty">Loading audit logs…</td>
+                    </tr>
+                  ) : displayedLogs.length > 0 ? (
                     displayedLogs.map((log) => (
                       <tr key={log.log_id}>
-                        <td style={{ whiteSpace: 'nowrap', fontSize: '12.5px' }}>{log.timestamp}</td>
+                        <td style={{ whiteSpace: 'nowrap', fontSize: '12.5px' }}>{formatTimestamp(log.timestamp)}</td>
                         <td>
-                          <strong>{log.user_name || 'System Worker'}</strong>
-                          {log.user_role && (
-                            <div style={{ fontSize: '11px', color: '#64748b' }}>{log.user_role}</div>
-                          )}
+                          <strong>{log.user_name || log.user_email || 'System Worker'}</strong>
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>{humanizeRole(log.user_role)}</div>
                         </td>
                         <td>
                           <span
@@ -399,15 +337,15 @@ export default function LEAAdminAuditLogs() {
                             {log.agency}
                           </span>
                         </td>
-                        <td>{log.region || '—'}</td>
+                        <td>{log.region_code || '—'}</td>
                         <td>
-                          <ActionBadge actionType={log.action_type} actionCode={log.action_code} />
+                          <ActionBadge action={log.action} />
                         </td>
                         <td style={{ fontFamily: 'monospace', fontSize: '12.5px' }}>
                           {log.target_table}
-                          {log.target_id && (
+                          {log.target_reference && (
                             <span style={{ color: '#94a3b8', marginLeft: '6px' }}>
-                              ({log.target_id})
+                              ({log.target_reference})
                             </span>
                           )}
                         </td>
@@ -432,7 +370,7 @@ export default function LEAAdminAuditLogs() {
                 </tbody>
               </table>
 
-              {totalItems > 0 && (
+              {!loading && totalItems > 0 && (
                 <div className="LEAAdminPaginationWrapper">
                   <span className="LEAAdminPaginationInfo">
                     Showing {startIndex + 1}–{endIndex} of {totalItems} audit logs
@@ -469,7 +407,6 @@ export default function LEAAdminAuditLogs() {
         </div>
       </div>
 
-      {/* Audit Detail Modal */}
       {selectedLog && (
         <div className="LEAAdminModalOverlay">
           <div className="LEAAdminModal" style={{ maxWidth: '580px' }}>
@@ -486,31 +423,50 @@ export default function LEAAdminAuditLogs() {
             <div className="LEAAdminModalBody">
               <div className="LEAAdminSummaryBox">
                 <div className="LEAAdminSummaryRow">
+                  <span className="LEAAdminSummaryLabel">Log ID:</span>
+                  <span className="LEAAdminSummaryValue" style={{ fontFamily: 'monospace' }}>
+                    {selectedLog.log_id}
+                  </span>
+                </div>
+                <div className="LEAAdminSummaryRow">
                   <span className="LEAAdminSummaryLabel">Timestamp:</span>
-                  <span className="LEAAdminSummaryValue">{selectedLog.timestamp}</span>
+                  <span className="LEAAdminSummaryValue">{formatTimestamp(selectedLog.timestamp)}</span>
                 </div>
                 <div className="LEAAdminSummaryRow">
                   <span className="LEAAdminSummaryLabel">Actor:</span>
                   <span className="LEAAdminSummaryValue">
-                    {selectedLog.user_name || 'Automated System Service'} ({selectedLog.user_role || 'System'})
+                    {selectedLog.user_name || selectedLog.user_email || 'Automated System Service'} ({humanizeRole(selectedLog.user_role)})
+                  </span>
+                </div>
+                <div className="LEAAdminSummaryRow">
+                  <span className="LEAAdminSummaryLabel">User ID:</span>
+                  <span className="LEAAdminSummaryValue" style={{ fontFamily: 'monospace' }}>
+                    {selectedLog.user_id || '—'}
+                  </span>
+                </div>
+                <div className="LEAAdminSummaryRow">
+                  <span className="LEAAdminSummaryLabel">Email:</span>
+                  <span className="LEAAdminSummaryValue">
+                    {selectedLog.user_email || '—'}
                   </span>
                 </div>
                 <div className="LEAAdminSummaryRow">
                   <span className="LEAAdminSummaryLabel">Action Code:</span>
                   <span className="LEAAdminSummaryValue">
-                    <ActionBadge
-                      actionType={selectedLog.action_type}
-                      actionCode={selectedLog.action_code}
-                    />
+                    <ActionBadge action={selectedLog.action} />
                   </span>
                 </div>
                 <div className="LEAAdminSummaryRow">
                   <span className="LEAAdminSummaryLabel">Target Table:</span>
-                  <span className="LEAAdminSummaryValue">{selectedLog.target_table}</span>
+                  <span className="LEAAdminSummaryValue">{selectedLog.target_table || '—'}</span>
                 </div>
                 <div className="LEAAdminSummaryRow">
-                  <span className="LEAAdminSummaryLabel">Target ID:</span>
-                  <span className="LEAAdminSummaryValue">{selectedLog.target_id || '—'}</span>
+                  <span className="LEAAdminSummaryLabel">Target Reference:</span>
+                  <span className="LEAAdminSummaryValue">{selectedLog.target_reference || '—'}</span>
+                </div>
+                <div className="LEAAdminSummaryRow">
+                  <span className="LEAAdminSummaryLabel">Record / Target ID:</span>
+                  <span className="LEAAdminSummaryValue" style={{ fontFamily: 'monospace' }}>{selectedLog.target_id || '—'}</span>
                 </div>
                 <div className="LEAAdminSummaryRow">
                   <span className="LEAAdminSummaryLabel">IP Address:</span>
@@ -524,19 +480,10 @@ export default function LEAAdminAuditLogs() {
                 </div>
               </div>
 
-              {/* Payload details */}
               {selectedLog.old_value && (
                 <div className="LEAAdminFormGroup">
                   <label className="LEAAdminLabel">Previous State (Old Value):</label>
-                  <pre
-                    style={{
-                      background: '#f1f5f9',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                      overflowX: 'auto',
-                    }}
-                  >
+                  <pre style={{ background: '#f1f5f9', padding: '10px', borderRadius: '8px', fontSize: '12px', overflowX: 'auto' }}>
                     {JSON.stringify(selectedLog.old_value, null, 2)}
                   </pre>
                 </div>
@@ -545,17 +492,7 @@ export default function LEAAdminAuditLogs() {
               {selectedLog.new_value && (
                 <div className="LEAAdminFormGroup">
                   <label className="LEAAdminLabel">Modified State (New Value):</label>
-                  <pre
-                    style={{
-                      background: '#eff6ff',
-                      border: '1px solid #bfdbfe',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                      overflowX: 'auto',
-                      color: '#1e40af',
-                    }}
-                  >
+                  <pre style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '10px', borderRadius: '8px', fontSize: '12px', overflowX: 'auto', color: '#1e40af' }}>
                     {JSON.stringify(selectedLog.new_value, null, 2)}
                   </pre>
                 </div>

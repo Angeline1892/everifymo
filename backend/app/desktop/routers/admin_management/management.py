@@ -41,19 +41,26 @@ def list_admins(db: Session = Depends(get_db), current_user: User = Depends(get_
         return []
 
     tokens = {
-        t.user_id: t for t in db.query(AccountInvitationToken)
-        .filter(AccountInvitationToken.user_id.in_([a.user_id for a in admins]))
-        .order_by(AccountInvitationToken.created_at.asc()).all()
+    t.user_id: t for t in db.query(AccountInvitationToken)
+    .filter(AccountInvitationToken.user_id.in_([a.user_id for a in admins]))
+    .order_by(AccountInvitationToken.created_at.asc()).all()
     }
     regions = {r.region_id: r.region_name for r in db.query(Region).all()}
+
+    # Look up the role of each admin's creator in one batch query, so the
+    # frontend can gate actions on "was this created by a National Admin"
+    # without needing to know individual National Admin identities.
+    creator_ids = {a.created_by for a in admins if a.created_by}
+    creator_roles = {
+        u.user_id: u.role for u in db.query(User).filter(User.user_id.in_(creator_ids)).all()
+    } if creator_ids else {}
+
     return [
         AccountListItem(
             user_id=a.user_id, first_name=a.first_name, middle_name=a.middle_name,
             last_name=a.last_name, email=a.email,
             agency="FDA" if a.role == Role.FDA_ADMIN else "LEA-CIDG",
             region=regions.get(a.region_id),
-            # --- fix: these were previously omitted, so AccountListItem always
-            # defaulted them to None even though the schema supports them ---
             department=a.department,
             position=a.position,
             employee_id=a.employee_id,
@@ -61,6 +68,9 @@ def list_admins(db: Session = Depends(get_db), current_user: User = Depends(get_
             invitation_date=tokens.get(a.user_id).created_at if tokens.get(a.user_id) else None,
             expiration_date=tokens.get(a.user_id).expires_at if tokens.get(a.user_id) else None,
             status=compute_display_status(a, tokens.get(a.user_id)), is_locked=a.is_locked,
+            is_active=a.is_active,   
+            created_by=str(a.created_by) if a.created_by else None,
+            created_by_is_national_admin=creator_roles.get(a.created_by) == Role.NATIONAL_ADMIN,
         ) for a in admins
     ]
 

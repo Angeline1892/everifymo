@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "E-VERIFY",
+  "name": "ProduCheck",
   "version": "0.0.1",
   "description": "Real-time FDA product verification for Philippine e-commerce platforms.",
 
@@ -34,7 +34,8 @@
     "https://*.shopee.ph/*",
     "https://*.lazada.com.ph/*",
     "https://*.tiktok.com/*",
-    "https://*.facebook.com/marketplace/*"
+    "https://*.facebook.com/marketplace/*",
+    "https://everify.store/*"
   ],
 
   "content_scripts": [
