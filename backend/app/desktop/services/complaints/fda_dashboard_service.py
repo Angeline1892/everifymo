@@ -64,9 +64,9 @@ def get_fda_dashboard_stats(db: Session, current_user) -> FdaDashboardStatsRespo
             category_counts["Cosmetics"] += 1
         elif cat in ["Food", "Supplement"]:
             category_counts["Food"] += 1
-        elif cat == "Pharmaceutical":
+        elif cat in ["Pharmaceutical", "Drugs"]:
             category_counts["Drugs"] += 1
-        elif cat == "Medical Device":
+        elif cat in ["Medical Device", "Med Device", "Devices", "Medical Devices"]:
             category_counts["Med Device"] += 1
 
         # Update takedown bar chart values

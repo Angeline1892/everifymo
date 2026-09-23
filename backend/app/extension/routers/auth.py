@@ -1,4 +1,3 @@
-# backend/app/extension/routers/auth.py
 from datetime import timedelta
 from typing import Annotated
 

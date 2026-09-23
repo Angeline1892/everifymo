@@ -3,16 +3,15 @@ console.log('FDA Checker content script loaded');
 console.log("Hello World from content.js")
 
 const verifyBtn = document.createElement("button");
-verifyBtn.textContent = "Check Product";
+verifyBtn.textContent = "Verify";
 verifyBtn.style.position = "fixed";
 verifyBtn.style.display = "none";
 verifyBtn.style.zIndex = "9999";
 verifyBtn.style.padding = "6px 12px";
-verifyBtn.style.backgroundColor = "#66BB6A";
-verifyBtn.style.color = "#256428";
-verifyBtn.style.border = "1px solid #256428";
-verifyBtn.style.fontWeight = "bold";
-verifyBtn.style.borderRadius = "15px";
+verifyBtn.style.backgroundColor = "black";
+verifyBtn.style.color = "white";
+verifyBtn.style.border = "none";
+verifyBtn.style.borderRadius = "5px";
 verifyBtn.style.cursor = "pointer";
 document.body.appendChild(verifyBtn);
 
@@ -87,8 +86,8 @@ function createModal() {
  
   modal.innerHTML = `
     <header class="mo-header">
-      <img src="${chrome.runtime.getURL('assets/images/extension_icon.png')}" alt="ProduCheck Logo" class="mo-logo" />
-      <h1 class="mo-extension-name">ProduCheck</h1>
+      <img src="${chrome.runtime.getURL('assets/images/extension_icon.png')}" alt="E-Verify Logo" class="mo-logo" />
+      <h1 class="mo-extension-name">E-Verify</h1>
       <button id="mo-close-x" class="mo-close-x" type="button" aria-label="Close">✕</button>
     </header>
     

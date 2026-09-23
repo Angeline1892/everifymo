@@ -150,12 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const btnManualInput = document.getElementById('manual-input-btn');
     if (btnManualInput) {
-      btnManualInput.addEventListener('click', (e) => {
-        if (!isUserLoggedIn()) {
-          e.preventDefault();
-          chrome.tabs.create({ url: chrome.runtime.getURL('pages/auth.html') });
-          return;
-        }
+      btnManualInput.addEventListener('click', () => {
         const errorEl = document.getElementById('manual-input-error');
         const inputEl = document.getElementById('manual-product-name');
         if (errorEl) errorEl.textContent = '';
@@ -336,12 +331,11 @@ function applyAuthView() {
   const userBanner = document.getElementById('home-banner-user');
   const complaintsBtn = document.getElementById('status-btn');
   const historyBtn = document.getElementById('history-btn');
-  const manualInputBtn = document.getElementById('manual-input-btn');
 
   if (guestBanner) guestBanner.classList.toggle('hidden', loggedIn);
   if (userBanner) userBanner.classList.toggle('hidden', !loggedIn);
 
-  [complaintsBtn, historyBtn, manualInputBtn].forEach(btn => {
+  [complaintsBtn, historyBtn].forEach(btn => {
     if (btn) btn.classList.toggle('btn-disabled-guest', !loggedIn);
   });
 

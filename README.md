@@ -1,5 +1,5 @@
-**# ProduCheck**
-ProduCheck is composed of two interconnected systems (browser extension and desktop application).
+**# E-VerifyMo**
+E-VerifyMo is composed of two interconnected systems (browser extension and desktop application).
 
 **System Architecture**
 
