@@ -105,6 +105,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             displayed_title: message.displayedTitle
           })
         });
+        console.log('recordDisplayedDetection response:', message.recordType, message.displayedTitle, response.status);
         if (!response.ok) {
           console.error('recordDisplayedDetection failed:', await response.text());
         }

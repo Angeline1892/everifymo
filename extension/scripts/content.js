@@ -533,6 +533,7 @@ function renderResult(status, productTitle, results = []) {
   const displayedTitle = nameSpan?.textContent?.trim();
 
   if (displayedTitle && displayedRecordType) {
+    console.log('recordDisplayedDetection firing:', displayedRecordType, displayedTitle);
     chrome.runtime.sendMessage({
       action: 'recordDisplayedDetection',
       recordType: displayedRecordType,
