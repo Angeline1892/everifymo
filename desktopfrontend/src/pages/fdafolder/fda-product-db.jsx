@@ -181,6 +181,18 @@ function FDAProductDB() {
   useEffect(() => {
     fetchProducts();
     fetchAdvisories();
+
+    const refreshProducts = () => {
+      fetchProducts();
+      fetchAdvisories();
+    };
+    const refreshInterval = window.setInterval(refreshProducts, 5000);
+    window.addEventListener('focus', refreshProducts);
+
+    return () => {
+      window.clearInterval(refreshInterval);
+      window.removeEventListener('focus', refreshProducts);
+    };
   }, []);
 
   useEffect(() => {

@@ -6,8 +6,9 @@ import './lea-css.css';
 import Sidebar from '../component/sidebar';
 import TopBar from '../component/top-bar';
 import { PenLine, Trash2, Info, Eye, MoreVertical, X, Inbox } from 'lucide-react';
+import { apiFetch } from '../../utils/apiFetch';
 
-const API_BASE = 'https://everify.store';
+
 
 // CHANGED — checks real backend values now ("draft"/"incomplete",
 // lowercase), not the old mock-data capitalized strings
@@ -24,6 +25,7 @@ function GetDraftTypeLabel(draftType) {
     if (draftType === 'verification') return 'Verification Request';
     return draftType;
 }
+
 
 function LeaSavedDraft() {
     const navigate = useNavigate();
@@ -53,14 +55,11 @@ function LeaSavedDraft() {
 
     // ADDED — fetches the real combined drafts list on page load
     useEffect(() => {
-        const token = localStorage.getItem('access_token');
         setLoading(true);
 
-        fetch(`${API_BASE}/drafts/`, {
-            headers: { authorization: `Bearer ${token}` },
-        })
+        apiFetch(`/drafts/`)
             .then((res) => res.json())
-            .then((data) => setDrafts(data))
+            .then((data) => setDrafts(Array.isArray(data) ? data : []))
             .catch(() => showToast('Could not load drafts.'))
             .finally(() => setLoading(false));
     }, []);
@@ -90,16 +89,12 @@ function LeaSavedDraft() {
     const handleConfirmDelete = async () => {
         if (!draftToDelete) return;
 
-        const token = localStorage.getItem('access_token');
         const endpoint = draftToDelete.draft_type === 'walkin'
-            ? `${API_BASE}/drafts/walkin/${draftToDelete.draft_id}`
-            : `${API_BASE}/drafts/verification/${draftToDelete.draft_id}`;
+            ? `/drafts/walkin/${draftToDelete.draft_id}`
+            : `/drafts/verification/${draftToDelete.draft_id}`;
 
         try {
-            const res = await fetch(endpoint, {
-                method: 'DELETE',
-                headers: { authorization: `Bearer ${token}` },
-            });
+            const res = await apiFetch(endpoint, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed to delete draft.');
 
             setDrafts(drafts.filter((d) => d.draft_id !== draftToDelete.draft_id));
@@ -110,7 +105,7 @@ function LeaSavedDraft() {
             setShowDeleteModal(false);
             setDraftToDelete(null);
         }
-    };
+        };
 
     const showToast = (msg) => {
         setToastMessage(msg);

@@ -78,6 +78,7 @@ from app.desktop.routers.verification.verification_response import fda_response_
 
 #for verification history in extension
 from app.extension.routers import verification
+from app.extension.routers.marketplace_detection import router as marketplace_detection_router
 
 #for update status in desktop
 from app.desktop.routers.complaints import complaint_status
@@ -168,5 +169,6 @@ app.include_router(workspace_location_router)
 #app.include_router(retrieval_router)
 
 app.include_router(verification.router)
+app.include_router(marketplace_detection_router)
 
 app.include_router(complaint_status.router)
