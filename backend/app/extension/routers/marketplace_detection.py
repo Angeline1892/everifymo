@@ -2,7 +2,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import func, text
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database.sessions import get_db
@@ -24,6 +24,10 @@ class DisplayedDetection(BaseModel):
 router = APIRouter()
 
 
+def _normalize_title(value: str) -> str:
+    return " ".join(value.split()).casefold()
+
+
 @router.post("/marketplace-detections")
 def increment_displayed_detection(
     detection: DisplayedDetection,
@@ -33,30 +37,37 @@ def increment_displayed_detection(
     title = detection.displayed_title.strip()
     if not title:
         raise HTTPException(status_code=400, detail="displayed_title is required")
+    normalized_title = _normalize_title(title)
 
     if detection.record_type == "registered":
-        normalized_title = func.lower(RegisteredProduct.product_name)
-        record = db.query(RegisteredProduct).filter(
-            normalized_title == title.lower(),
+        records = db.query(RegisteredProduct).filter(
             RegisteredProduct.deleted_at.is_(None),
-        ).first()
+        ).all()
+        exact_matches = [
+            item for item in records
+            if item.product_name and _normalize_title(item.product_name) == normalized_title
+        ]
+        record = exact_matches[0] if exact_matches else None
         if record is None:
-            records = db.query(RegisteredProduct).filter(
-                RegisteredProduct.deleted_at.is_(None),
-            ).all()
             matches = [
                 item for item in records
-                if item.product_name and item.product_name.strip().lower() in title.lower()
+                if item.product_name and _normalize_title(item.product_name) in normalized_title
             ]
             record = max(matches, key=lambda item: len(item.product_name), default=None)
         if record is None:
             raise HTTPException(status_code=404, detail="Displayed registered record not found")
         incremented = increment_registered_detection(db, record.product_id)
     else:
-        record = db.query(UnregisteredAdvisory).filter(
-            func.lower(UnregisteredAdvisory.product_name) == title.lower(),
+        records = db.query(UnregisteredAdvisory).filter(
             UnregisteredAdvisory.deleted_at.is_(None),
-        ).first()
+        ).all()
+        record = next(
+            (
+                item for item in records
+                if item.product_name and _normalize_title(item.product_name) == normalized_title
+            ),
+            None,
+        )
         if record is None:
             raise HTTPException(status_code=404, detail="Displayed unregistered record not found")
         incremented = increment_unregistered_detection(db, record.advisory_id)
