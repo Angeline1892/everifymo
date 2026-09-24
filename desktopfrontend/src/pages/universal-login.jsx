@@ -934,17 +934,18 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
   }
 
   useEffect(() => {
-    const key = rememberedEmailKey(personnelAgency);
-    if (!key) return;
-    const savedEmail = localStorage.getItem(key);
-    if (savedEmail) {
-      setPersonnelEmail(savedEmail);
-      setPersonnelRememberMe(true);
-    } else {
-      setPersonnelEmail('');
-      setPersonnelRememberMe(false);
-    }
-  }, [personnelAgency]);
+  const key = rememberedEmailKey(personnelAgency);
+  if (!key) return;
+
+  const savedEmail = localStorage.getItem(key);
+
+  if (savedEmail && !personnelEmail.trim()) {
+    setPersonnelEmail(savedEmail);
+    setPersonnelRememberMe(true);
+  } else if (!savedEmail) {
+    setPersonnelRememberMe(false);
+  }
+}, [personnelAgency]);
 
   const [personnelIsOtpSent, setPersonnelIsOtpSent] = useState(false);
   const [personnelOtp, setPersonnelOtp] = useState(new Array(6).fill(''));
@@ -1059,10 +1060,14 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
     if (personnelErrors.password) setPersonnelErrors((prev) => ({ ...prev, password: '' }));
   }
 
-  function handlePersonnelAgencyChange(value) {
-    setPersonnelAgency(value);
-    if (personnelErrors.agency) setPersonnelErrors((prev) => ({ ...prev, agency: '' }));
+ function handlePersonnelAgencyChange(value) {
+  setPersonnelAgency(value);
+  setPersonnelPassword('');
+
+  if (personnelErrors.agency) {
+    setPersonnelErrors((prev) => ({ ...prev, agency: '' }));
   }
+}
 
   async function handlePersonnelLoginSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
@@ -1816,6 +1821,27 @@ function InteragencyAdminLoginForm({ navigate, onOtpStateChange }) {
   const [loginError, setLoginError] = useState('');       // NEW: banner error for the credentials step
   const [lockoutSeconds, setLockoutSeconds] = useState(0); // NEW: for the 429 throttled-login case
 
+ 
+  const [rememberMe, setRememberMe] = useState(false);
+
+  function rememberedEmailKey(forAgency) {
+    return forAgency ? `remembered_email_admin_${forAgency}` : null;
+  }
+
+  useEffect(() => {
+  const key = rememberedEmailKey(agency);
+  if (!key) return;
+
+  const savedEmail = localStorage.getItem(key);
+
+  if (savedEmail && !email.trim()) {
+    setEmail(savedEmail);
+    setRememberMe(true);
+  } else if (!savedEmail) {
+    setRememberMe(false);
+  }
+}, [agency]);
+
   // OTP state
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [otp, setOtp] = useState(new Array(6).fill(''));
@@ -1852,10 +1878,14 @@ function InteragencyAdminLoginForm({ navigate, onOtpStateChange }) {
     return () => clearInterval(interval);
   }, [lockoutSeconds]);
 
-  function handleAgencyChange(value) {
-    setAgency(value);
-    if (errors.agency) setErrors((prev) => ({ ...prev, agency: '' }));
+function handleAgencyChange(value) {
+  setAgency(value);
+  setPassword('');
+
+  if (errors.agency) {
+    setErrors((prev) => ({ ...prev, agency: '' }));
   }
+}
 
   function handleEmailChange(e) {
     const val = e.target.value;
@@ -1907,6 +1937,13 @@ function InteragencyAdminLoginForm({ navigate, onOtpStateChange }) {
         }
         setLockoutSeconds(0);
         throw new Error(errorData.detail || 'Invalid email or password.');
+      }
+
+      // Save or clear the remembered email for this agency
+      const key = rememberedEmailKey(agency);
+      if (key) {
+        if (rememberMe) localStorage.setItem(key, email.trim());
+        else localStorage.removeItem(key);
       }
 
       // Success: backend sent the OTP email, move to the OTP screen
@@ -2141,12 +2178,20 @@ function InteragencyAdminLoginForm({ navigate, onOtpStateChange }) {
             )}
           </div>
 
-         {/* Forgot-password link — was completely missing before */}
+        {/* Remember my email + Forgot-password link */}
         <div className="universal-login-admin-remember-row">
+          <label htmlFor="universal-login-interagency-remember-me">
+            <input
+              type="checkbox"
+              id="universal-login-interagency-remember-me"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+            />
+            Remember my email
+          </label>
           <a
             onClick={() => navigate('/forgot-password?from=interagency-admin')}
             className="universal-login-forgot-password-link"
-            style={{ marginLeft: 'auto' }}
           >
             Forgot password?
           </a>
