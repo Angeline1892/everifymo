@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import ProduCheckLogo from '../../images/producheck_logo.png';
 
 /**
  * FDA Product Database Conversion Email Template
@@ -180,17 +179,8 @@ const ConvertedEmailTemplate = (props) => {
           .EmailHeader {
             background: linear-gradient(135deg, #1E293B 0%, #0f172a 100%);
             padding: 32px 24px;
-            text-align: left;
+            text-align: center;
             border-bottom: 4px solid #0D9488;
-          }
-          .EmailHeaderLogo {
-            display: block;
-            width: 48px;
-            height: 48px;
-            border-radius: 10px;
-            background-color: #ffffff;
-            margin: 0;
-            object-fit: contain;
           }
           .EmailSystemName {
             color: #0D9488;
@@ -200,7 +190,6 @@ const ConvertedEmailTemplate = (props) => {
             letter-spacing: 3px;
             text-transform: uppercase;
             margin: 0 0 6px;
-            text-align: left;
           }
           .EmailHeaderTitle {
             color: #ffffff;
@@ -209,14 +198,12 @@ const ConvertedEmailTemplate = (props) => {
             font-weight: 700;
             margin: 0;
             letter-spacing: 0.3px;
-            text-align: left;
           }
           .EmailHeaderSub {
             color: #94a3b8;
             font-size: 11.5px;
             margin: 6px 0 0;
             letter-spacing: 0.5px;
-            text-align: left;
           }
 
           /* Content */
@@ -481,57 +468,12 @@ const ConvertedEmailTemplate = (props) => {
             {/* ── HEADER ── */}
             <tbody>
               <tr>
-                <td className="EmailHeader" align="left" style={{ textAlign: 'left' }}>
-                  <table
-                    role="presentation"
-                    border="0"
-                    cellPadding="0"
-                    cellSpacing="0"
-                    style={{ width: '100%', borderCollapse: 'collapse' }}
-                  >
-                    <tbody>
-                      <tr>
-                        {/* Logo cell on the left, vertically centered */}
-                        <td
-                          style={{
-                            width: '48px',
-                            verticalAlign: 'middle',
-                            paddingRight: '18px',
-                          }}
-                        >
-                          <img
-                            src={ProduCheckLogo}
-                            alt="ProduCheck Logo"
-                            width="48"
-                            height="48"
-                            className="EmailHeaderLogo"
-                            style={{
-                              display: 'block',
-                              width: '48px',
-                              height: '48px',
-                              borderRadius: '10px',
-                              backgroundColor: '#ffffff',
-                              objectFit: 'contain',
-                              border: '0',
-                            }}
-                          />
-                        </td>
-
-                        {/* Header text cell on the right, left-aligned, vertically centered */}
-                        <td style={{ verticalAlign: 'middle', textAlign: 'left' }}>
-                          <p className="EmailSystemName" style={{ textAlign: 'left', margin: '0 0 4px 0' }}>
-                            ICMDA
-                          </p>
-                          <h2 className="EmailHeaderTitle" style={{ textAlign: 'left', margin: '0' }}>
-                            Interagency Complaint Management Desktop Application
-                          </h2>
-                          <p className="EmailHeaderSub" style={{ textAlign: 'left', margin: '4px 0 0 0' }}>
-                            Product Classification Update
-                          </p>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <td className="EmailHeader">
+                  <p className="EmailSystemName">ICMDA</p>
+                  <h2 className="EmailHeaderTitle">
+                    Interagency Complaint Management Desktop Application
+                  </h2>
+                  <p className="EmailHeaderSub">Product Classification Update</p>
                 </td>
               </tr>
 

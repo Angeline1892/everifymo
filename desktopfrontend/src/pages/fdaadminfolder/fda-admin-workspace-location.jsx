@@ -65,8 +65,9 @@ function formatDateTime(dateVal) {
 }
 
 export default function FDAAdminWorkspaceLocation() {
-  const [locationData, setLocationData] = useState(null);
-  const [isLoadingLocation, setIsLoadingLocation] = useState(true);
+  // 🔌 BACKEND: GET /workspace-location on page load
+  // Initialize locationData from backend API once implemented.
+  const [locationData, setLocationData] = useState(INITIAL_WORKSPACE_LOCATION);
 
   // Profile data for dynamic agency/region/admin name
   const [profile, setProfile] = useState(null);
@@ -106,28 +107,9 @@ export default function FDAAdminWorkspaceLocation() {
     }
   }, []);
 
-  // Fetch workspace location from backend
-  const fetchWorkspaceLocation = useCallback(async () => {
-    setIsLoadingLocation(true);
-    try {
-      const res = await apiFetch('/workspace-location');
-      if (res.ok) {
-        const data = await res.json();
-        setLocationData(data);
-      } else if (res.status === 404) {
-        setLocationData(null);
-      }
-    } catch (err) {
-      console.warn('Could not fetch workspace location:', err);
-    } finally {
-      setIsLoadingLocation(false);
-    }
-  }, []);
-
   useEffect(() => {
     fetchProfile();
-    fetchWorkspaceLocation();
-  }, [fetchProfile, fetchWorkspaceLocation]);
+  }, [fetchProfile]);
 
   const isConfigured = Boolean(
     locationData &&
@@ -281,41 +263,30 @@ export default function FDAAdminWorkspaceLocation() {
     setConfirmData(null);
   };
 
-  const handleConfirmSave = async () => {
+  const handleConfirmSave = () => {
     if (!confirmData || isSaving) return;
     setIsSaving(true);
 
-    try {
-      const res = await apiFetch('/workspace-location', {
-        method: 'POST',
-        body: JSON.stringify({
-          latitude: confirmData.latitude,
-          longitude: confirmData.longitude,
-          radius_meters: confirmData.radius_meters,
-        }),
-      });
+    // 🔌 BACKEND: PUT/POST /workspace-location
+    // The backend must set updated_at and updated_by from the authenticated admin and server time.
+    setLocationData({
+      agency: locationData?.agency || profile?.agency || 'FDA',
+      region: locationData?.region || profile?.region || 'Region III',
+      latitude: confirmData.latitude,
+      longitude: confirmData.longitude,
+      radius_meters: confirmData.radius_meters,
+      updated_at: new Date().toISOString(),
+      updated_by: formatAdminDisplayName(profile),
+    });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || 'Failed to save workspace location.');
-      }
+    const source = confirmData.source;
+    setConfirmData(null);
+    setIsSaving(false);
 
-      const saved = await res.json();
-      setLocationData(saved);
-
-      const source = confirmData.source;
-      setConfirmData(null);
-
-      if (source === 'modal') {
-        handleCloseModal();
-      }
-      showToast('Workspace location saved successfully.');
-    } catch (err) {
-      console.error('Save workspace location error:', err);
-      showToast(err.message || 'Error saving workspace location.');
-    } finally {
-      setIsSaving(false);
+    if (source === 'modal') {
+      handleCloseModal();
     }
+    showToast('Workspace location saved successfully.');
   };
 
   return (
