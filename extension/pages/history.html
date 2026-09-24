@@ -1,0 +1,60 @@
+<!-- History -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-VERIFY | History</title>
+    <link rel="stylesheet" href="../css/global.css">
+</head>
+<body>
+    <main class="history-card">
+        <div id="header-slot"></div>
+        <div id="overlay-slot"></div>
+        
+        <div id="blur-target">
+            <div id="nav-slot"></div>
+            <div id="page-content">
+                <div id="history-empty-view" class="history-view hidden">
+                    <div class="notice-banner">
+                        <img class="notice-icon" src="../assets/images/clock_icon.png" alt="History Icon" />
+                        <div class="notice-text-container">
+                        <p class="notice-title">History</p>
+                        <p class="notice-text" id="history-empty-text-main">History page is currently empty.</p>
+                        </div>
+                    </div>
+                    </div>
+
+                    <div id="history-populated-view" class="history-view hidden">
+                    <div class="notice-banner">
+                        <img class="notice-icon" src="../assets/images/clock_icon.png" alt="History Icon" />
+                        <div class="notice-text-container">
+                        <p class="notice-title">History</p>
+                        <p class="notice-text">You can view your Complaints and Verification History below.</p>
+                        </div>
+                    </div>
+
+                    <div class="history-tabs">
+                        <button id="tab-complaints" class="history-tab active" data-tab="complaints">Complaints History</button>
+                        <button id="tab-verification" class="history-tab" data-tab="verification">Verification History</button>
+                    </div>
+
+                    <div class="history-list-header">
+                        <span id="resolved-counter" class="resolved-counter"></span>
+                    </div>
+
+                    <div id="history-list"></div>
+                </div>
+            </div>
+        </div>
+   
+    </main>
+
+    <script type="module" src="../utils/api.js"></script>
+    <script type="module" src="../scripts/session.js"></script>
+    <script type="module" src="../js/partial-loader.js"></script>
+    <script type="module" src="../js/header.js"></script>
+    <script type="module" src="../js/nav.js"></script>
+    <script type="module" src="../js/history.js"></script>
+</body>
+</html>

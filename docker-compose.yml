@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  nlp:
+    build: .
+    ports:
+      - "8001:8001"
+    volumes:
+      - /etc/dokploy/data/everifymo/datasets:/everifymo/backend/nlp/datasets
+      - /etc/dokploy/data/everifymo/assets:/everifymo/backend/nlp/assets
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      MIGRATIONS_DATABASE_URL: ${MIGRATIONS_DATABASE_URL}
+      MAIL_EXTENSION_USERNAME: ${MAIL_EXTENSION_USERNAME}
+      MAIL_EXTENSION_PASSWORD: ${MAIL_EXTENSION_PASSWORD}
+      MAIL_EXTENSION_FROM: ${MAIL_EXTENSION_FROM}
+      MAIL_EXTENSION_FROM_NAME: ${MAIL_EXTENSION_FROM_NAME}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+    networks:
+      - dokploy-network
+      - default
+
+  postgres:
+    image: postgres:17
+    container_name: everify_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - /etc/dokploy/data/everifymo/postgres:/var/lib/postgresql/data
+    networks:
+      - default
+      
+networks:
+  dokploy-network:
+    external: true
+  default:
+

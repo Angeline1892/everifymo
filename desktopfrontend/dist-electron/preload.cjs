@@ -1,0 +1,1 @@
+var{contextBridge:e,ipcRenderer:t}=require("electron");e.exposeInMainWorld(`electronAPI`,{onDeepLinkToken:e=>{let n=(t,n)=>e(n);return t.on(`deep-link-token`,n),()=>t.removeListener(`deep-link-token`,n)}});
