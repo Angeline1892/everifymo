@@ -20,7 +20,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       try {
         const { access_token } = await chrome.storage.local.get(['access_token']);
 
-        const response = await fetch('http://localhost:8001/verify', {
+        const response = await fetch('https://everify.store/verify', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -49,7 +49,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         
         sendResponse({ status: 'success', data: data });
 
-        const res = await fetch('http://localhost:8001/submitVerification', {
+        const res = await fetch('https://everify.store/submitVerification', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -90,12 +90,38 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.action === 'recordDisplayedDetection') {
+    (async () => {
+      try {
+        if (!['registered', 'unregistered'].includes(message.recordType) || !message.displayedTitle) {
+          return;
+        }
+
+        const response = await fetch('https://everify.store/marketplace-detections', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            record_type: message.recordType,
+            displayed_title: message.displayedTitle
+          })
+        });
+        console.log('recordDisplayedDetection response:', message.recordType, message.displayedTitle, response.status);
+        if (!response.ok) {
+          console.error('recordDisplayedDetection failed:', await response.text());
+        }
+      } catch (error) {
+        console.error('Error recording displayed detection:', error);
+      }
+    })();
+    return true;
+  }
+
   if (message.action === 'submitComplaint') {
     (async () => {
       try {
         const { access_token } = await chrome.storage.local.get(['access_token']);
 
-        const res = await fetch('http://localhost:8001/submitComplaint', {
+        const res = await fetch('https://everify.store/submitComplaint', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

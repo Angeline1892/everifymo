@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react' // ADDED useEffect: runs code on pag
 import { useLocation, useNavigate } from 'react-router-dom' // ADDED: read nav data + redirect
 
 // ADDED — backend URL in one place, so it's easy to update later
-const API_BASE = 'http://127.0.0.1:8000'
+const API_BASE = 'https://everify.store';
 
 function LeaNewIntake() {
   const location = useLocation()  // ADDED

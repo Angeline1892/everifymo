@@ -21,7 +21,7 @@ function createWindow() {
   })
 
   // Open DevTools
-  //mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
 
   // Stash the token here if it arrives before React has finished loading and
   // listening — we'll deliver it below, once did-finish-load confirms React is ready.
@@ -35,7 +35,7 @@ function createWindow() {
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../../dist/index.html'))
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 }
 
