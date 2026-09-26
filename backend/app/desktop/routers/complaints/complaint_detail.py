@@ -245,6 +245,7 @@ def list_complaints_awaiting_request(
     Complaint.status == "open",
     Complaint.region_id == current_user.region_id,
     Complaint.deleted_at.is_(None),   # ADD — exclude soft-deleted complaints
+    Complaint.source == "walk_in", # ADDED — this list is walk-in only; without this filter, browser-extension complaints with status "open" also show up here
     ).order_by(Complaint.created_at.desc()).all()
 
     return complaints

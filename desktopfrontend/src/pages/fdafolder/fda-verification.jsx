@@ -175,7 +175,7 @@ const dummyCompletedRequests = [
     productName: 'AstraMed Pain Relief Patch 5s',
     manufacturer: 'Astra Therapeutics Inc.',
     complainant: 'Agent E. Gomez (LEA-CIDG)',
-    category: 'Medical Devices',
+    category: 'Health Devices',
     dateLogged: '2026-05-08 01:10 PM',
     dateReceived: '2026-05-08 01:25 PM',
     dateCompleted: '2026-05-10 11:00 AM',
@@ -1944,7 +1944,7 @@ function FDAVerification() {
                         <option value="">All Categories</option>
                         <option value="Cosmetics">Cosmetics</option>
                         <option value="Food">Food</option>
-                        <option value="Devices">Medical Devices</option>
+                        <option value="Devices">Devices</option>
                         <option value="Drugs">Drugs</option>
                       </select>
                     </div>
@@ -2189,7 +2189,7 @@ function FDAVerification() {
                         <option value="All">All Categories</option>
                         <option value="Cosmetics">Cosmetics</option>
                         <option value="Food">Food</option>
-                        <option value="Devices">Medical Devices</option>
+                        <option value="Devices">Devices</option>
                         <option value="Drugs">Drugs</option>
                       </select>
                     </div>
