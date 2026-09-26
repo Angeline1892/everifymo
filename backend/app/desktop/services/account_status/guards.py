@@ -1,10 +1,13 @@
 # backend/app/desktop/services/account_status/guards.py
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
 
 from app.models.users import User
+from app.models.audit_logs import AuditLog
 from app.core.constants import Role, AuditAction
+from app.core.audit import write_audit_log, get_user_region_code
 
 
 def agency_of(role: str) -> str | None:
@@ -127,3 +130,52 @@ def get_agency_admins_for(db: Session, target: User) -> list[User]:
         .all()
     )
     return [u for u in candidates if agency_of(u.role) == target_agency]
+
+
+def _expired_invitation_action_for_role(role: str) -> str:
+    if role == Role.NATIONAL_ADMIN:
+        return AuditAction.INVITATION_EXPIRED_NATIONAL_ADMIN
+    if role in Role.ADMIN_ROLES:
+        return AuditAction.INVITATION_EXPIRED_REGIONAL_ADMIN
+    return AuditAction.INVITATION_EXPIRED_PERSONNEL
+
+
+def log_expired_invitation_if_needed(db: Session, target: User, latest_token, request=None):
+    """Writes an INVITATION_EXPIRED_* audit row the first time an admin views
+    a list containing an invite that expired with no response — same expiry
+    check compute_display_status already runs to show the "Link Expired"
+    badge, just also logging it once. Dedups by checking audit_logs directly
+    (action + target_id) rather than adding a new column, so this needs no
+    migration.
+    """
+    if not latest_token or latest_token.used_at is not None:
+        return
+
+    expires_at = latest_token.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at >= datetime.now(timezone.utc):
+        return
+
+    action = _expired_invitation_action_for_role(target.role)
+
+    already_logged = (
+        db.query(AuditLog)
+        .filter(AuditLog.action == action, AuditLog.target_id == target.user_id)
+        .first()
+    )
+    if already_logged:
+        return
+
+    write_audit_log(
+        db,
+        user=target,
+        action=action,
+        target_table="users",
+        target_id=target.user_id,
+        target_reference=target.email,
+        old_value={"status": "invited"},
+        new_value={"status": "expired"},
+        request=request,
+        region_code=get_user_region_code(db, target) if target.region_id else None,
+    )

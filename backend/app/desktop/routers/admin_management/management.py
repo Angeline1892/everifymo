@@ -21,7 +21,7 @@ from app.desktop.services.account_status import (
 from app.desktop.services.admin_notifications import admin_notification_service as notification_service
 from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
 
-from app.desktop.services.account_status.guards import agency_of, assert_employee_id_available
+from app.desktop.services.account_status.guards import agency_of, assert_employee_id_available, log_expired_invitation_if_needed
 
 router = APIRouter(prefix="/admin-management", tags=["admin-management"])
 
@@ -32,7 +32,7 @@ def _region_name(db: Session, region_id) -> str | None:
 
 
 @router.get("", response_model=list[AccountListItem])
-def list_admins(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_or_national_admin)):
+def list_admins(http_request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_or_national_admin)):
     query = db.query(User).filter(User.role.in_(Role.ADMIN_ROLES))
     if current_user.role != Role.NATIONAL_ADMIN:
         query = query.filter(User.role == current_user.role, User.region_id == current_user.region_id)
@@ -45,6 +45,9 @@ def list_admins(db: Session = Depends(get_db), current_user: User = Depends(get_
     .filter(AccountInvitationToken.user_id.in_([a.user_id for a in admins]))
     .order_by(AccountInvitationToken.created_at.asc()).all()
     }
+    for a in admins:
+        log_expired_invitation_if_needed(db, a, tokens.get(a.user_id), request=http_request)
+
     regions = {r.region_id: r.region_name for r in db.query(Region).all()}
 
     # Look up the role of each admin's creator in one batch query, so the
