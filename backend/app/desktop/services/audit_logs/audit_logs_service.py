@@ -1,6 +1,6 @@
 # backend/app/desktop/services/audit_logs/audit_logs_service.py
-from sqlalchemy.orm import Session
-from sqlalchemy import select, func, or_
+from sqlalchemy.orm import Session, aliased
+from sqlalchemy import select, func, or_, and_
 
 from app.models.audit_logs import AuditLog
 from app.models.users import User
@@ -128,6 +128,7 @@ def get_national_admin_audit_logs(
                 AuditLog.action.in_(SHARED_WITH_REGIONAL_ADMIN_TAB),
             )
         )
+        .where(AuditLog.action.notin_(SYSTEM_ACTION_CODES))
     )
 
     if action:
@@ -174,6 +175,83 @@ SYSTEM_ACTION_CODES = [
     "INVITATION_EXPIRED_REGIONAL_ADMIN",
     "INVITATION_EXPIRED_PERSONNEL",
 ]
+
+# National-Admin-only system events (excludes INVITATION_EXPIRED_REGIONAL_ADMIN
+# and INVITATION_EXPIRED_PERSONNEL, which belong to FDA/LEA's own System tabs
+# instead — see get_national_admin_system_audit_logs below for how a Regional
+# Admin's expired invite still surfaces here, but only when National Admin
+# was the one who invited them).
+NATIONAL_ADMIN_SYSTEM_ACTIONS = (
+    "LOCK_NATIONAL_ADMIN_ACCOUNT",
+    "PENDING_NATIONAL_ADMIN_ACCOUNT",
+    "INVITATION_EXPIRED_NATIONAL_ADMIN",
+)
+
+
+def get_national_admin_system_audit_logs(
+    db: Session,
+    page: int,
+    limit: int,
+    action: str | None = None,
+    date_from=None,
+    date_to=None,
+    search: str | None = None,
+):
+    """National Admin's own System tab: their own system events, PLUS
+    INVITATION_EXPIRED_REGIONAL_ADMIN rows — but ONLY for Regional Admin
+    accounts that a National Admin (not a fellow Regional Admin) originally
+    invited, mirroring the same ownership rule assert_same_agency_and_region
+    already enforces for managing those accounts. The row's own user_role is
+    the target's real role (fda_admin/lea_admin), so it comes back correctly
+    agency-tagged by derive_agency() in the router, same as any other row.
+    """
+    Creator = aliased(User)
+
+    query = (
+        select(AuditLog, User)
+        .outerjoin(User, AuditLog.user_id == User.user_id)
+        .outerjoin(Creator, User.created_by == Creator.user_id)
+        .where(
+            or_(
+                and_(
+                    AuditLog.user_role == "national_admin",
+                    AuditLog.action.in_(NATIONAL_ADMIN_SYSTEM_ACTIONS),
+                ),
+                and_(
+                    AuditLog.action == "INVITATION_EXPIRED_REGIONAL_ADMIN",
+                    Creator.role == "national_admin",
+                ),
+            )
+        )
+    )
+
+    if action:
+        query = query.where(AuditLog.action == action)
+    if date_from:
+        query = query.where(AuditLog.performed_at >= date_from)
+    if date_to:
+        query = query.where(AuditLog.performed_at <= date_to)
+    if search:
+        like = f"%{search}%"
+        full_name = User.first_name.concat(" ").concat(User.last_name)
+        query = query.where(
+            AuditLog.target_reference.ilike(like)
+            | AuditLog.target_table.ilike(like)
+            | cast(AuditLog.target_id, String).ilike(like)
+            | User.first_name.ilike(like)
+            | User.last_name.ilike(like)
+            | User.email.ilike(like)
+            | full_name.ilike(like)
+        )
+
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    rows = db.execute(
+        query.order_by(AuditLog.performed_at.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
+    ).all()
+
+    return rows, total
 
 
 def get_system_audit_logs(
