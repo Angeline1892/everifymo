@@ -668,9 +668,9 @@
   line-height: 1;
 }
 
-#everifymo-modal #state-unregistered .match-score-best-red .match-percent-red { color: #B22222; }
-#everifymo-modal #state-unregistered .match-score-high-red .match-percent-red { color: #D32F2F; }
-#everifymo-modal #state-unregistered .match-score-partial-red .match-percent-red { color: #EF5350; }
+#everifymo-modal #state-unregistered .match-score-best-red .match-percent-red { color: #374151; }
+#everifymo-modal #state-unregistered .match-score-high-red .match-percent-red { color: #6B7280; }
+#everifymo-modal #state-unregistered .match-score-partial-red .match-percent-red { color: #9CA3AF; }
 
 /* STATE ACTION BUTTONS (all three states) */
 #everifymo-modal #state-unregistered .action-buttons-red,
