@@ -136,7 +136,7 @@ async function renderHistoryPage() {
   const isGuest = typeof isUserLoggedIn === 'function' ? !isUserLoggedIn() : false;
 
   if (isGuest) {
-    if (emptyText) emptyText.textContent = 'No contents to show. Sign in/up for tracking.';
+    if (emptyText) emptyText.innerHTML = 'No contents to show. <a href="auth.html" class="guest-notice-link">Sign in/up</a> for tracking.';
     if (emptyView) emptyView.classList.remove('hidden');
     if (populatedView) populatedView.classList.add('hidden');
     return;

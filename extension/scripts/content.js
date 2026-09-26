@@ -1,4 +1,4 @@
-//content.js
+//extension/scripts/content.js
 console.log('FDA Checker content script loaded');
 console.log("Hello World from content.js")
 
@@ -115,7 +115,7 @@ function createModal() {
       <!-- ui top matches result -->
         <div class="top-matches">
           <div class="top-matches-title">Top Matches</div>
-          <div class="top-matches-subtitle">Closest registered products to the detected listing.</div>
+          <div class="top-matches-subtitle">Registered products similar to the detected listing.</div>
             <div class="match-legend">
             <div class="legend-item">
               <span class="legend-dot dot-best"></span>
@@ -226,7 +226,7 @@ function createModal() {
  
         <div class="top-matches-red">
           <div class="top-matches-title-red">Top Matches</div>
-          <div class="top-matches-subtitle-red">Closest UNREGISTERED products to the detected listing.</div>
+          <div class="top-matches-subtitle-red">Registered alternatives you may consider instead.</div>
           <div class="match-legend-red">
             <div class="legend-item-red">
               <span class="legend-dot-red dot-best-red"></span>
@@ -462,6 +462,9 @@ function createModal() {
         console.log('submitComplaint response:', response);
         if (response?.success) {
           showState('state-report-success');
+          // Clear the detected-product state so report-complaint.html doesn't
+          // re-populate this already-submitted product on its next load
+          chrome.storage.local.remove(['productTitle', 'productUrl', 'productStatus']);
         } else {
           document.getElementById('report-error-message').textContent = response?.error || 'Failed to submit report. Please try again.';
           showState('state-report-error');

@@ -1,3 +1,4 @@
+<!-- backend/app/extension/services/templates/otp_email.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,11 +21,11 @@
                 <tr>
                   <td style="vertical-align:middle; padding-right:10px;">
                     <img src="cid:extension_logo"
-                         width="36" height="36" alt="E-Verify Logo"
+                         width="36" height="36" alt="ProduCheck Logo"
                          style="display:block; border-radius:50%;" />
                   </td>
-                  <td style="vertical-align:middle; font-size:22px; font-weight:700; color:#030303; font-family: 'Segoe UI', Arial, sans-serif;">
-                    E-Verify
+                  <td style="vertical-align:middle; font-size:22px; font-weight:700; color:#2E7D32; font-family: 'Segoe UI', Arial, sans-serif;">
+                    ProduCheck
                   </td>
                 </tr>
               </table>
@@ -38,14 +39,14 @@
                 Your verification code
               </p>
               <p style="margin:0 0 24px 0; font-size:14px; line-height:1.5; color:#777777;">
-                Enter this code to verify your email and continue.
+                {{PURPOSE_TEXT}}
               </p>
 
               <!-- OTP Code box -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#EEF0F3; border:1px solid #1F2937; border-radius:10px; margin-bottom:24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F0FFF0; border:1px solid #2E7D32; border-radius:10px; margin-bottom:24px;">
                 <tr>
                   <td align="center" style="padding:20px;">
-                    <span style="font-size:32px; font-weight:700; letter-spacing:8px; color:#1F2937; font-family: 'Segoe UI', Arial, sans-serif;">
+                    <span style="font-size:32px; font-weight:700; letter-spacing:8px; color:#2E7D32; font-family: 'Segoe UI', Arial, sans-serif;">
                       {{OTP_CODE}}
                     </span>
                   </td>
@@ -71,7 +72,7 @@
           <tr>
             <td style="padding:16px 32px; background-color:#F3F3F3; border-top:1px solid #E5E5E5;">
               <p style="margin:0; font-size:11px; color:#777777; text-align:center;">
-                E-Verify · Real-time FDA product verification
+                ProduCheck · Real-time FDA product verification
               </p>
             </td>
           </tr>

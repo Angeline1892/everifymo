@@ -1,4 +1,5 @@
 ﻿
+// extension/popup/popup.js
 import { whenSessionReady, isUserLoggedIn, getCurrentUser } from "../scripts/session.js";
 
 let lastProductTitle = '';
