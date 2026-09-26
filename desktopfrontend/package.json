@@ -19,7 +19,8 @@
       "dist-electron/**/*"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "src/images/producheck_logo.ico"
     },
     "directories": {
       "output": "release"
@@ -48,3 +49,4 @@
     "vite-plugin-electron-renderer": "^1.0.0"
   }
 }
+
