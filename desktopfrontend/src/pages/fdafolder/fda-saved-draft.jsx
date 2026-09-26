@@ -433,7 +433,7 @@ function FDASavedDraft() {
                   <option value="">All Categories</option>
                   <option value="Cosmetics">Cosmetics</option>
                   <option value="Food">Food</option>
-                  <option value="Devices">Medical Devices</option>
+                  <option value="Devices">Health Devices</option>
                   <option value="Drugs">Drugs</option>
                 </select>
               </div>
