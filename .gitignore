@@ -93,3 +93,5 @@ backend/db.env
 desktopfrontend/release/
 
 #HI
+backend/nlp/
+backend/app/extension/routers/retrieval.py

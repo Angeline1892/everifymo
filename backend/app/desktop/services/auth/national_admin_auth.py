@@ -162,7 +162,7 @@ def _handle_failed_attempt(db: Session, user: User, http_request: Request | None
             write_audit_log(
                 db,
                 user=None,
-                action=AuditAction.LOCK_SUPERADMIN_ACCOUNT,
+                action=AuditAction.LOCK_NATIONAL_ADMIN_ACCOUNT,
                 target_table="users",
                 target_id=user_id,
                 target_reference=user_email,
