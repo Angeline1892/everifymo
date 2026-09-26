@@ -1,17 +1,18 @@
-//extension/scripts/content.js
+//content.js
 console.log('FDA Checker content script loaded');
 console.log("Hello World from content.js")
 
 const verifyBtn = document.createElement("button");
-verifyBtn.textContent = "Verify";
+verifyBtn.textContent = "Check Product";
 verifyBtn.style.position = "fixed";
 verifyBtn.style.display = "none";
 verifyBtn.style.zIndex = "9999";
 verifyBtn.style.padding = "6px 12px";
-verifyBtn.style.backgroundColor = "black";
-verifyBtn.style.color = "white";
-verifyBtn.style.border = "none";
-verifyBtn.style.borderRadius = "5px";
+verifyBtn.style.backgroundColor = "#66BB6A";
+verifyBtn.style.color = "#256428";
+verifyBtn.style.border = "1px solid #256428";
+verifyBtn.style.fontWeight = "bold";
+verifyBtn.style.borderRadius = "15px";
 verifyBtn.style.cursor = "pointer";
 document.body.appendChild(verifyBtn);
 
@@ -86,8 +87,8 @@ function createModal() {
  
   modal.innerHTML = `
     <header class="mo-header">
-      <img src="${chrome.runtime.getURL('assets/images/extension_icon.png')}" alt="E-Verify Logo" class="mo-logo" />
-      <h1 class="mo-extension-name">E-Verify</h1>
+      <img src="${chrome.runtime.getURL('assets/images/extension_icon.png')}" alt="ProduCheck Logo" class="mo-logo" />
+      <h1 class="mo-extension-name">ProduCheck</h1>
       <button id="mo-close-x" class="mo-close-x" type="button" aria-label="Close">✕</button>
     </header>
     
@@ -115,7 +116,7 @@ function createModal() {
       <!-- ui top matches result -->
         <div class="top-matches">
           <div class="top-matches-title">Top Matches</div>
-          <div class="top-matches-subtitle">Registered products similar to the detected listing.</div>
+          <div class="top-matches-subtitle">Closest registered products to the detected listing.</div>
             <div class="match-legend">
             <div class="legend-item">
               <span class="legend-dot dot-best"></span>
@@ -226,7 +227,7 @@ function createModal() {
  
         <div class="top-matches-red">
           <div class="top-matches-title-red">Top Matches</div>
-          <div class="top-matches-subtitle-red">Registered alternatives you may consider instead.</div>
+          <div class="top-matches-subtitle-red">Closest UNREGISTERED products to the detected listing.</div>
           <div class="match-legend-red">
             <div class="legend-item-red">
               <span class="legend-dot-red dot-best-red"></span>
@@ -462,9 +463,6 @@ function createModal() {
         console.log('submitComplaint response:', response);
         if (response?.success) {
           showState('state-report-success');
-          // Clear the detected-product state so report-complaint.html doesn't
-          // re-populate this already-submitted product on its next load
-          chrome.storage.local.remove(['productTitle', 'productUrl', 'productStatus']);
         } else {
           document.getElementById('report-error-message').textContent = response?.error || 'Failed to submit report. Please try again.';
           showState('state-report-error');
@@ -526,23 +524,6 @@ function renderResult(status, productTitle, results = []) {
   }
  
   showState(stateId);
-
-  const displayedState = modal.querySelector(`#${stateId}`);
-  const displayedRecordType = displayedState?.id === 'state-registered'
-    ? 'registered'
-    : displayedState?.id === 'state-unregistered'
-      ? 'unregistered'
-      : null;
-  const displayedTitle = nameSpan?.textContent?.trim();
-
-  if (displayedTitle && displayedRecordType) {
-    console.log('recordDisplayedDetection firing:', displayedRecordType, displayedTitle);
-    chrome.runtime.sendMessage({
-      action: 'recordDisplayedDetection',
-      recordType: displayedRecordType,
-      displayedTitle
-    });
-  }
 }
 
 function matchTier(pct) {

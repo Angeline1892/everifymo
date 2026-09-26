@@ -27,6 +27,7 @@ UPLOAD_DIR = "uploads/draft_attachments"
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".pdf", ".docx"}
 MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024  # 25 MB, matching the UI's stated limit
+MAX_FILES_PER_DRAFT = 10   # ADDED — same cap as the direct-submit path, kept in sync
 
 
 # Fields the officer's form requires (see Image 4/5) — everything
@@ -145,6 +146,15 @@ def save_walkin_draft(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+
+    # ADDED — reject an oversized batch before creating the draft row
+    # at all, so we never end up with a draft that's already invalid
+    if len(files) > MAX_FILES_PER_DRAFT:
+        raise HTTPException(
+            status_code=400,
+            detail=f"You can upload up to {MAX_FILES_PER_DRAFT} files only.",
+        )
+    
     # Repackage the loose Form() parameters back into a
     # WalkinIntakeDraftSave object, so _determine_draft_status can
     # reuse the exact same logic regardless of whether the request
@@ -281,6 +291,20 @@ def update_walkin_draft(
         # one filter per ID
         DraftAttachment.attachment_id.in_(remove_attachment_ids),
     ).all()
+
+    # ADDED — check the post-edit total (surviving existing files +
+    # newly uploaded ones) against the same cap, before touching disk
+    # or the DB. Mirrors the survivor-count logic just below it that
+    # already exists for draft_status, but done up front as a guard.
+    existing_count = db.query(DraftAttachment).filter(
+        DraftAttachment.walkin_draft_id == draft_id
+    ).count()
+    surviving_count = existing_count - len(attachments_to_remove)
+    if surviving_count + len(files) > MAX_FILES_PER_DRAFT:
+        raise HTTPException(
+            status_code=400,
+            detail=f"You can have up to {MAX_FILES_PER_DRAFT} files total on this draft.",
+        )
 
     # Remember the file paths BEFORE deleting the rows, same reasoning
     # as the submit-order notes — grab what we need before anything

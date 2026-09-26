@@ -1,6 +1,5 @@
 **# ProduCheck**
 ProduCheck is composed of two interconnected systems (browser extension and desktop application).
-qwqwq
 
 **System Architecture**
 
@@ -247,7 +246,6 @@ Do not push or make changes to **main or develop** branches
 add more branch if needed
 
 always commit every progress
-
 
 
 

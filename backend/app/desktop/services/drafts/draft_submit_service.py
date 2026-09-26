@@ -25,6 +25,7 @@ from app.desktop.services.notifications.notification_service import notify_lea_n
 SHARED_FILES_DIR = "uploads/shared_files"
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".pdf", ".docx"}
 MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
+MAX_FILES_PER_COMPLAINT = 10   # ADDED — shared cap for both create and edit paths
 
 
 def _create_complainant_and_complaint(
@@ -82,18 +83,28 @@ def _save_new_upload_to_shared_files(file: UploadFile, complaint_id) -> dict:
     unique_name = f"{uuid4()}_{file.filename}"
     destination_path = os.path.join(SHARED_FILES_DIR, str(complaint_id), unique_name)
     os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+    # CHANGED — stream in 1MB chunks and abort the moment the 25MB
+    # cap is crossed, instead of copying the whole upload to disk
+    # first and checking size after. The old order let an oversized
+    # file get fully written before it was ever rejected.
+    total_written = 0
+    chunk_size = 1024 * 1024
     with open(destination_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    actual_size = os.path.getsize(destination_path)
-    if actual_size > MAX_FILE_SIZE_BYTES:
-        os.remove(destination_path)
-        raise HTTPException(status_code=400, detail="File exceeds the 25 MB limit.")
+        while chunk := file.file.read(chunk_size):
+            total_written += len(chunk)
+            if total_written > MAX_FILE_SIZE_BYTES:
+                buffer.close()
+                os.remove(destination_path)
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"'{file.filename}' exceeds the 25 MB limit.",
+                )
+            buffer.write(chunk)
 
     return {
         "file_name": file.filename,
         "file_path": destination_path,
-        "file_size_bytes": actual_size,
+        "file_size_bytes": total_written,
         "mime_type": file.content_type,
     }
 
@@ -200,6 +211,15 @@ def create_walkin_complaint_direct(
     if len(files) == 0:
         raise HTTPException(status_code=400, detail="At least one file attachment is required.")
 
+    # ADDED — reject oversized batches before any DB row or file
+    # write happens, same "fail before touching disk" principle as
+    # the per-file size check
+    if len(files) > MAX_FILES_PER_COMPLAINT:
+        raise HTTPException(
+            status_code=400,
+            detail=f"You can upload up to {MAX_FILES_PER_COMPLAINT} files only.",
+        )
+
     new_complaint = _create_complainant_and_complaint(
         db, current_user, current_user.region_id,
         complainant_fields=complainant_fields,
@@ -293,6 +313,15 @@ def update_walkin_complaint_direct(
     if remove_attachment_ids:
         existing_query = existing_query.filter(SharedFile.file_id.notin_(remove_attachment_ids))
     existing_count = existing_query.count()
+
+    # ADDED — total attachments after this edit (surviving existing
+    # files + newly uploaded ones) must stay within the same 10-file
+    # cap as a fresh submission, not just the new batch in isolation
+    if existing_count + len(files) > MAX_FILES_PER_COMPLAINT:
+        raise HTTPException(
+            status_code=400,
+            detail=f"You can have up to {MAX_FILES_PER_COMPLAINT} files total on this complaint.",
+        )
 
     if existing_count == 0 and len(files) == 0:
         raise HTTPException(

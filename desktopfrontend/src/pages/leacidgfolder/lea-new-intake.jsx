@@ -757,7 +757,7 @@ function LeaNewIntake() {
                       <option value="Food">Food</option>
                       <option value="Cosmetics">Cosmetics</option>
                       <option value="Drugs">Drugs</option>
-                      <option value="Devices">Medical Devices</option>
+                      <option value="Devices">Devices</option>
                     </select>
                     {errors.productCategory && (
                       <span className="LoginErrorMsg">
