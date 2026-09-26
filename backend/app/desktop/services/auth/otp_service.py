@@ -77,7 +77,7 @@ def _lock_action_for_role(role: str) -> str:
     if role == Role.NATIONAL_ADMIN:
         return AuditAction.LOCK_NATIONAL_ADMIN_ACCOUNT
     if role in Role.ADMIN_ROLES:
-        return AuditAction.LOCK_ADMIN_ACCOUNT
+        return AuditAction.LOCK_REGIONAL_ADMIN_ACCOUNT
     return AuditAction.LOCK_PERSONNEL_ACCOUNT
 
 

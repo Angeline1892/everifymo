@@ -46,7 +46,7 @@ const LEA_TAB_ACTIONS = [
 // personnel/regional-admin lockouts and pending-approvals show on FDA/LEA
 // Admin's own System tabs instead.
 const SYSTEM_TAB_ACTIONS = [
-  'LOCK_NATIONAL_ADMIN_ACCOUNT', 'PENDING_NATIONAL_ADMIN_ACCOUNT',
+  'LOCK_NATIONAL_ADMIN_ACCOUNT', 'PENDING_NATIONAL_ADMIN_ACCOUNT', 'INVITATION_EXPIRED_NATIONAL_ADMIN',
 ];
 
 const SHARED_LOGIN_ACTIONS = ['LOGIN', 'LOGOUT', 'LOGIN_FAILED'];
@@ -68,6 +68,19 @@ function formatTimestamp(iso) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleString('en-PH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// Local (not UTC) calendar date, so the date filter agrees with what
+// formatTimestamp displays — a raw ISO string's date portion is UTC and
+// can be off by a day from the viewer's local date.
+function toLocalDateStr(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function ActionBadge({ action }) {
@@ -209,7 +222,7 @@ export default function NationalAdminAuditLogs() {
         if (!matchesSearch) return false;
       }
 
-      const logDate = log.timestamp ? log.timestamp.split('T')[0] : '';
+      const logDate = toLocalDateStr(log.timestamp);
       if (dateFrom && logDate < dateFrom) return false;
       if (dateTo && logDate > dateTo) return false;
 

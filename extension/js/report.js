@@ -1,4 +1,4 @@
-// report.js
+// extension/js/report.js
 import { whenSessionReady, isUserLoggedIn, getCurrentUser, submitComplaint } from "../scripts/session.js";
 
 let currentVerificationResult = 'unregistered';

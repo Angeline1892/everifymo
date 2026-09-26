@@ -16,12 +16,13 @@ from app.desktop.services.account_status import (
     compute_display_status, suspend_account, reactivate_account, unlock_account,
     resend_invite_link, delete_invited_account,
 )
+from app.desktop.services.account_status.guards import log_expired_invitation_if_needed
 
 router = APIRouter(prefix="/national-admin-management", tags=["national-admin-management"])
 
 
 @router.get("", response_model=list[AccountListItem])
-def list_national_admins(db: Session = Depends(get_db), current_user: User = Depends(get_current_national_admin)):
+def list_national_admins(http_request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_national_admin)):
     admins = db.query(User).filter(User.role == Role.NATIONAL_ADMIN).all()
     if not admins:
         return []
@@ -31,6 +32,10 @@ def list_national_admins(db: Session = Depends(get_db), current_user: User = Dep
         .filter(AccountInvitationToken.user_id.in_([a.user_id for a in admins]))
         .order_by(AccountInvitationToken.created_at.asc()).all()
     }
+
+    for a in admins:
+        log_expired_invitation_if_needed(db, a, tokens.get(a.user_id), request=http_request)
+
     return [
         AccountListItem(
             user_id=a.user_id, first_name=a.first_name, middle_name=a.middle_name,
