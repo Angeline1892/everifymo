@@ -21,7 +21,7 @@ from app.desktop.services.account_status import (
     compute_display_status, suspend_account, reactivate_account, unlock_account,
     edit_personnel_info, reset_personnel_password, resend_invite_link, delete_invited_account,
 )
-from app.desktop.services.account_status.guards import agency_of, assert_employee_id_available
+from app.desktop.services.account_status.guards import agency_of, assert_employee_id_available, log_expired_invitation_if_needed
 
 router = APIRouter(prefix="/personnel-management", tags=["personnel-management"])
 
@@ -32,7 +32,7 @@ def _region_name(db: Session, region_id) -> str | None:
 
 
 @router.get("", response_model=list[AccountListItem])
-def list_personnel(db: Session = Depends(get_db), current_user: User = Depends(get_current_agency_admin)):
+def list_personnel(http_request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_agency_admin)):
     personnel_role = Role.FDA_PERSONNEL if current_user.role == Role.FDA_ADMIN else Role.LEA_PERSONNEL
     users = db.query(User).filter(User.role == personnel_role, User.region_id == current_user.region_id).all()
     if not users:
@@ -43,6 +43,9 @@ def list_personnel(db: Session = Depends(get_db), current_user: User = Depends(g
         .filter(AccountInvitationToken.user_id.in_([u.user_id for u in users]))
         .order_by(AccountInvitationToken.created_at.asc()).all()
     }
+    for u in users:
+        log_expired_invitation_if_needed(db, u, tokens.get(u.user_id), request=http_request)
+
     regions = {r.region_id: r.region_name for r in db.query(Region).all()}
     return [
         AccountListItem(

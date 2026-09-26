@@ -17,6 +17,24 @@ from app.desktop.schemas.Product_database.registered_products import (
 from app.desktop.services.Product_database.csv_sync import sync_registered_products_to_csv, sync_unregistered_advisories_to_csv
 
 
+def increment_marketplace_detection_count(db: Session, product_id) -> bool:
+    updated = db.query(RegisteredProduct).filter(
+        RegisteredProduct.product_id == product_id,
+        RegisteredProduct.deleted_at.is_(None),
+    ).update(
+        {
+            RegisteredProduct.marketplace_detection_count:
+            RegisteredProduct.marketplace_detection_count + 1,
+        },
+        synchronize_session=False,
+    )
+    if not updated:
+        db.rollback()
+        return False
+    db.commit()
+    return True
+
+
 def format_product_response(product: RegisteredProduct, db: Session):
     added_by_user = None
     if product.added_by:

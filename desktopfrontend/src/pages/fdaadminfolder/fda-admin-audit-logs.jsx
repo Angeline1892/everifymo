@@ -89,6 +89,19 @@ function formatTimestamp(iso) {
   return d.toLocaleString('en-PH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
+// Local (not UTC) calendar date, so the date filter agrees with what
+// formatTimestamp displays — a raw ISO string's date portion is UTC and
+// can be off by a day from the viewer's local date.
+function toLocalDateStr(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 // Action-filter dropdown options, per tab — only actions that can actually
 // appear on that tab are listed, instead of the old generic create/update/
 // delete/login buckets.
@@ -96,6 +109,7 @@ const ADMIN_TAB_ACTION_OPTIONS = REGIONAL_ADMIN_ACTIONS;
 const PERSONNEL_TAB_ACTION_OPTIONS = PERSONNEL_ACTIONS;
 const SYSTEM_TAB_ACTION_OPTIONS = [
   'LOCK_PERSONNEL_ACCOUNT', 'LOCK_REGIONAL_ADMIN_ACCOUNT', 'PENDING_REGIONAL_ADMIN_ACCOUNT',
+  'INVITATION_EXPIRED_REGIONAL_ADMIN', 'INVITATION_EXPIRED_PERSONNEL',
 ];
 
 export default function FDAAdminAuditLogs() {
@@ -166,7 +180,7 @@ export default function FDAAdminAuditLogs() {
       (log.target_table && log.target_table.toLowerCase().includes(q)) ||
       (log.target_reference && log.target_reference.toLowerCase().includes(q));
 
-    const logDate = log.timestamp ? log.timestamp.split('T')[0] : '';
+    const logDate = toLocalDateStr(log.timestamp);
     const matchesDateFrom = !dateFrom || logDate >= dateFrom;
     const matchesDateTo = !dateTo || logDate <= dateTo;
 

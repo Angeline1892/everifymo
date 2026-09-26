@@ -167,4 +167,4 @@ def sync_unregistered_advisories_to_csv(db: Session):
         print(f"Successfully synced database changes to {UNREGISTERED_CSV_PATH}.", file=sys.stderr)
     except Exception as e:
         print(f"Warning: Error syncing unregistered advisories to CSV: {e}", file=sys.stderr)
-'''
+        '''

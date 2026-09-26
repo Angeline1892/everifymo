@@ -208,17 +208,17 @@ body {
   flex-shrink: 0;
 }
 
-#state-registered .dot-best { background-color: #2E7D32; }
-#state-registered .fill-best { background-color: #2E7D32; }
-#state-registered .match-score-best .match-percent { color: #2E7D32; }
+#state-registered .dot-best { background-color: #374151; }
+#state-registered .fill-best { background-color: #374151; }
+#state-registered .match-score-best .match-percent { color: #374151; }
 
-#state-registered .dot-high { background-color: #66BB6A; }
-#state-registered .fill-high { background-color: #66BB6A; }
-#state-registered .match-score-high .match-percent { color: #66BB6A; }
+#state-registered .dot-high { background-color: #6B7280; }
+#state-registered .fill-high { background-color: #6B7280; }
+#state-registered .match-score-high .match-percent { color: #6B7280; }
 
-#state-registered .dot-partial { background-color: #A5D6A7; }
-#state-registered .fill-partial { background-color: #A5D6A7; }
-#state-registered .match-score-partial .match-percent { color: #A5D6A7; }
+#state-registered .dot-partial { background-color: #9CA3AF; }
+#state-registered .fill-partial { background-color: #9CA3AF; }
+#state-registered .match-score-partial .match-percent { color: #9CA3AF; }
 
 #state-registered .legend-label {
   font-family: 'Inter', sans-serif;
@@ -257,11 +257,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #eaf7ea;
+  background-color: #F3F4F6;
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
   font-size: 12px;
-  color: #2E7D32;
+  color: #374151;
   flex-shrink: 0;
 }
 
@@ -483,17 +483,17 @@ body {
   flex-shrink: 0;
 }
 
-#state-unregistered .dot-best-red { background-color: #B22222; }
-#state-unregistered .fill-best-red { background-color: #B22222; }
-#state-unregistered .match-score-best-red .match-percent-red { color: #B22222; }
+#state-unregistered .dot-best-red { background-color: #374151; }
+#state-unregistered .fill-best-red { background-color: #374151; }
+#state-unregistered .match-score-best-red .match-percent-red { color: #374151; }
 
-#state-unregistered .dot-high-red { background-color: #D32F2F; }
-#state-unregistered .fill-high-red { background-color: #D32F2F; }
-#state-unregistered .match-score-high-red .match-percent-red { color: #D32F2F; }
+#state-unregistered .dot-high-red { background-color: #6B7280; }
+#state-unregistered .fill-high-red { background-color: #6B7280; }
+#state-unregistered .match-score-high-red .match-percent-red { color: #6B7280; }
 
-#state-unregistered .dot-partial-red { background-color: #EF5350; }
-#state-unregistered .fill-partial-red { background-color: #EF5350; }
-#state-unregistered .match-score-partial-red .match-percent-red { color: #EF5350; }
+#state-unregistered .dot-partial-red { background-color: #9CA3AF; }
+#state-unregistered .fill-partial-red { background-color: #9CA3AF; }
+#state-unregistered .match-score-partial-red .match-percent-red { color: #9CA3AF; }
 
 #state-unregistered .legend-label-red {
   font-family: 'Inter', sans-serif;
@@ -532,11 +532,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #FDECEA;
+  background-color: #F3F4F6;
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
   font-size: 12px;
-  color: #B22222;
+  color: #374151;
   flex-shrink: 0;
 }
 

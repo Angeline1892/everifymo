@@ -17,6 +17,24 @@ from app.desktop.schemas.Product_database.unregistered_advisories import (
 from app.desktop.services.Product_database.csv_sync import sync_registered_products_to_csv, sync_unregistered_advisories_to_csv
 
 
+def increment_marketplace_detection_count(db: Session, advisory_id) -> bool:
+    updated = db.query(UnregisteredAdvisory).filter(
+        UnregisteredAdvisory.advisory_id == advisory_id,
+        UnregisteredAdvisory.deleted_at.is_(None),
+    ).update(
+        {
+            UnregisteredAdvisory.marketplace_detection_count:
+            UnregisteredAdvisory.marketplace_detection_count + 1,
+        },
+        synchronize_session=False,
+    )
+    if not updated:
+        db.rollback()
+        return False
+    db.commit()
+    return True
+
+
 def format_advisory_response(advisory: UnregisteredAdvisory, db: Session):
     added_by_user = None
     if advisory.added_by:

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, AlertCircle, Users, ShieldCheck, Building2, CheckCircle2, Loader2 } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, AlertCircle, Users, ShieldCheck, Building2, CheckCircle2 } from 'lucide-react'
 import FDALogo from '../images/FDA.png'
 import PNPLogo from '../images/pnp-cidg.jpg'
 import { API_BASE_URL } from '../utils/apiConfig'
@@ -824,8 +824,6 @@ function UniversalLogin() {
         }
 
         @keyframes universalLoginFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        .universal-login-spin { animation: universalLoginSpin 0.8s linear infinite; }
-        @keyframes universalLoginSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         /* ===== RESPONSIVENESS ===== */
         @media (max-width: 1023px) {
@@ -929,7 +927,6 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
   const [personnelLoginError, setPersonnelLoginError] = useState('');
   const [personnelRememberMe, setPersonnelRememberMe] = useState(false);
   const [personnelErrors, setPersonnelErrors] = useState({});
-  const [personnelIsVerifying, setPersonnelIsVerifying] = useState(false);
 
 
   function rememberedEmailKey(forAgency) {
@@ -937,17 +934,18 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
   }
 
   useEffect(() => {
-    const key = rememberedEmailKey(personnelAgency);
-    if (!key) return;
-    const savedEmail = localStorage.getItem(key);
-    if (savedEmail) {
-      setPersonnelEmail(savedEmail);
-      setPersonnelRememberMe(true);
-    } else {
-      setPersonnelEmail('');
-      setPersonnelRememberMe(false);
-    }
-  }, [personnelAgency]);
+  const key = rememberedEmailKey(personnelAgency);
+  if (!key) return;
+
+  const savedEmail = localStorage.getItem(key);
+
+  if (savedEmail && !personnelEmail.trim()) {
+    setPersonnelEmail(savedEmail);
+    setPersonnelRememberMe(true);
+  } else if (!savedEmail) {
+    setPersonnelRememberMe(false);
+  }
+}, [personnelAgency]);
 
   const [personnelIsOtpSent, setPersonnelIsOtpSent] = useState(false);
   const [personnelOtp, setPersonnelOtp] = useState(new Array(6).fill(''));
@@ -1062,10 +1060,14 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
     if (personnelErrors.password) setPersonnelErrors((prev) => ({ ...prev, password: '' }));
   }
 
-  function handlePersonnelAgencyChange(value) {
-    setPersonnelAgency(value);
-    if (personnelErrors.agency) setPersonnelErrors((prev) => ({ ...prev, agency: '' }));
+ function handlePersonnelAgencyChange(value) {
+  setPersonnelAgency(value);
+  setPersonnelPassword('');
+
+  if (personnelErrors.agency) {
+    setPersonnelErrors((prev) => ({ ...prev, agency: '' }));
   }
+}
 
   async function handlePersonnelLoginSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
@@ -1132,41 +1134,12 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
 
 
 
-      // Show instant feedback the moment the user clicks — don't wait on
-      // geolocation or the network call below.
-      setPersonnelIsVerifying(true);
-      setPersonnelLoginError('');
-
-      // Get device coordinates if available (with graceful timeout fallback).
-      // enableHighAccuracy is OFF: desktops have no GPS chip, so "high
-      // accuracy" just stalls for the full timeout waiting on hardware that
-      // doesn't exist. Wi-Fi/IP triangulation is fine for a geofence check.
-      let coords = null;
-      if (navigator.geolocation) {
-        try {
-          coords = await new Promise((resolve) => {
-            navigator.geolocation.getCurrentPosition(
-              (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, source: 'gps' }),
-              () => resolve(null),
-              { enableHighAccuracy: false, timeout: 800, maximumAge: 60000 }
-            );
-          });
-        } catch {
-          coords = null;
-        }
-      }
-
       // REAL BACKEND OTP VERIFICATION
       try {
-        const verifyPayload = {
-          email: personnelEmail.trim(),
-          otp: otpCode,
-          ...(coords || {}),
-        };
         const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(verifyPayload),
+          body: JSON.stringify({ email: personnelEmail.trim(), otp: otpCode }),
         });
 
         if (!response.ok) {
@@ -1195,8 +1168,6 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
         if (/request a new otp/i.test(err.message)) {
           setPersonnelTimer(0);
         }
-      } finally {
-        setPersonnelIsVerifying(false);
       }
     }
   }
@@ -1374,17 +1345,10 @@ function PersonnelLoginForm({ navigate, onOtpStateChange }) {
               </div>
             )}
 
-            <button type="submit" className="universal-login-submit-btn" disabled={personnelIsVerifying}>
-              {personnelIsVerifying ? (
-                <>
-                  <Loader2 size={16} className="universal-login-spin" style={{ marginRight: 8 }} />
-                  Verifying...
-                </>
-              ) : (
-                'Verify & Login'
-              )}
+            <button type="submit" className="universal-login-submit-btn">
+              Verify &amp; Login
             </button>
-            <button type="button" className="universal-login-back-btn" onClick={handlePersonnelBackToLogin} disabled={personnelIsVerifying}>
+            <button type="button" className="universal-login-back-btn" onClick={handlePersonnelBackToLogin}>
               ← Back to login credentials
             </button>
           </div>
@@ -1836,6 +1800,27 @@ function InteragencyAdminLoginForm({ navigate, onOtpStateChange }) {
   const [loginError, setLoginError] = useState('');       // NEW: banner error for the credentials step
   const [lockoutSeconds, setLockoutSeconds] = useState(0); // NEW: for the 429 throttled-login case
 
+ 
+  const [rememberMe, setRememberMe] = useState(false);
+
+  function rememberedEmailKey(forAgency) {
+    return forAgency ? `remembered_email_admin_${forAgency}` : null;
+  }
+
+  useEffect(() => {
+  const key = rememberedEmailKey(agency);
+  if (!key) return;
+
+  const savedEmail = localStorage.getItem(key);
+
+  if (savedEmail && !email.trim()) {
+    setEmail(savedEmail);
+    setRememberMe(true);
+  } else if (!savedEmail) {
+    setRememberMe(false);
+  }
+}, [agency]);
+
   // OTP state
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [otp, setOtp] = useState(new Array(6).fill(''));
@@ -1872,10 +1857,14 @@ function InteragencyAdminLoginForm({ navigate, onOtpStateChange }) {
     return () => clearInterval(interval);
   }, [lockoutSeconds]);
 
-  function handleAgencyChange(value) {
-    setAgency(value);
-    if (errors.agency) setErrors((prev) => ({ ...prev, agency: '' }));
+function handleAgencyChange(value) {
+  setAgency(value);
+  setPassword('');
+
+  if (errors.agency) {
+    setErrors((prev) => ({ ...prev, agency: '' }));
   }
+}
 
   function handleEmailChange(e) {
     const val = e.target.value;
@@ -1927,6 +1916,13 @@ function InteragencyAdminLoginForm({ navigate, onOtpStateChange }) {
         }
         setLockoutSeconds(0);
         throw new Error(errorData.detail || 'Invalid email or password.');
+      }
+
+      // Save or clear the remembered email for this agency
+      const key = rememberedEmailKey(agency);
+      if (key) {
+        if (rememberMe) localStorage.setItem(key, email.trim());
+        else localStorage.removeItem(key);
       }
 
       // Success: backend sent the OTP email, move to the OTP screen
@@ -2161,12 +2157,20 @@ function InteragencyAdminLoginForm({ navigate, onOtpStateChange }) {
             )}
           </div>
 
-         {/* Forgot-password link — was completely missing before */}
+        {/* Remember my email + Forgot-password link */}
         <div className="universal-login-admin-remember-row">
+          <label htmlFor="universal-login-interagency-remember-me">
+            <input
+              type="checkbox"
+              id="universal-login-interagency-remember-me"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+            />
+            Remember my email
+          </label>
           <a
             onClick={() => navigate('/forgot-password?from=interagency-admin')}
             className="universal-login-forgot-password-link"
-            style={{ marginLeft: 'auto' }}
           >
             Forgot password?
           </a>

@@ -11,6 +11,21 @@
     "preview": "vite preview",
     "dist": "electron-builder"
   },
+  "build": {
+    "appId": "com.everifymo.desktop",
+    "productName": "E-VERIFYMO",
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "src/images/producheck_logo.ico"
+    },
+    "directories": {
+      "output": "release"
+    }
+  },
   "dependencies": {
     "lucide-react": "^1.23.0",
     "mammoth": "^1.12.1",
@@ -34,3 +49,4 @@
     "vite-plugin-electron-renderer": "^1.0.0"
   }
 }
+

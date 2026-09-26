@@ -10,7 +10,7 @@ from app.extension.schemas import consumer_acc #CreateConsumerAcc, UpdateUsernam
 from app.extension.services import consumer_acc_service
 from app.core.security import get_current_user
 
-from app.extension.services.send_email import send_otp_email
+from app.extension.services.send_email import send_otp_email, RESET_PASSWORD_PURPOSE_TEXT
 from app.extension.services import consumer_otp_service
 
 from app.core.extension_limiter import limiter
@@ -107,7 +107,7 @@ async def forgot_password(
 
     if result:
         email, otp_code = result
-        background_tasks.add_task(send_otp_email, email, otp_code)
+        background_tasks.add_task(send_otp_email, email, otp_code, None, RESET_PASSWORD_PURPOSE_TEXT)
 
     return { "detail": "A reset code has been sent to your email." }
 

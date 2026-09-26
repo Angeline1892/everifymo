@@ -24,7 +24,6 @@ from app.desktop.routers.profile_setting import profile as profile_router
 from app.desktop.routers.admin_notifications.admin_notifications import router as admin_notifications_router
 from app.desktop.routers.audit_logs.audit_logs import router as audit_logs_router  
 from app.desktop.routers.notifications.notifications import router as notifications_router  # ADDED     
-from app.desktop.routers.workspace_locations.workspace_location import router as workspace_location_router     
 
 
 from app.database.base import Base
@@ -78,6 +77,7 @@ from app.desktop.routers.verification.verification_response import fda_response_
 
 #for verification history in extension
 from app.extension.routers import verification
+from app.extension.routers.marketplace_detection import router as marketplace_detection_router
 
 #for update status in desktop
 from app.desktop.routers.complaints import complaint_status
@@ -154,7 +154,6 @@ app.include_router(profile_router.router)
 app.include_router(admin_notifications_router)
 app.include_router(audit_logs_router)
 app.include_router(notifications_router)  # ADDED
-app.include_router(workspace_location_router)
 
 # @app.get("/", status_code=status.HTTP_200_OK)
 # async def user(consumer: consumer_dependency):
@@ -168,5 +167,6 @@ app.include_router(workspace_location_router)
 #app.include_router(retrieval_router)
 
 app.include_router(verification.router)
+app.include_router(marketplace_detection_router)
 
 app.include_router(complaint_status.router)
