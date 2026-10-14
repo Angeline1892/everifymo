@@ -1,6 +1,45 @@
 ﻿// https://everify.store
 console.log("Background service worker started");
 
+function productKey(url) {
+  try {
+    const u = new URL(url);
+    return u.origin + u.pathname;
+  } catch {
+    return url;
+  }
+}
+
+function showNotification(id, title, message) {
+  chrome.notifications.clear(id, () => {
+    chrome.notifications.create(id, {
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('assets/images/icon128.png'),
+      title,
+      message
+    }, () => {
+      if (chrome.runtime.lastError) console.error('Notification error:', chrome.runtime.lastError.message);
+    });
+  });
+}
+
+async function notifyOnStatusChange(message, status) {
+  const key = productKey(message.url);
+  const { seenProducts = {} } = await chrome.storage.local.get('seenProducts');
+  const previous = seenProducts[key];
+
+  if (status !== 'registered') {
+    showNotification(`status-${key}`, 'Product not verified',
+      `This product is still ${status} in the FDA registry.`);
+  } else if (previous && previous !== 'registered') {
+    showNotification(`status-${key}`, 'Good news',
+      'This product is now registered with the FDA.');
+  }
+
+  seenProducts[key] = status;
+  await chrome.storage.local.set({ seenProducts });
+}
+
 async function authorizedFetch(url, options = {}) {
   let { access_token, refresh_token } = await chrome.storage.local.get(['access_token', 'refresh_token']);
 
@@ -16,7 +55,7 @@ async function authorizedFetch(url, options = {}) {
 
   if (res.status === 401 && refresh_token) {
     const refreshRes = await fetch(
-      `http://localhost:8001/auth/refresh?refresh_token=${encodeURIComponent(refresh_token)}`,
+      `https://everify.store/auth/refresh?refresh_token=${encodeURIComponent(refresh_token)}`,
       { method: 'POST' }
     );
 
@@ -43,6 +82,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.action === 'pageVisited') {
+    (async () => {
+      const key = productKey(message.url);
+      const { seenProducts = {} } = await chrome.storage.local.get('seenProducts');
+      const status = seenProducts[key];
+      if (status && status !== 'registered') {
+        showNotification(`status-${key}`, 'Product not verified',
+          `You already verified this product. It is still ${status}.`);
+      }
+    })();
+    return;
+  }
+
   if (message.action === "captureScreenshot") {
     const host = sender.tab ? new URL(sender.tab.url).hostname : "";
     if (!/(^|\.)(shopee\.ph|lazada\.com\.ph|facebook\.com|tiktok\.com)$/.test(host)) {
@@ -56,7 +108,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
       try {
-        const res = await fetch('http://localhost:8001/verify-screenshot', {
+        const res = await fetch('https://everify.store/verify-screenshot', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ image: dataUrl, url: message.url, platform: message.platform })
@@ -77,10 +129,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   console.log('Background received message:', message);
   if (message.action === 'extractedTitle') {
-    //
     (async () => {
       try {
-        const response = await fetch('http://localhost:8001/verify', {
+        const response = await fetch('https://everify.store/verify', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -92,6 +143,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log('Backend response:', data);
         
         const status = data?.verdict === 'no_match' ? 'suspicious' : data?.verdict || 'unregistered';
+        await notifyOnStatusChange(message, status);
 
         // Store the extracted product info in chrome.storage
         chrome.storage.local.set({
@@ -109,7 +161,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         
         sendResponse({ status: 'success', data: data });
 
-        const res = await authorizedFetch('http://localhost:8001/submitVerification', {
+        const res = await authorizedFetch('https://everify.store/submitVerification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -154,7 +206,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
 
-        const response = await fetch('http://localhost:8001/marketplace-detections', { // http://localhost:8001
+        const response = await fetch('https://everify.store/marketplace-detections', { // http://localhost:8001
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -176,7 +228,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'submitComplaint') {
     (async () => {
       try {
-        const res = await authorizedFetch('http://localhost:8001/submitComplaint', {
+        const res = await authorizedFetch('https://everify.store/submitComplaint', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
