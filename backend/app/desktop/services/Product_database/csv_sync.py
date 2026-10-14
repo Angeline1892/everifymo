@@ -17,7 +17,7 @@ def clean_title(title: str) -> str:
 def is_date_expired(val) -> bool:
     """
     Checks if a given date string or date/datetime object is expired.
-    Returns True if expired (date <= date.today()), False otherwise (valid or not set).
+    Returns True if expired (date < date.today()), False otherwise (valid or not set).
     """
     if val is None or (isinstance(val, float) and pd.isna(val)):
         return False
@@ -25,9 +25,9 @@ def is_date_expired(val) -> bool:
     today = date.today()
     
     if isinstance(val, (datetime, pd.Timestamp)):
-        return val.date() <= today
+        return val.date() < today
     if isinstance(val, date):
-        return val <= today
+        return val < today
         
     val_str = str(val).strip()
     if not val_str or val_str.lower() in ("", "nan", "none", "null", "nat"):
@@ -36,7 +36,7 @@ def is_date_expired(val) -> bool:
     try:
         parsed_dt = pd.to_datetime(val_str, errors="coerce")
         if pd.notna(parsed_dt):
-            return parsed_dt.date() <= today
+            return parsed_dt.date() < today
     except Exception:
         pass
         
@@ -79,7 +79,6 @@ def sync_registered_products_to_csv(db: Session):
                     return i
             return -1
 
-        db_modified = False
         if db_products:
             for p in db_products:
                 reg_num = p.registration_number
@@ -90,17 +89,10 @@ def sync_registered_products_to_csv(db: Session):
                 is_expired = is_date_expired(p.expiry_date)
 
                 if p.deleted_at is not None or is_expired:
-                    # If deleted in system or expired, remove from records if exists
+                    # If deleted in system or expired, remove from CSV only.
+                    # NOTE: Do NOT modify p.deleted_at in the database! It remains active in the DB.
                     if idx != -1:
                         records.pop(idx)
-                    
-                    # If expired but not yet soft-deleted in DB, soft-delete it
-                    if is_expired and p.deleted_at is None:
-                        p.deleted_at = datetime.now(timezone.utc)
-                        fallback_user = db.query(User.user_id).first()
-                        fallback_user_id = fallback_user[0] if fallback_user else None
-                        p.deleted_by = p.updated_by or p.added_by or fallback_user_id
-                        db_modified = True
                 else:
                     # If active and not expired, clean product name and upsert
                     cleaned_name = clean_title(p.product_name)
@@ -127,10 +119,7 @@ def sync_registered_products_to_csv(db: Session):
                         # Append new record
                         records.append(updated_record)
 
-        if db_modified:
-            db.commit()
-
-        # 3. Also filter out any existing CSV rows whose NOTIFICATION_VALIDITY is expired
+        # 3. Filter out any other records in CSV that might be expired
         records = [
             r for r in records
             if not is_date_expired(r.get("NOTIFICATION_VALIDITY", ""))
