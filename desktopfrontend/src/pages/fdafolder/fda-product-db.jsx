@@ -1830,9 +1830,19 @@ function FDAProductDB() {
                   </div>
                   <div className="FdaDetailItem">
                     <label>Expiry Date</label>
-                    <span className={`FdaBadge ${getExpiryInfo(selectedProduct.expiryDate).className}`} style={{ width: 'fit-content' }}>
-                      {formatDate(selectedProduct.expiryDate)}
-                    </span>
+                    {selectedProduct.expiryDate ? (
+                      (() => {
+                        const expiryInfo = getExpiryInfo(selectedProduct.expiryDate);
+                        return (
+                          <span className={`FdaBadge ${expiryInfo.className}`} style={{ width: 'fit-content', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            {expiryInfo.icon}
+                            <span>{formatDate(selectedProduct.expiryDate)} ({expiryInfo.label})</span>
+                          </span>
+                        );
+                      })()
+                    ) : (
+                      <span className="FdaBadge badge-none" style={{ width: 'fit-content' }}>—</span>
+                    )}
                   </div>
                   <div className="FdaDetailItem">
                     <label>Added By</label>
