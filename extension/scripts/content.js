@@ -2,6 +2,8 @@
 console.log('FDA Checker content script loaded');
 console.log("Hello World from content.js")
 
+chrome.runtime.sendMessage({ action: 'pageVisited', url: location.href });
+
 const verifyBtn = document.createElement("button");
 verifyBtn.textContent = "Check Product";
 verifyBtn.style.position = "fixed";

@@ -18,7 +18,8 @@
   "permissions": [
     "activeTab",
     "storage",
-    "identity"
+    "identity",
+    "notifications"
   ],
 
   "oauth2": {
