@@ -1,4 +1,4 @@
-﻿// https://everify.store
+﻿// extension/scripts/background.js
 console.log("Background service worker started");
 
 function productKey(url) {
@@ -23,17 +23,24 @@ function showNotification(id, title, message) {
   });
 }
 
+function statusLabel(status) {
+  if (status === 'registered') return 'Registered';
+  if (status === 'unregistered') return 'Unregistered';
+  if (status === 'suspicious') return 'Suspicious';
+  return status;
+}
+
 async function notifyOnStatusChange(message, status) {
   const key = productKey(message.url);
   const { seenProducts = {} } = await chrome.storage.local.get('seenProducts');
   const previous = seenProducts[key];
 
   if (status !== 'registered') {
-    showNotification(`status-${key}`, 'Product not verified',
-      `This product is still ${status} in the FDA registry.`);
+    showNotification(`status-${key}`, 'Product not confirmed as registered',
+      `ProduCheck's result: ${statusLabel(status)}. Please confirm on the FDA Verification Portal (verification.fda.gov.ph).`);
   } else if (previous && previous !== 'registered') {
     showNotification(`status-${key}`, 'Good news',
-      'This product is now registered with the FDA.');
+      'This product now shows as Registered in ProduCheck.');
   }
 
   seenProducts[key] = status;
@@ -88,8 +95,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const { seenProducts = {} } = await chrome.storage.local.get('seenProducts');
       const status = seenProducts[key];
       if (status && status !== 'registered') {
-        showNotification(`status-${key}`, 'Product not verified',
-          `You already verified this product. It is still ${status}.`);
+        showNotification(`status-${key}`, 'You checked this product before',
+          `Your earlier result was: ${statusLabel(status)}. Results can change, so click Check Product again for the latest result.`);
       }
     })();
     return;
@@ -267,6 +274,7 @@ function updateBadge(status, tabId) {
   const badgeConfig = {
     registered:   { text: '✓', color: '#16A34A' }, // green
     unregistered: { text: '!', color: '#DC2626' }, // red
+    suspicious:   { text: '?', color: '#D97706' }, // amber
     unverified:   { text: '?', color: '#D97706' }, // amber
     idle:         { text: '',  color: '#000000' }  // clears badge
   };

@@ -1,4 +1,4 @@
-//Auth.js
+//extension/js/auth.js  
 import {
   whenSessionReady,
   isUserLoggedIn,

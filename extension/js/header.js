@@ -1,4 +1,4 @@
-// header.js
+// extension/js/header.js 
 import { whenSessionReady, isUserLoggedIn, getCurrentUser, logoutUser, updateUsername, deleteAccount } from "../scripts/session.js";
 import { loadPartial } from "./partial-loader.js";
 import { LIMITS, validateUsername, liveLengthCheck } from "../utils/validation.js";
