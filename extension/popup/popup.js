@@ -201,7 +201,13 @@ document.addEventListener("DOMContentLoaded", () => {
         lastProductTitle = value;
 
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        lastProductUrl = tab?.url || '';
+        // only keep the page address if it is one of our four shops
+        let shopUrl = '';
+        try {
+          const host = new URL(tab?.url || '').hostname;
+          if (/(^|\.)(shopee\.ph|lazada\.com\.ph|facebook\.com|tiktok\.com)$/.test(host)) shopUrl = tab.url;
+        } catch {}
+        lastProductUrl = shopUrl;
 
         showState('scanning');
 
@@ -211,6 +217,12 @@ document.addEventListener("DOMContentLoaded", () => {
           platform: platform(lastProductUrl),
           url: lastProductUrl
         }, (response) => {
+          if (!response || response.status === 'error' || !response.data) {
+            showState('manual-input');
+            const errEl = document.getElementById('manual-input-error');
+            if (errEl) errEl.textContent = "We couldn't reach the ProduCheck server. Please check your internet connection and try again.";
+            return;
+          }
           const verdict = response?.data?.verdict || 'no_match';
           const status = verdict === 'no_match' ? 'suspicious' : verdict;
           lastVerificationStatus = status;

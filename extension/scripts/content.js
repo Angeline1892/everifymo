@@ -1,4 +1,4 @@
-//content.js
+//extension/scripts/content.js
 console.log('FDA Checker content script loaded');
 console.log("Hello World from content.js")
 
@@ -394,6 +394,17 @@ function createModal() {
         </div>
       </div>
 
+      <div class="state hidden rf-result" id="state-check-error">
+        <div class="icon-ring icon-ring--error">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 8v5M12 16.5v.01" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>
+        </div>
+        <p class="rf-result-title">Couldn't Check This Product</p>
+        <p class="rf-result-message" id="check-error-message">Something went wrong. Please try again.</p>
+        <div class="action-row">
+          <button class="btn btn-primary btn-error" id="check-error-close" type="button">Close</button>
+        </div>
+      </div>
+
       <div class="state hidden rf-result" id="state-report-success">
         <div class="icon-ring icon-ring--success">
           <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -479,6 +490,10 @@ function createModal() {
 
   modal.querySelector('#rf-error-back').addEventListener('click', () => {
     showState('state-report-form');
+  });
+
+  modal.querySelector('#check-error-close').addEventListener('click', () => {
+    modal.style.display = 'none';
   });
  
   modal.querySelectorAll('.btn-skip').forEach(btn => {
@@ -592,6 +607,13 @@ function sanitizeUrl(rawUrl) {
   }
 }
 
+function showCheckError(message) {
+  createModal();
+  const msgEl = modal.querySelector('#check-error-message');
+  if (msgEl) msgEl.textContent = message;
+  showState('state-check-error');
+}
+
 function showState(stateId) {
   modal.style.display = 'block';
   modal.querySelectorAll('.state').forEach(el => {
@@ -674,11 +696,17 @@ verifyBtn.addEventListener("click", async () => {
 
     if (!response?.success) {
       console.error("Capture failed:", response?.error);
+      showCheckError("We couldn't capture this page. Please wait for the page to finish loading, then try again.");
       return;
     }
 
     lastProductTitle = (response.title || '').slice(0, RF_LIMITS.PRODUCT_NAME_MAX);
     lastStoreName = response.store || '';
+
+    if (!lastProductTitle.trim()) {
+      showCheckError("We couldn't read a product title from this page. Please make sure the product name is visible on screen, then try again.");
+      return;
+    }
 
     chrome.runtime.sendMessage({
       action: "extractedTitle",
@@ -686,7 +714,11 @@ verifyBtn.addEventListener("click", async () => {
       platform: platform(location.href),
       url: location.href
     }, (res) => {
-      const verdict = res?.data?.verdict || 'no_match';
+      if (!res || res.status === 'error' || !res.data) {
+        showCheckError("We couldn't reach the ProduCheck server. Please check your internet connection and try again.");
+        return;
+      }
+      const verdict = res.data.verdict || 'no_match';
       const status = verdict === 'no_match' ? 'suspicious' : verdict;
       lastVerificationStatus = status;
       renderResult(status, lastProductTitle, res?.data?.top5_registered || []);
