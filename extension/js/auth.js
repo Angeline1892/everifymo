@@ -1,4 +1,5 @@
-//Auth.js
+//extension/js/auth.js  
+import "./agreement-guard.js";
 import {
   whenSessionReady,
   isUserLoggedIn,

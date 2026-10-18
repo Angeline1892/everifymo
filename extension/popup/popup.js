@@ -40,7 +40,10 @@ document.addEventListener("DOMContentLoaded", () => {
       productStatus: 'home'
     });
 
-    showState('home');
+    // Until the person agrees to the Terms, only show the agreement message
+    chrome.storage.local.get(['termsAgreed'], (r) => {
+      showState(r.termsAgreed === true ? 'home' : 'agreement');
+    });
 
     //babalikan 3
     // chrome.storage.local.get(
@@ -118,6 +121,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnSigninHeader) {
       btnSigninHeader.addEventListener('click', () => {
         chrome.tabs.create({ url: chrome.runtime.getURL('pages/auth.html') });
+      });
+    }
+
+    const btnReviewTerms = document.getElementById('btn-review-terms');
+    if (btnReviewTerms) {
+      btnReviewTerms.addEventListener('click', () => {
+        chrome.tabs.create({ url: chrome.runtime.getURL('pages/welcome.html') });
       });
     }
 
@@ -201,7 +211,13 @@ document.addEventListener("DOMContentLoaded", () => {
         lastProductTitle = value;
 
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        lastProductUrl = tab?.url || '';
+        // only keep the page address if it is one of our four shops
+        let shopUrl = '';
+        try {
+          const host = new URL(tab?.url || '').hostname;
+          if (/(^|\.)(shopee\.ph|lazada\.com\.ph|facebook\.com|tiktok\.com)$/.test(host)) shopUrl = tab.url;
+        } catch {}
+        lastProductUrl = shopUrl;
 
         showState('scanning');
 
@@ -211,6 +227,12 @@ document.addEventListener("DOMContentLoaded", () => {
           platform: platform(lastProductUrl),
           url: lastProductUrl
         }, (response) => {
+          if (!response || response.status === 'error' || !response.data) {
+            showState('manual-input');
+            const errEl = document.getElementById('manual-input-error');
+            if (errEl) errEl.textContent = "We couldn't reach the ProduCheck server. Please check your internet connection and try again.";
+            return;
+          }
           const verdict = response?.data?.verdict || 'no_match';
           const status = verdict === 'no_match' ? 'suspicious' : verdict;
           lastVerificationStatus = status;
@@ -295,7 +317,7 @@ function renderResult(status, productTitle, results = []) {
 // }
 
 function showState(state) {
-  const states = ['idle', 'registered', 'suspicious', 'unregistered', 'home', 'scanning', 'manual-input'];
+  const states = ['idle', 'registered', 'suspicious', 'unregistered', 'home', 'scanning', 'manual-input', 'agreement'];
   states.forEach(s => {
     const el = document.getElementById(`state-${s}`);
     if (el) el.classList.add('hidden');
