@@ -22,6 +22,8 @@ document.body.appendChild(verifyBtn);
 
 let verifyButtonEnabled = true; // default
 let lastStoreName = '';
+let lastBrand = '';
+let lastSearchText = '';
 
 // checking if its in the product page
 function isProductPage() {
@@ -542,8 +544,11 @@ function createModal() {
         return;
       }
 
+      const fullName = modal.querySelector('#rf-product-name').value.trim()
+        .slice(0, RF_LIMITS.PRODUCT_NAME_MAX);
+
       const complaint = {
-        productName: modal.querySelector('#rf-product-name').value,
+        productName: fullName,
         productUrl: sanitizeUrl(lastProductUrl),
         storeName: modal.querySelector('#rf-store-name').value,
         description: modal.querySelector('#rf-description').value,
@@ -604,11 +609,29 @@ function showState(stateId) {
   const reportStates = ['state-report-form', 'state-report-success', 'state-report-error'];
   closeX.style.display = reportStates.includes(stateId) ? 'block' : 'none';
 }
+
+function setLoading(on, text = 'Verifying product…') {
+  modal.querySelector('#state-loading .spinner').style.display = on ? '' : 'none';
+  modal.querySelector('#state-loading .state-message').textContent = text;
+  showState('state-loading');
+  if (!on) modal.querySelector('#mo-close-x').style.display = 'block';
+}
  
 function renderResult(status, productTitle, results = []) {
   const stateId = ['registered', 'suspicious', 'unregistered'].includes(status)
     ? `state-${status}`
     : 'state-suspicious';
+
+  const stateEl = modal.querySelector(`#${stateId}`);
+  let note = stateEl.querySelector('.detected-note');
+  if (!note) {
+    note = document.createElement('div');
+    note.className = 'detected-note';
+    note.style.cssText = 'font-size:11px;color:#6b7280;margin:6px 0;';
+    stateEl.firstElementChild.after(note);   
+  }
+  note.textContent = lastSearchText ? `Searched as: ${lastSearchText}` : '';
+  note.style.display = lastSearchText ? 'block' : 'none';
  
   const nameSpan = modal.querySelector(`#product-name-${status}`);
   if (nameSpan) nameSpan.textContent = productTitle;
@@ -660,36 +683,63 @@ verifyBtn.addEventListener("click", async () => {
   verifyBtn.style.display = "none";
   if (modal) modal.style.display = "none";
 
-  document.getElementById("debug-shot")?.remove();
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
   chrome.runtime.sendMessage({ 
     action: "captureScreenshot",
     url: location.href,
-    platform: platform(location.href)
-  }, (response) => {
+    platform: platform(location.href),
+    dpr: window.devicePixelRatio,
+    rect: { x: 0, y: 0, w: window.innerWidth / 2, h: window.innerHeight }
+  }, (shot) => {
     updateButton();
     createModal();
-    showState('state-loading');
+    setLoading(true, 'Reading the listing…');
 
-    if (!response?.success) {
-      console.error("Capture failed:", response?.error);
+    if (!shot?.success) {
+      setLoading(false, "Couldn't capture the page. Please try again.");
       return;
     }
 
-    lastProductTitle = (response.title || '').slice(0, RF_LIMITS.PRODUCT_NAME_MAX);
-    lastStoreName = response.store || '';
-
     chrome.runtime.sendMessage({
-      action: "extractedTitle",
-      title: lastProductTitle,
+      action: "verifyScreenshot",
+      image: shot.dataUrl,
+      url: location.href,
       platform: platform(location.href),
-      url: location.href
-    }, (res) => {
-      const verdict = res?.data?.verdict || 'no_match';
-      const status = verdict === 'no_match' ? 'suspicious' : verdict;
-      lastVerificationStatus = status;
-      renderResult(status, lastProductTitle, res?.data?.top5_registered || []);
+      dpr: window.devicePixelRatio,
+      rect: { x: 0, y: 0, w: window.innerWidth / 2, h: window.innerHeight }
+    }, (response) => {
+      if (!response?.success || response.error || !response.title) {
+        const unreadable = response?.success && response.error === 'unreadable';
+        setLoading(false, unreadable
+          ? "We couldn't read the product title on this page. Make sure the title is visible on screen, close any pop-ups, then try again."
+          : "Something went wrong on our side. Please try again in a moment.");
+        return;
+      }
+
+      lastProductTitle = (response.title || '').slice(0, RF_LIMITS.PRODUCT_NAME_MAX);
+      lastStoreName = response.store || '';
+      lastBrand = (response.brand || '').slice(0, 100);
+      lastSearchText = (response.searchText || '').slice(0, RF_LIMITS.PRODUCT_NAME_MAX);
+
+      setLoading(true, 'Checking the FDA database…');
+
+      chrome.runtime.sendMessage({
+        action: "extractedTitle",
+        title: lastSearchText || lastProductTitle,
+        platform: platform(location.href),
+        url: location.href
+      }, (res) => {
+        if (res?.status !== 'success') {          
+          setLoading(false, "We couldn't reach the verification service. Please try again.");
+          return;
+        }
+
+        const verdict = res?.data?.verdict || 'no_match';
+        const status = verdict === 'no_match' ? 'suspicious' : verdict;
+        lastVerificationStatus = status;
+        renderResult(status, lastProductTitle, res?.data?.top5_registered || []);
+      });
     });
   });
 });
