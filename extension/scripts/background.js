@@ -112,7 +112,7 @@ async function authorizedFetch(url, options = {}) {
 }
 
 // These actions do real work (read the page, call the server), so they only run after the person agrees
-const NEEDS_AGREEMENT = ['pageVisited', 'captureScreenshot', 'extractedTitle', 'recordDisplayedDetection', 'submitComplaint'];
+const NEEDS_AGREEMENT = ['pageVisited', 'captureScreenshot', 'verifyScreenshot', 'extractedTitle', 'recordDisplayedDetection', 'submitComplaint'];
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (NEEDS_AGREEMENT.includes(message.action)) {
@@ -208,7 +208,7 @@ function handleMessage(message, sender, sendResponse) {
     return true;
   }
 
-  console.log('Background received message:', message);
+  // console.log('Background received message:', message); - this debug line printed the whole message, which includes a complaint's attached screenshot, into the extension's developer console on the user's own computer. It was never sent anywhere, but it is better not to log it.
   if (message.action === 'extractedTitle') {
     (async () => {
       try {
