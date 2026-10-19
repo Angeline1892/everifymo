@@ -157,24 +157,50 @@ function handleMessage(message, sender, sendResponse) {
       return;
     }
 
-    chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: "png" }, async (dataUrl) => {
+    chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: "png" }, (dataUrl) => {
       if (chrome.runtime.lastError) {
         sendResponse({ success: false, error: chrome.runtime.lastError.message });
         return;
       }
+      sendResponse({ success: true, dataUrl });
+    });
+    return true;
+  }
+
+  if (message.action === "verifyScreenshot") {
+    (async () => {
       try {
         const res = await fetch('https://everify.store/verify-screenshot', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: dataUrl, url: message.url, platform: message.platform })
+          body: JSON.stringify({ 
+            image: message.image, 
+            url: message.url, 
+            platform: message.platform,
+            dpr: message.dpr, 
+            rect: message.rect 
+          })
         });
+        
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+
         const data = await res.json();
-        sendResponse({ success: true, dataUrl, title: data.title, store: data.store });
+        sendResponse({ 
+          success: true, 
+          title: data.title, 
+          store: data.store,
+          brand: data.brand,
+          searchText: data.search_text,
+          error: data.error 
+        });
       } catch (e) {
-        sendResponse({ success: false, error: e.message });
+        sendResponse({ 
+          success: false, 
+          error: e.message 
+        });
       }
-    });
-    return true;  
+   })();
+    return true;
   }
 
   if (message.action === "openLogin") {
@@ -196,9 +222,15 @@ function handleMessage(message, sender, sendResponse) {
 
         const data = await response.json().catch(() => null);
         console.log('Backend response:', data);
+
+        if (!response.ok || !data?.verdict) {
+          console.error('verify failed:', response.status, data);
+          sendResponse({ status: 'error', data: null });
+          return;
+        }
         
         const status = data?.verdict === 'no_match' ? 'suspicious' : data?.verdict || 'unregistered';
-        await notifyOnStatusChange(message, status);
+        notifyOnStatusChange(message, status).catch(console.error);
 
         // Store the extracted product info in chrome.storage
         chrome.storage.local.set({
