@@ -266,19 +266,19 @@ function handleMessage(message, sender, sendResponse) {
       } catch (error) {
         //
         console.error('Error sending title to backend:', error);
-        const status = 'unregistered';
-        chrome.storage.local.set({
-          productTitle: message.title,
-          productPlatform: message.platform,
-          productUrl: message.url,
-          productStatus: status
-        }, () => {
-          console.log('Product info stored with error fallback:', message.title);
-        });
+        // const status = 'unregistered';
+        // chrome.storage.local.set({
+        //   productTitle: message.title,
+        //   productPlatform: message.platform,
+        //   productUrl: message.url,
+        //   productStatus: status
+        // }, () => {
+        //   console.log('Product info stored with error fallback:', message.title);
+        // });
 
-        if (sender.tab && sender.tab.id) {
-          updateBadge(status, sender.tab.id);
-        }
+        // if (sender.tab && sender.tab.id) {
+        //   updateBadge(status, sender.tab.id);
+        // }
         
         sendResponse({ status: 'error', data: null });
       }
