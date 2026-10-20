@@ -1,0 +1,145 @@
+<!-- extension/pages/about.html -->
+<!DOCTYPE html>
+<html lang="en">    
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ProduCheck | About</title>
+        <link rel="stylesheet" href="../css/global.css" />
+    </head>
+    <body>
+        <main class="about-card">
+        <div id="header-slot"></div>
+        <div id="overlay-slot"></div>
+
+        <div id="blur-target">
+            <div id="nav-slot"></div>
+            <div id="page-content">
+
+                    <div class="about-everify-details">
+                        <div class="about-everify-row">
+                            <div class="about-everify-text">
+                            <p class="about-everify-title">ProduCheck</p>
+                            <p class="about-everify-version">Version <span id="about-version">1.0.0</span></p>
+                            <p class="about-everify-description">
+                                ProduCheck is a thesis prototype Chrome extension that helps you check whether a
+                                cosmetic product on Shopee, Lazada, TikTok Shop, or Facebook Marketplace appears in a
+                                list of FDA products. Results are a guide only, not an official FDA decision.
+                            </p>
+                            </div>
+                            <span class="about-everify-icon">
+                            <img src="../assets/images/extension_icon.png" alt="Extension Icon">
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="about-everify-guide">
+                        <div class="about-everify-guide-top">
+                            <p class="about-everify-guide-title">How it Works</p>
+                            <p class="about-everify-guide-subtitle">3 simple steps:</p>
+                        </div>
+
+                        <div class="about-everify-guide-steps">
+                            <div class="about-everify-guide-step1">
+                                <img src="../assets/images/shop_icon.png" alt="Step 1 Icon" class="about-everify-guide-step-icon">
+                                <p class="step-title">Open</p>
+                                <p class="step-description">Browse cosmetic products on Shopee, Lazada, TikTok Shop, or Facebook Marketplace. When you open a product page, a Check Product button appears.</p>
+                            </div>
+
+                            <div class="about-everify-guide-step2">
+                                <img src="../assets/images/search_icon.png" alt="Step 2 Icon" class="about-everify-guide-step-icon">
+                                <p class="step-title">Check</p>
+                                <p class="step-description">Click Check Product. ProduCheck reads the product title from the part of the page you can see and compares it with its FDA product list.</p>
+                            </div>
+
+                            <div class="about-everify-guide-step3">
+                                <img src="../assets/images/clock_icon.png" alt="Step 3 Icon" class="about-everify-guide-step-icon">
+                                <p class="step-title">See the result</p>
+                                <p class="step-description">The product is shown as Registered, Unregistered, or Suspicious (we couldn't match it, so it needs further checking on the FDA portal).</p>
+                            </div>
+                        </div>
+
+                        <p class="about-everify-guide-subtitle" style="margin-top: 20px;">
+                            <strong>Revisit reminder:</strong> If you open a product page again that was Unregistered or Suspicious
+                            when you checked it, ProduCheck shows a reminder of your earlier result. It does not check the product
+                            again by itself. Click Check Product to get the latest result.
+                        </p>
+                    </div>
+
+                    <div class="about-everify-guide">
+                        <div class="about-everify-guide-top">
+                            <p class="about-everify-guide-title">Tips for Best Results</p>
+                        </div>
+                        <p class="about-everify-guide-subtitle" style="text-align: left;">
+                            <strong>Show a clear brand name.</strong> ProduCheck also reads the brand name from the product photo
+                            shown on the listing. Choose a photo where the brand name is clear and in focus before you click Check
+                            Product. If the brand cannot be read, ProduCheck still checks the product using its listing title.
+                        </p>
+                        <p class="about-everify-guide-subtitle" style="text-align: left;">
+                            <strong>Before you click Check Product.</strong> ProduCheck takes a picture of the visible part of your
+                            current page and sends it to our server and an AI service to read the product details. Please close any
+                            chats, messages, or personal information that may be visible on screen first. We use the picture only to
+                            check the product.
+                        </p>
+                    </div>
+
+                    <div class="about-everify-platforms">
+                        <p class="about-everify-platforms-title">Supported E-marketplace Platforms</p>
+
+                        <div class="platforms-grid">
+                            <div class="platform-item">
+                                <img src="../assets/images/shopee_icon.png" alt="Shopee Logo" class="platform-logo">
+                                <p class="platform-name">Shopee</p>
+                            </div>
+                            <div class="platform-item">
+                                <img src="../assets/images/lazada_icon.png" alt="Lazada Logo" class="platform-logo">
+                                <p class="platform-name">Lazada</p>
+                            </div>
+                            <div class="platform-item">
+                                <img src="../assets/images/marketplace_icon.png" alt="Facebook Marketplace Logo" class="platform-logo">
+                                <p class="platform-name">Facebook Marketplace</p>
+                            </div>
+                            <div class="platform-item">
+                                <img src="../assets/images/tiktok_icon.png" alt="TikTok Shop Logo" class="platform-logo">
+                                <p class="platform-name">TikTok Shop</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="about-everify-agencies">
+                            <p class="about-everify-agencies-title">Partner Agencies</p>
+                            <p class="about-everify-guide-subtitle" style="margin: 0 0 16px;">
+                                The FDA is the only agency that sees complaints sent through ProduCheck. The CIDG only helps the FDA
+                                with taking down online stores or products when needed, and does not see complaints sent from the
+                                extension. ProduCheck is a prototype, so these complaints are not official reports.
+                            </p>
+
+                            <div class="agencies-grid">
+                                <div class="agency-item">
+                                    <img src="../assets/images/fda_icon.png" alt="FDA Logo" class="agency-logo">
+                                    <p class="agency-name">Food and Drug Administration</p>
+                                </div>
+                                <div class="agency-item">
+                                    <img src="../assets/images/cidg_icon.png" alt="CIDG Logo" class="agency-logo">
+                                    <p class="agency-name">Criminal Investigation and Detection Group</p>
+                                </div>
+                            </div>
+                    </div>
+
+                    <div class="about-everify-terms" id="terms">
+                        <p class="about-everify-terms-title">Terms of Use and Privacy Notice</p>
+                        <div id="terms-slot"></div>
+                    </div>
+                </div>
+            </div>
+            
+        </main>
+
+        <script type="module" src="../utils/api.js"></script>
+        <script type="module" src="../scripts/session.js"></script>
+        <script type="module" src="../js/partial-loader.js"></script>
+        <script type="module" src="../js/header.js"></script>
+        <script type="module" src="../js/nav.js"></script>
+        <script type="module" src="../js/about.js"></script>
+    </body>
+</html>

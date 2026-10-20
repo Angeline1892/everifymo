@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+    <div style="width:400px; height: 350px; background-color: antiquewhite; border: 1 px solid; overflow-y: scroll; text-align: center;">
+        
+        <div id="loginContainer">
+            <form id="loginForm">
+                <h1>Login</h1>
+                <input type="text" id="loginUsername" name="username" placeholder="Enter your username">
+                <input type="password" id="loginPassword" name="password">
+                <input type="submit" value="Login">
+            </form>    
+            <p id="loginStatus"></p>
+            <p>No account? <a href="#" id="showSignUp">Sign up</a></p>
+        </div>
+
+        <div id="signUpContainer" style="display: none;">
+            <form id="signUpForm">
+                <h1>Create Account</h1>
+                <input type="email" id="signUpEmail" name="email" placeholder="juan@gmail.com">
+                <input type="text" id="signUpUsername" name="username" placeholder="juan_">
+                <input type="password" id="signUpPassword" name="password" placeholder="Enter password">
+                <input type="password" id="passwordConfirmation" name="passwordConfirmation" placeholder="Confirm password">
+                <input type="submit" value="Sign Up">
+            </form>
+            <p id="signUpStatus"></p>
+        </div>
+
+        <div id="complaintContainer" style="display: none;">
+            <form id="submitComplaint">
+                <h1>You can submit your complaint here:</h1>
+                <input type="text" id="productName" name="productName" placeholder="Enter the product name"><br>
+                <input type="text" id="shop" name="shop" placeholder="Enter the seller name"><br>
+                <input type="text" id="shopUrl" name="shopUrl"><br>
+                <!-- <textarea id="reasonComplaint" name="reasonComplaint" placeholder="Type your complaint here..."></textarea> -->
+                <input type="submit" value="Submit">           
+            </form>
+            <p id="info"></p>
+            <button id="showHistoryBtn">View Complaint History</button>
+            <button id="logoutBtn">Log out</button>
+        </div>
+
+        <div id="complaintHistory" style="display: none;">
+            <h1>Your Complaint History</h1>
+            <div id="historyList"></div>
+            <button id="backToComplaintBtn">Back</button>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

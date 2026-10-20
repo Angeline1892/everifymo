@@ -1,184 +1,666 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
-
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+*{
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+body{
+  font-family: 'Poppins', sans-serif;
 }
 
-.hero {
-  position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
+/* LOGIN PAGE */
+.LoginPage {
+  background-color: #1D3439; 
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 24px;
+  color: #fdfdfd;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
-#center {
+.LoginGlassContainer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: stretch;
+  width: 100%;
+  max-width: min(92vw, 1280px);
+  min-height: 560px;
+  margin: 0 auto;
+  background: rgba(253, 253, 253, 0.07);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+
+  padding: 48px 56px;
+  gap: 48px;
+  box-sizing: border-box;
+}
+
+.LeftPanel {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
-
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 0;
+  gap: 24px;
 }
 
-#next-steps {
+.Agency {
   display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
-
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
+  align-items: center;
+  gap: 16px;
+  flex-direction: row;
 }
 
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
+.Agency img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
 }
 
-#next-steps ul {
-  list-style: none;
-  padding: 0;
+.AgencyTop img, .FdaLogo {
+  width: 60px;
+  height: 60px;
+}
+
+.Agency h3 {
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  line-height: 1.3;
+}
+
+.Agency p {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.Hero {
+  margin: 16px 0;
+  text-align: center;
+}
+
+.Hero h1 {
+  font-size: clamp(1.5rem, 2.5vw, 2.9rem);
+  line-height: 1.15;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.Hero span {
+  color: #f7931a;
+}
+
+.Hero h4 {
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  margin-top: 12px;
+}
+
+.RightPanel {
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  padding: 38px 34px;
+  border-radius: 16px;
+
+   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.RightPanel h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+
+.RightPanel small {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.RightPanel p {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
+.LoginForm {
+  display: flex;
+  flex-direction: column;
+}
+
+.LoginForm label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.LoginForm input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 25px !important;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.LoginForm input:focus {
+  border-color: #f7931a;
+  outline: none;
+}
+
+.LoginForm span {
+  color: #ef4444;
+}
+
+.AgencyButtons input[type="radio"] {
+  display: none;
+}
+
+.AgencyButtons label {
+  color: #334155;
+  font-weight: 600;
+}
+
+.AgencyButtons {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+  margin-bottom: 18px;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.InterButtons {
+  flex: 1;
+  padding: 11px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.AgencyButtonFDA {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.AgencyButtonFDA:hover {
+  border-color: #1b4322;
+  background: #1b4322;
+  color: #fdfdfd;
+}
+
+.AgencyButtonCIDG {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.AgencyButtonCIDG:hover {
+  background: #1f2937;
+  border-color: #1f2937;
+  color: #fdfdfd;
+}
+
+input[type="radio"]#fda:checked + label {
+  border-color: #2d6c39;
+  background: #2d6c39;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(45, 108, 57, 0.25);
+  transform: translateY(-1px);
+}
+
+input[type="radio"]#cidg:checked + label {
+  border-color: #1f2937;
+  background: #1f2937;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(31, 41, 55, 0.25);
+  transform: translateY(-1px);
+}
+
+.RememberMe {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.RememberMe label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px;
+  margin: 0 !important;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+}
+
+.RememberMe input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  cursor: pointer;
+  accent-color: #1e293b;
+}
+
+.ForgetPass {
+  color: #f7931a;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: right;
+  margin: 0 !important;
+}
+
+.ForgetPass a {
+  color: #f7931a;
+  text-decoration: none;
+}
+
+.ForgetPass:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.LoginErrorMsgContainer {
+  background-color: #fef2f2;
+  border: 1px solid #fca5a5;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  min-height: unset;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.LoginErrorMsg {
+  color: #dc2626 !important;
+  font-size: 13px;
+  font-weight: 500;
+  align-items: center;
+  text-align: center;
+  margin: 0 !important;
+}
+
+.LoginButton {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  background: #1D3439;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
+}
+
+.LoginButton:hover {
+  background: #1D3439;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.3);
+}
+
+/* OTP Code Layout */
+.OtpContainer {
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.OtpInstructions {
+  font-size: 13px;
+  color: #475569;
+  margin-bottom: 20px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.OtpInstructions span {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.LoginOtpInputGrid {
   display: flex;
   gap: 8px;
-  margin: 32px 0 0;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
 
-  .logo {
-    height: 18px;
+.LoginOtpDigitInput {
+  width: 44px;
+  height: 48px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1 !important;
+  background-color: #ffffff;
+  color: #0f172a;
+  transition: all 0.2s ease;
+  margin-bottom: 0 !important; 
+}
+
+.LoginOtpDigitInput:focus {
+  border-color: #f7931a !important;
+  box-shadow: 0 0 0 3px rgba(247, 147, 26, 0.2);
+  outline: none;
+}
+
+.LoginOtpTimerContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.LoginResendButton {
+  background: none;
+  border: none;
+  color: #f7931a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.LoginResendButton:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.LoginBackToLoginBtn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  transition: color 0.2s ease;
+  text-decoration: none;
+}
+
+.LoginBackToLoginBtn:hover {
+  color: #0f172a;
+  text-decoration: underline;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* RESPONSIVE BREAKPOINTS */
+@media (max-width: 1279px) {
+  .LoginGlassContainer {
+    width: min(92vw, 1100px);
+    padding: 40px 40px;
+    gap: 36px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .LoginPage {
+    padding: 32px 16px;
+    height: auto;
+    min-height: 100vh;
   }
 
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
+  .LoginGlassContainer {
+    flex-direction: column;
+    width: min(92vw, 640px);
+    min-height: auto;
+    padding: 36px 28px;
+    gap: 32px;
     align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
   }
 
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
+  .LeftPanel {
+    width: 100%;
+    min-height: auto;
+    align-items: center;
+    text-align: center;
+    gap: 24px;
+    padding: 0;
+  }
+
+  .Agency {
     justify-content: center;
+    text-align: left;
+  }
 
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
+  .AgencyTop {
+    transform: none;
+  }
 
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
+  .Hero {
+    margin: 12px 0;
+    text-align: center;
+  }
+
+  .Hero h1 {
+    font-size: 2.1rem;
+  }
+
+  .RightPanel {
+    width: 100%;
+    max-width: 100%;
   }
 }
 
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
+@media (max-width: 767px) {
+  .LoginPage {
+    padding: 20px 12px;
+    justify-content: flex-start;
+  }
+
+  .LoginGlassContainer {
+    width: 95vw;
+    padding: 24px 18px;
+    border-radius: 14px;
+    gap: 24px;
+  }
+
+  .Hero h1 {
+    font-size: 1.55rem;
+  }
+
+  .Hero h4 {
+    font-size: 0.95rem;
+  }
+
+  .Agency img, .AgencyTop img, .FdaLogo {
+    width: 46px;
+    height: 46px;
+  }
+
+  .Agency h3 {
+    font-size: 0.85rem;
+  }
+
+  .RightPanel {
+    padding: 24px 18px;
+    border-radius: 12px;
+  }
+
+  .RightPanel h2 {
+    font-size: 20px;
+  }
+
+  .AgencyButtons {
+    gap: 8px;
+  }
+
+  .InterButtons {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
+  .LoginOtpInputGrid {
+    gap: 6px;
+  }
+
+  .LoginOtpDigitInput {
+    width: 38px;
+    height: 44px;
+    font-size: 18px;
   }
 }
 
-.ticks {
-  position: relative;
+.LoginInputWrapper {
+ position: relative;
+  display: flex;
+  align-items: center;
   width: 100%;
+  margin-bottom: 20px;  
+}
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
-  }
+.LoginInputWrapper input {
+  width: 100%;
+  padding: 11px 12px 11px 40px !important;
+  margin-bottom: 0 !important;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  background: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+}
 
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
-  }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
-  }
+.LoginInputWrapper input:focus {
+  border-color: #f7931a;
+}
+
+.PasswordInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 20px; 
+}
+
+.PasswordInputWrapper input {
+  width: 100%;
+  padding: 11px 45px 11px 40px !important;
+  margin-bottom: 0 !important;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  background: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.PasswordInputWrapper input:focus {
+  border-color: #f7931a;
+}
+
+.LoginInputIcon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.TogglePasswordBtn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.TogglePasswordBtn:hover {
+  color: #f7931a;
+}
+
+/* per-field validation error styling — Login page (mirrors reg-input-error / RegError) */
+.login-input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.LoginFieldError {
+  font-size: 12px;
+  color: #ef4444 !important;
+  margin-top: -14px !important;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }

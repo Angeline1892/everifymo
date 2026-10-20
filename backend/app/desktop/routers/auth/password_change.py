@@ -1,0 +1,62 @@
+# backend/app/desktop/routers/auth/password_change.py
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+
+from fastapi import Request
+from app.core.audit import write_audit_log, get_user_region_code
+from app.core.constants import AuditAction, Role
+
+from app.database.sessions import get_db
+from app.core.dependencies import get_current_user
+from app.core.security import verify_password, hash_password
+from app.models.users import User
+from app.desktop.schemas.auth.password_change import ChangePasswordRequest
+from app.desktop.services.admin_notifications import admin_notification_service as notification_service
+from app.desktop.schemas.admin_notifications.notification_enums import NotificationEventType
+
+router = APIRouter(prefix="/auth/password", tags=["auth-password"])
+
+
+@router.post("/change")
+def change_password(
+    payload: ChangePasswordRequest,
+    http_request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db.execute(text("SET app.bypass_rls = 'true'"))
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect.")
+
+    current_user.password_hash = hash_password(payload.new_password)
+    current_user.force_password_change = False
+    db.commit()
+
+    notification_service.notify_self_service_account_event(
+        db=db,
+        target=current_user,
+        event_type=NotificationEventType.PASSWORD_CHANGED,
+        title="Password changed",
+        message=f"{current_user.email} changed their account password.",
+    )
+
+    if current_user.role == Role.NATIONAL_ADMIN:
+        password_action = AuditAction.UPDATE_NATIONAL_ADMIN_PASSWORD
+    elif current_user.role in Role.ADMIN_ROLES:
+        password_action = AuditAction.UPDATE_REGIONAL_ADMIN_PASSWORD
+    else:
+        password_action = AuditAction.UPDATE_PERSONNEL_PASSWORD
+
+    write_audit_log(
+        db,
+        user=current_user,
+        action=password_action,
+        target_table="users",
+        target_id=current_user.user_id,
+        target_reference=current_user.email,
+        request=http_request,
+        region_code=get_user_region_code(db, current_user),
+    )
+
+    return {"message": "Password changed successfully."}
