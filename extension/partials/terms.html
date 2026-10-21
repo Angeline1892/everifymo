@@ -5,7 +5,7 @@
      Remove every yellow spot before sending the extension to respondents. -->
 <div class="terms-content">
 
-  <p class="terms-updated">Last updated: 19 October 2026</p>
+  <p class="terms-updated">Last updated: 22 October 2026</p>
 
   <p>
     Thank you for trying ProduCheck! This page explains, in plain words, what ProduCheck is,
@@ -75,7 +75,9 @@
 
   <p><strong>When you click Check Product</strong></p>
   <ul>
-    <li>Nothing is captured or sent until you click Check Product (or type a product name and confirm it).</li>
+    <li>No picture is taken until you click Check Product (or type a product name and confirm it). 
+      The only thing sent without a click is the revisit re-check, described under 
+      “What ProduCheck remembers on your device.” It sends a saved product title, never a picture.</li>
     <li>
       ProduCheck takes a picture of the part of the shopping page you can see in your current browser tab.
       It does not capture your whole screen, your other tabs, or other apps. It hides its own button and
@@ -150,21 +152,27 @@
   <p><strong>What ProduCheck remembers on your device</strong></p>
   <ul>
     <li>
-      ProduCheck saves a few things in your Chrome browser, not on our server: the address of each product page
-      you checked (without the part after the "?") and its result, the last product you checked, whether the
-      Check Product button is switched on, that you agreed to these Terms, and your sign-in details if you are
-      signed in.
+      ProduCheck saves a few things in your Chrome browser, not on our server: a product ID taken from the page 
+      address of each product you checked, the product title, and its result; the full page address and title of 
+      the last product you checked; whether the Check Product button is switched on, 
+      that you agreed to these Terms, and your sign-in details if you are signed in.
     </li>
     <li>
-      This is how the revisit reminder works. When you open a page on a supported shop, ProduCheck compares its
-      address with this saved list on your device. Nothing is sent to us for this. If you open a product page
-      again that was Unregistered or Suspicious when you checked it, Chrome shows a reminder of your earlier
-      result. The reminder does not check the product again. Click Check Product again to get the latest result.
+      This is how the revisit reminder works. When you open or return to a product page on a supported shop, ProduCheck looks for 
+      it in this saved list on your device. If you checked it before and its result was Unregistered or Suspicious, 
+      ProduCheck sends the saved product title (no picture) to our server to check it again, and Chrome shows a notification. 
+      If the product is now Registered, the notification says so. Otherwise, it shows your earlier or updated result. 
+      This happens only for product pages you already checked, and only after you agree to these Terms. You can click Check 
+      Product at any time for the full result.
     </li>
     <li>ProduCheck does not keep a list of the pages you browse. It only remembers products you chose to check.</li>
     <li>This information stays on your device until you remove the extension from Chrome.</li>
   </ul>
 
+  <p>
+    ProduCheck’s Chrome permissions cover all websites, but it only acts on Shopee, Lazada, TikTok Shop, 
+    and Facebook Marketplace product pages. It takes a picture only when you click Check Product.
+  </p>
   <p>
     Our server also records technical details, such as the time of a request and your IP address. We keep
     them until we submit the final thesis paper, and then delete them.

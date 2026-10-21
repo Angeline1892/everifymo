@@ -31,13 +31,11 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 syncAgreement(); // also check every time the background worker wakes up
 
 // ── Notification on revisit ──────────────────────────────────────────────────
-// OS notification fired once per tab per session whenever the user visits
-// (or switches back to) a product page they have already checked.
-
-// OS notification fired every time the user visits (or returns to) a product
-// page they have already checked. A short cooldown (5 s) deduplicates the
-// rare case where both changeInfo.url and status:'complete' fire for the same
-// navigation in quick succession — but any real revisit fires a fresh notice.
+// Fires an OS notification every time the user visits (or returns to) a product
+// page they have already checked.  On each visit the stored product title is
+// re-verified against our own backend so the user is notified immediately if a
+// previously suspicious/unregistered product has since become registered.
+// A short cooldown (5 s) deduplicates rapid duplicate tab events only.
 const NOTIFICATION_COOLDOWN_MS = 5000;
 
 /**
@@ -48,13 +46,21 @@ const NOTIFICATION_COOLDOWN_MS = 5000;
  * reopen) always get a fresh notification.
  */
 async function checkTabForNotification(tabId, url) {
+  const { termsAgreed } = await chrome.storage.local.get('termsAgreed');
+  if (termsAgreed !== true) return;
+  try { if (!PRODUCT_HOSTS.test(new URL(url).hostname)) return; } catch { return; }
+
   const key = productKey(url);
   // productKey() falls back to the full origin+path for unrecognised URLs
   if (!key || /^https?:\/\//.test(key)) return;
 
   const seenProducts = await migrateSeenProducts();
-  const status = seenProducts[key];
-  if (!status || status === 'registered') return;
+  const entry = seenProducts[key];
+  if (!entry) return; // never checked on this product
+
+  const storedStatus = typeof entry === 'object' ? entry.status : entry;
+  const storedTitle = typeof entry === 'object' ? entry.title : null;
+  if (!storedStatus || storedStatus === 'registered') return;
 
   const { notifiedTabs = {} } = await chrome.storage.session.get('notifiedTabs');
   const stampKey = `${tabId}:${key}`;
@@ -64,8 +70,47 @@ async function checkTabForNotification(tabId, url) {
 
   notifiedTabs[stampKey] = Date.now();
   await chrome.storage.session.set({ notifiedTabs });
+
+  // If we have the stored product title, silently re-check the current status from
+  // our own backend.  This is NOT automation — it is triggered purely by the user
+  // navigating to the page, and it never touches the platform itself.
+  if (storedTitle) {
+    try {
+      const res = await fetch('https://everify.store/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: storedTitle, top_k: 1 })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const freshVerdict = data?.verdict;
+        const freshStatus = (!freshVerdict || freshVerdict === 'no_match') ? 'suspicious' : freshVerdict;
+
+        if (freshStatus !== storedStatus) {
+          // Status changed — persist the updated entry
+          const updated = { ...seenProducts, [key]: { status: freshStatus, title: storedTitle } };
+          await chrome.storage.local.set({ seenProducts: updated });
+
+          if (freshStatus === 'registered') {
+            // Great news — notify and stop (don't show the 'checked before' notice)
+            showNotification(`status-${key}`, 'Product Now Registered!',
+              `"${storedTitle}" is now in the FDA-registered products list. Click Check Product to see the full result.`);
+            return;
+          }
+          // For other status changes (e.g. suspicious → unregistered), fall through
+          // and show the notice using the fresh status
+          showNotification(`status-${key}`, 'You checked this product before',
+            `Status updated: ${statusLabel(freshStatus)}. Click Check Product for the full result.`,
+            FDA_CONTACT_LINE);
+          return;
+        }
+      }
+    } catch { /* network unavailable — fall through to show the stored status */ }
+  }
+
+  // Default: show the stored status (backend unreachable or no title stored yet)
   showNotification(`status-${key}`, 'You checked this product before',
-    `Your earlier result was: ${statusLabel(status)}. Results can change, so click Check Product again for the latest result.`,
+    `Your earlier result was: ${statusLabel(storedStatus)}. Results can change, so click Check Product again for the latest result.`,
     FDA_CONTACT_LINE);
 }
 
@@ -107,20 +152,21 @@ async function migrateSeenProducts() {
   let changed = false;
   const migrated = {};
   for (const [k, v] of Object.entries(seenProducts)) {
-    // A canonical key looks like "shopee:…", "lazada:…", "tiktok:…", "facebook:…"
-    // A legacy key starts with "https://" or "http://"
-    if (k.startsWith('http://') || k.startsWith('https://')) {
-      const canonical = productKey(k);
-      migrated[canonical] = v;
+    // Normalise the key: legacy keys start with "https://" or "http://"
+    const canonical = (k.startsWith('http://') || k.startsWith('https://'))
+      ? productKey(k)
+      : k;
+    if (canonical !== k) {
       changed = true;
       console.log('[seenProducts] migrated key', k, '->', canonical);
-    } else {
-      migrated[k] = v;
     }
+    // Normalise the value: old format was a plain string status,
+    // new format is { status, title } — upgrade silently.
+    const entry = (typeof v === 'string') ? { status: v, title: '' } : v;
+    if (typeof v === 'string') changed = true;
+    migrated[canonical] = entry;
   }
-  if (changed) {
-    await chrome.storage.local.set({ seenProducts: migrated });
-  }
+  if (changed) await chrome.storage.local.set({ seenProducts: migrated });
   return migrated;
 }
 
@@ -163,18 +209,21 @@ async function notifyOnStatusChange(message, status) {
   const key = productKey(message.url);
   // Always migrate first so we are working with canonical keys
   const seenProducts = await migrateSeenProducts();
-  const previous = seenProducts[key];
+  const entry = seenProducts[key];
+  const previous = typeof entry === 'object' ? entry?.status : entry;
+  const title = message.title || (typeof entry === 'object' ? entry?.title : '') || '';
 
   if (status !== 'registered') {
     showNotification(`status-${key}`, 'Product not confirmed as registered',
       `ProduCheck's result: ${statusLabel(status)}. Please confirm on the FDA Verification Portal (verification.fda.gov.ph).`,
       FDA_CONTACT_LINE);
   } else if (previous && previous !== 'registered') {
-    showNotification(`status-${key}`, 'Good news',
-      'This product now matches the FDA product list used by ProduCheck. You can double-check on verification.fda.gov.ph.');
+    showNotification(`status-${key}`, '🎉 Product Now Registered!',
+      `"${title || 'This product'}" is now in the FDA-registered products list. You can double-check on verification.fda.gov.ph.`);
   }
 
-  seenProducts[key] = status;
+  // Store both status AND title so checkTabForNotification can re-verify on the next visit
+  seenProducts[key] = { status, title };
   await chrome.storage.local.set({ seenProducts });
 }
 
@@ -213,7 +262,7 @@ async function authorizedFetch(url, options = {}) {
 }
 
 // These actions do real work (read the page, call the server), so they only run after the person agrees
-const NEEDS_AGREEMENT = ['captureScreenshot', 'extractedTitle', 'recordDisplayedDetection', 'submitComplaint'];
+const NEEDS_AGREEMENT = ['captureScreenshot', 'verifyScreenshot', 'extractedTitle', 'recordDisplayedDetection', 'submitComplaint'];
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (NEEDS_AGREEMENT.includes(message.action)) {
