@@ -116,7 +116,7 @@ registered_df['full_product_info'] = (
 )
 
 registered_df['tokens']   = registered_df['full_product_info'].apply(word_tokenize)
-registered_df['filtered'] = registered_df['full_product_info'].apply(tokenize_for_bm25)
+registered_df['filtered'] = registered_df['full_product_info'].str.lower().apply(tokenize_for_bm25)
 
 registered_df.to_pickle(ASSET_DIR/"Registered_cleaned.pkl")
 
