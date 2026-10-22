@@ -1,4 +1,4 @@
-﻿
+
 // extension/popup/popup.js
 import { whenSessionReady, isUserLoggedIn, getCurrentUser } from "../scripts/session.js";
 import { LIMITS, liveLengthCheck } from "../utils/validation.js";
@@ -11,7 +11,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (tabs[0]?.id) {
-      chrome.tabs.sendMessage(tabs[0].id, { action: "closeEverifyModal" });
+      // Suppress "Receiving end does not exist" when the active tab has no content script
+      // (e.g. chrome:// pages, non-shop sites, or the tab hasn't fully loaded yet).
+      chrome.tabs.sendMessage(tabs[0].id, { action: "closeEverifyModal" }, () => {
+        void chrome.runtime.lastError; // consume the error intentionally
+      });
     }
   });
 

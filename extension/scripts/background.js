@@ -3,6 +3,9 @@ import { TERMS_VERSION, WELCOME_PAGE } from '../utils/agreement.js';
 
 console.log("Background service worker started");
 
+const PRODUCT_HOSTS = /(^|\.)(shopee\.ph|lazada\.com\.ph|facebook\.com|tiktok\.com)$/;
+const FDA_CONTACT_LINE = 'FDA hotline (02) 8857-1900 · info@fda.gov.ph';
+
 // ----- Terms agreement -----
 // If the Terms date changed since the person agreed, switch the agreement off so they are asked again
 async function syncAgreement() {
@@ -27,28 +30,171 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
 syncAgreement(); // also check every time the background worker wakes up
 
+// ── Notification on revisit ──────────────────────────────────────────────────
+// Fires an OS notification every time the user visits (or returns to) a product
+// page they have already checked.  On each visit the stored product title is
+// re-verified against our own backend so the user is notified immediately if a
+// previously suspicious/unregistered product has since become registered.
+// A short cooldown (5 s) deduplicates rapid duplicate tab events only.
+const NOTIFICATION_COOLDOWN_MS = 5000;
+
+/**
+ * Check a tab URL against seenProducts and fire the OS notification whenever
+ * the user lands on a previously-checked suspicious/unregistered product.
+ * Uses a short time-based cooldown per (tabId, key) instead of a session-wide
+ * once-only guard, so revisits (scroll away → scroll back, tab switch, browser
+ * reopen) always get a fresh notification.
+ */
+async function checkTabForNotification(tabId, url) {
+  const { termsAgreed } = await chrome.storage.local.get('termsAgreed');
+  if (termsAgreed !== true) return;
+  try { if (!PRODUCT_HOSTS.test(new URL(url).hostname)) return; } catch { return; }
+
+  const key = productKey(url);
+  // productKey() falls back to the full origin+path for unrecognised URLs
+  if (!key || /^https?:\/\//.test(key)) return;
+
+  const seenProducts = await migrateSeenProducts();
+  const entry = seenProducts[key];
+  if (!entry) return; // never checked on this product
+
+  const storedStatus = typeof entry === 'object' ? entry.status : entry;
+  const storedTitle = typeof entry === 'object' ? entry.title : null;
+  if (!storedStatus || storedStatus === 'registered') return;
+
+  const { notifiedTabs = {} } = await chrome.storage.session.get('notifiedTabs');
+  const stampKey = `${tabId}:${key}`;
+  const lastTime = notifiedTabs[stampKey] ?? 0;
+  // Skip only if we already fired within the cooldown window (rapid duplicate events)
+  if (Date.now() - lastTime < NOTIFICATION_COOLDOWN_MS) return;
+
+  notifiedTabs[stampKey] = Date.now();
+  await chrome.storage.session.set({ notifiedTabs });
+
+  // If we have the stored product title, silently re-check the current status from
+  // our own backend.  This is NOT automation — it is triggered purely by the user
+  // navigating to the page, and it never touches the platform itself.
+  if (storedTitle) {
+    try {
+      const res = await fetch('https://everify.store/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: storedTitle, top_k: 1 })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const freshVerdict = data?.verdict;
+        const freshStatus = (!freshVerdict || freshVerdict === 'no_match') ? 'suspicious' : freshVerdict;
+
+        if (freshStatus !== storedStatus) {
+          // Status changed — persist the updated entry
+          const updated = { ...seenProducts, [key]: { status: freshStatus, title: storedTitle } };
+          await chrome.storage.local.set({ seenProducts: updated });
+
+          if (freshStatus === 'registered') {
+            // Great news — notify and stop (don't show the 'checked before' notice)
+            showNotification(`status-${key}`, 'Product Now Registered!',
+              `"${storedTitle}" is now in the FDA-registered products list. Click Check Product to see the full result.`);
+            return;
+          }
+          // For other status changes (e.g. suspicious → unregistered), fall through
+          // and show the notice using the fresh status
+          showNotification(`status-${key}`, 'You checked this product before',
+            `Status updated: ${statusLabel(freshStatus)}. Click Check Product for the full result.`,
+            FDA_CONTACT_LINE);
+          return;
+        }
+      }
+    } catch { /* network unavailable — fall through to show the stored status */ }
+  }
+
+  // Default: show the stored status (backend unreachable or no title stored yet)
+  showNotification(`status-${key}`, 'You checked this product before',
+    `Your earlier result was: ${statusLabel(storedStatus)}. Results can change, so click Check Product again for the latest result.`,
+    FDA_CONTACT_LINE);
+}
+
+// Covers full page loads (status:'complete') AND SPA pushState URL changes
+// (changeInfo.url).  Both event types wake the SW reliably.
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  const url = changeInfo.url || (changeInfo.status === 'complete' ? tab.url : null);
+  if (url) checkTabForNotification(tabId, url).catch(console.error);
+});
+
+// Covers the case where the user switches to an already-open product tab
+// (e.g. after browser restore — no onUpdated fires, but onActivated does).
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (tab?.url) checkTabForNotification(tabId, tab.url).catch(console.error);
+  } catch { /* tab not accessible (e.g. chrome:// pages) */ }
+});
+
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  chrome.action.setBadgeText({ text: '', tabId });
+  // Clean up all notifiedTabs entries belonging to this tab (keys are "tabId:productKey")
+  const { notifiedTabs = {} } = await chrome.storage.session.get('notifiedTabs');
+  const prefix = `${tabId}:`;
+  const keysToDelete = Object.keys(notifiedTabs).filter(k => k.startsWith(prefix));
+  if (keysToDelete.length) {
+    keysToDelete.forEach(k => delete notifiedTabs[k]);
+    await chrome.storage.session.set({ notifiedTabs });
+  }
+});
+
+/**
+ * One-time migration: older builds stored seenProducts with the raw URL as the
+ * key instead of the canonical productKey(). Re-key any such entries so that
+ * lookups with the current productKey() format will actually find them.
+ */
+async function migrateSeenProducts() {
+  const { seenProducts = {} } = await chrome.storage.local.get('seenProducts');
+  let changed = false;
+  const migrated = {};
+  for (const [k, v] of Object.entries(seenProducts)) {
+    // Normalise the key: legacy keys start with "https://" or "http://"
+    const canonical = (k.startsWith('http://') || k.startsWith('https://'))
+      ? productKey(k)
+      : k;
+    if (canonical !== k) {
+      changed = true;
+      console.log('[seenProducts] migrated key', k, '->', canonical);
+    }
+    // Normalise the value: old format was a plain string status,
+    // new format is { status, title } — upgrade silently.
+    const entry = (typeof v === 'string') ? { status: v, title: '' } : v;
+    if (typeof v === 'string') changed = true;
+    migrated[canonical] = entry;
+  }
+  if (changed) await chrome.storage.local.set({ seenProducts: migrated });
+  return migrated;
+}
+
 function productKey(url) {
   try {
     const u = new URL(url);
-    return u.origin + u.pathname;
+    const p = decodeURIComponent(u.pathname);
+    let m;
+    if (u.hostname.includes('shopee') && (m = p.match(/-i\.(\d+)\.(\d+)/))) return `shopee:${m[1]}.${m[2]}`;
+    if (u.hostname.includes('lazada') && (m = p.match(/-i(\d+)/))) return `lazada:${m[1]}`;
+    if (u.hostname.includes('tiktok') && (m = p.match(/\/pdp\/(?:.*\/)?(\d+)\/?$/))) return `tiktok:${m[1]}`;
+    if (u.hostname.includes('facebook') && (m = p.match(/\/marketplace\/item\/(\d+)/))) return `facebook:${m[1]}`;
+    return u.origin + u.pathname;   // fallback for anything else
   } catch {
     return url;
   }
 }
 
-const FDA_CONTACT_LINE = 'FDA hotline (02) 8857-1900 · info@fda.gov.ph';
-
 function showNotification(id, title, message, contextMessage) {
-  chrome.notifications.clear(id, () => {
-    chrome.notifications.create(id, {
-      type: 'basic',
-      iconUrl: chrome.runtime.getURL('assets/images/icon128.png'),
-      title,
-      message,
-      ...(contextMessage ? { contextMessage } : {})
-    }, () => {
-      if (chrome.runtime.lastError) console.error('Notification error:', chrome.runtime.lastError.message);
-    });
+  const uniqueId = `${id}-${Date.now()}`;
+  chrome.notifications.create(uniqueId, {
+    type: 'basic',
+    iconUrl: chrome.runtime.getURL('assets/images/icon128.png'),
+    title,
+    message,
+    ...(contextMessage ? { contextMessage } : {})
+  }, () => {
+    if (chrome.runtime.lastError) console.error('Notification error:', chrome.runtime.lastError.message);
   });
 }
 
@@ -61,19 +207,23 @@ function statusLabel(status) {
 
 async function notifyOnStatusChange(message, status) {
   const key = productKey(message.url);
-  const { seenProducts = {} } = await chrome.storage.local.get('seenProducts');
-  const previous = seenProducts[key];
+  // Always migrate first so we are working with canonical keys
+  const seenProducts = await migrateSeenProducts();
+  const entry = seenProducts[key];
+  const previous = typeof entry === 'object' ? entry?.status : entry;
+  const title = message.title || (typeof entry === 'object' ? entry?.title : '') || '';
 
   if (status !== 'registered') {
     showNotification(`status-${key}`, 'Product not confirmed as registered',
       `ProduCheck's result: ${statusLabel(status)}. Please confirm on the FDA Verification Portal (verification.fda.gov.ph).`,
       FDA_CONTACT_LINE);
   } else if (previous && previous !== 'registered') {
-    showNotification(`status-${key}`, 'Good news',
-      'This product now matches the FDA product list used by ProduCheck. You can double-check on verification.fda.gov.ph.');
+    showNotification(`status-${key}`, '🎉 Product Now Registered!',
+      `"${title || 'This product'}" is now in the FDA-registered products list. You can double-check on verification.fda.gov.ph.`);
   }
 
-  seenProducts[key] = status;
+  // Store both status AND title so checkTabForNotification can re-verify on the next visit
+  seenProducts[key] = { status, title };
   await chrome.storage.local.set({ seenProducts });
 }
 
@@ -112,7 +262,7 @@ async function authorizedFetch(url, options = {}) {
 }
 
 // These actions do real work (read the page, call the server), so they only run after the person agrees
-const NEEDS_AGREEMENT = ['pageVisited', 'captureScreenshot', 'verifyScreenshot', 'extractedTitle', 'recordDisplayedDetection', 'submitComplaint'];
+const NEEDS_AGREEMENT = ['captureScreenshot', 'verifyScreenshot', 'extractedTitle', 'recordDisplayedDetection', 'submitComplaint'];
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (NEEDS_AGREEMENT.includes(message.action)) {
@@ -137,22 +287,23 @@ function handleMessage(message, sender, sendResponse) {
   }
 
   if (message.action === 'pageVisited') {
+    // This path only returns the saved status so content.js can show the
+    // in-page banner.  The OS notification is now fired by tabs.onUpdated /
+    // tabs.onActivated (see above), which wake the SW before this message
+    // is ever sent — removing the cold-start race entirely.
     (async () => {
       const key = productKey(message.url);
-      const { seenProducts = {} } = await chrome.storage.local.get('seenProducts');
+      const seenProducts = await migrateSeenProducts();
       const status = seenProducts[key];
-      if (status && status !== 'registered') {
-        showNotification(`status-${key}`, 'You checked this product before',
-          `Your earlier result was: ${statusLabel(status)}. Results can change, so click Check Product again for the latest result.`,
-          FDA_CONTACT_LINE);
-      }
+      console.log('[pageVisited] key:', key, '| status:', status);
+      sendResponse({ status: status || null });
     })();
-    return;
+    return true;
   }
 
   if (message.action === "captureScreenshot") {
     const host = sender.tab ? new URL(sender.tab.url).hostname : "";
-    if (!/(^|\.)(shopee\.ph|lazada\.com\.ph|facebook\.com|tiktok\.com)$/.test(host)) {
+    if (!PRODUCT_HOSTS.test(host)) {
       sendResponse({ success: false, error: "Not an allowed site" });
       return;
     }
@@ -173,33 +324,33 @@ function handleMessage(message, sender, sendResponse) {
         const res = await fetch('https://everify.store/verify-screenshot', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            image: message.image, 
-            url: message.url, 
+          body: JSON.stringify({
+            image: message.image,
+            url: message.url,
             platform: message.platform,
-            dpr: message.dpr, 
-            rect: message.rect 
+            dpr: message.dpr,
+            rect: message.rect
           })
         });
-        
+
         if (!res.ok) throw new Error('HTTP ' + res.status);
 
         const data = await res.json();
-        sendResponse({ 
-          success: true, 
-          title: data.title, 
+        sendResponse({
+          success: true,
+          title: data.title,
           store: data.store,
           brand: data.brand,
           searchText: data.search_text,
-          error: data.error 
+          error: data.error
         });
       } catch (e) {
-        sendResponse({ 
-          success: false, 
-          error: e.message 
+        sendResponse({
+          success: false,
+          error: e.message
         });
       }
-   })();
+    })();
     return true;
   }
 
@@ -208,9 +359,10 @@ function handleMessage(message, sender, sendResponse) {
     return true;
   }
 
-  // console.log('Background received message:', message); - this debug line printed the whole message, which includes a complaint's attached screenshot, into the extension's developer console on the user's own computer. It was never sent anywhere, but it is better not to log it.
   if (message.action === 'extractedTitle') {
     (async () => {
+      let verified = false;
+      console.log('Background received extractedTitle:', message.title);
       try {
         const response = await fetch('https://everify.store/verify', {
           method: 'POST',
@@ -228,7 +380,7 @@ function handleMessage(message, sender, sendResponse) {
           sendResponse({ status: 'error', data: null });
           return;
         }
-        
+
         const status = data?.verdict === 'no_match' ? 'suspicious' : data?.verdict || 'unregistered';
         notifyOnStatusChange(message, status).catch(console.error);
 
@@ -245,8 +397,9 @@ function handleMessage(message, sender, sendResponse) {
         if (sender.tab && sender.tab.id) {
           updateBadge(status, sender.tab.id);
         }
-        
+
         sendResponse({ status: 'success', data: data });
+        verified = true;
 
         const res = await authorizedFetch('https://everify.store/submitVerification', {
           method: 'POST',
@@ -266,20 +419,21 @@ function handleMessage(message, sender, sendResponse) {
       } catch (error) {
         //
         console.error('Error sending title to backend:', error);
-        // const status = 'unregistered';
-        // chrome.storage.local.set({
-        //   productTitle: message.title,
-        //   productPlatform: message.platform,
-        //   productUrl: message.url,
-        //   productStatus: status
-        // }, () => {
-        //   console.log('Product info stored with error fallback:', message.title);
-        // });
+        if (verified) return;
+        const status = 'unregistered';
+        chrome.storage.local.set({
+          productTitle: message.title,
+          productPlatform: message.platform,
+          productUrl: message.url,
+          productStatus: status
+        }, () => {
+          console.log('Product info stored with error fallback:', message.title);
+        });
 
-        // if (sender.tab && sender.tab.id) {
-        //   updateBadge(status, sender.tab.id);
-        // }
-        
+        if (sender.tab && sender.tab.id) {
+          updateBadge(status, sender.tab.id);
+        }
+
         sendResponse({ status: 'error', data: null });
       }
     })();
@@ -352,10 +506,10 @@ function handleMessage(message, sender, sendResponse) {
 
 function updateBadge(status, tabId) {
   const badgeConfig = {
-    registered:   { text: '✓', color: '#16A34A' }, // green
+    registered: { text: '✓', color: '#16A34A' }, // green
     unregistered: { text: '!', color: '#DC2626' }, // red
-    suspicious:   { text: '?', color: '#D97706' }, // amber
-    idle:         { text: '',  color: '#000000' }  // clears badge
+    suspicious: { text: '?', color: '#D97706' }, // amber
+    idle: { text: '', color: '#000000' }  // clears badge
   };
 
   const config = badgeConfig[status] || badgeConfig.idle;
@@ -366,7 +520,7 @@ function updateBadge(status, tabId) {
 
 // Clear the badge when the user navigates away or closes the tab,
 // so it doesn't show a stale result on a page with no product
-chrome.tabs.onRemoved.addListener((tabId) => {
-  chrome.action.setBadgeText({ text: '', tabId: tabId });
-});
+// chrome.tabs.onRemoved.addListener((tabId) => {
+//   chrome.action.setBadgeText({ text: '', tabId: tabId });
+// });
 
