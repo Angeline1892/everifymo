@@ -59,6 +59,30 @@ sbert_registered_embeddings_finetuned = np.load(_get_path("sbert_registered_embe
 sbert_unregistered_embeddings_finetuned = np.load(_get_path("sbert_unregistered_embeddings_finetuned.npy", "unregistered_embeddings.npy"))
 
 
+import re
+
+GENERIC_BRAND_WORDS = {
+    "the", "and", "inc", "corp", "corporation", "co", "ltd", "limited",
+    "beauty", "care", "skin", "cosmetics", "hair", "natural", "pure",
+    "spa", "new", "organic", "philippines", "essential", "essentials",
+    "lab", "laboratories", "formula", "wellness", "products", "international",
+}
+
+
+def check_brand_match(query: str, text: str) -> bool:
+    """Check if any distinct non-generic brand word from text appears in the query."""
+    if not text or pd.isna(text):
+        return False
+    b_words = [
+        w for w in re.findall(r"\b[a-zA-Z0-9]{3,}\b", str(text).lower())
+        if w not in GENERIC_BRAND_WORDS
+    ]
+    if not b_words:
+        return False
+    q_words = set(re.findall(r"\b[a-zA-Z0-9]{3,}\b", query.lower()))
+    return any(w in q_words for w in b_words)
+
+
 def add_missing_cosine_scores(combined, embeddings, query_vec):
     """Fill in cosine similarity for candidates that BM25 found but FAISS didn't surface."""
     q = query_vec[0]
@@ -68,7 +92,7 @@ def add_missing_cosine_scores(combined, embeddings, query_vec):
     return combined
 
 
-def _candidates(query_tokens, query_vec, bm25, index, embeddings, df, title_col, k=50):
+def _candidates(query, query_tokens, query_vec, bm25, index, embeddings, df, title_col, is_registered=True, k=50):
     k = min(k, index.ntotal)
     bm25_scores = bm25.get_scores(query_tokens)
     bm25_top = np.argpartition(bm25_scores, -k)[-k:]
@@ -80,20 +104,40 @@ def _candidates(query_tokens, query_vec, bm25, index, embeddings, df, title_col,
             combined.setdefault(int(i), {})["faiss_score"] = float(s)
     combined = add_missing_cosine_scores(combined, embeddings, query_vec)
 
-    return [
-        {
+    results = []
+    for i, sc in combined.items():
+        row = df.iloc[i]
+        c_score = sc["faiss_score"]
+        bm_score = float(bm25_scores[i])
+        bm_norm = min(1.0, max(0.0, bm_score / 30.0))
+
+        if is_registered:
+            brand = str(row.get("BRAND_NAME", "")).strip() if pd.notna(row.get("BRAND_NAME")) else ""
+            pname = str(row.get("PRODUCT_NAME", row.get(title_col, ""))).strip()
+            display_title = f"[{brand}] {pname}" if brand else pname
+            brand_matched = check_brand_match(query, brand)
+        else:
+            brand = ""
+            pname = str(row.get(title_col, "")).strip()
+            display_title = pname
+            brand_matched = check_brand_match(query, display_title)
+
+        results.append({
             "index": i,
-            "title": df.iloc[i][title_col],
-            "bm25_score": float(bm25_scores[i]),
-            **sc,
-        }
-        for i, sc in combined.items()
-    ]
+            "title": display_title,
+            "brand": brand,
+            "product_name": pname,
+            "faiss_score": c_score,
+            "bm25_score": bm_score,
+            "bm25_norm": bm_norm,
+            "brand_match": brand_matched,
+        })
+    return results
 
 
 def retrieve(query):
     cleaned_query = clean_productTitle(query)
-    query_tokens = tokenize_for_bm25(cleaned_query)
+    query_tokens = [w.lower() for w in tokenize_for_bm25(cleaned_query)]
 
     query_vec = finetuned_model.encode([cleaned_query], convert_to_numpy=True).astype("float32")
     faiss.normalize_L2(query_vec)
@@ -105,6 +149,7 @@ def retrieve(query):
         "query": query,
         "query_tokens": query_tokens,
         "registered_df": _candidates(
+            query,
             query_tokens,
             query_vec,
             bm25_registered,
@@ -112,8 +157,10 @@ def retrieve(query):
             sbert_registered_embeddings_finetuned,
             registered_df,
             title_reg_col,
+            is_registered=True,
         ),
         "unregistered_df": _candidates(
+            query,
             query_tokens,
             query_vec,
             bm25_unregistered,
@@ -121,6 +168,7 @@ def retrieve(query):
             sbert_unregistered_embeddings_finetuned,
             unregistered_df,
             title_unreg_col,
+            is_registered=False,
         ),
     }
 
@@ -154,11 +202,27 @@ def assign_verdict(scores, use_margin=True):
 def evaluate_match(query, use_margin=True, verbose=True):
     result = retrieve(query)
 
-    reg = sorted(result["registered_df"], key=lambda x: x["faiss_score"], reverse=True)
-    unreg = sorted(result["unregistered_df"], key=lambda x: x["faiss_score"], reverse=True)
+    has_registered_brand_in_query = any(c["brand_match"] for c in result["registered_df"])
 
-    r1, r2 = (reg[0]["faiss_score"], reg[1]["faiss_score"]) if len(reg) >= 2 else (reg[0]["faiss_score"] if reg else -1.0, -1.0)
-    u1, u2 = (unreg[0]["faiss_score"], unreg[1]["faiss_score"]) if len(unreg) >= 2 else (unreg[0]["faiss_score"] if unreg else -1.0, -1.0)
+    for c in result["registered_df"]:
+        base_score = 0.70 * c["faiss_score"] + 0.30 * c["bm25_norm"]
+        if has_registered_brand_in_query:
+            c["final_score"] = base_score + 0.08 if c["brand_match"] else base_score - 0.20
+        else:
+            c["final_score"] = base_score
+
+    for c in result["unregistered_df"]:
+        base_score = 0.70 * c["faiss_score"] + 0.30 * c["bm25_norm"]
+        if has_registered_brand_in_query:
+            c["final_score"] = base_score + 0.08 if c["brand_match"] else base_score - 0.20
+        else:
+            c["final_score"] = base_score
+
+    reg = sorted(result["registered_df"], key=lambda x: x["final_score"], reverse=True)
+    unreg = sorted(result["unregistered_df"], key=lambda x: x["final_score"], reverse=True)
+
+    r1, r2 = (reg[0]["final_score"], reg[1]["final_score"]) if len(reg) >= 2 else (reg[0]["final_score"] if reg else -1.0, -1.0)
+    u1, u2 = (unreg[0]["final_score"], unreg[1]["final_score"]) if len(unreg) >= 2 else (unreg[0]["final_score"] if unreg else -1.0, -1.0)
 
     verdict = assign_verdict(
         pd.DataFrame({"reg_top1": [r1], "reg_top2": [r2], "unreg_top1": [u1], "unreg_top2": [u2]}),
@@ -170,9 +234,9 @@ def evaluate_match(query, use_margin=True, verbose=True):
         print(f"Query: {query}")
         print("\n  Top 5 REGISTERED candidates:")
         for i, c in enumerate(reg[:5], 1):
-            print(f"    {i}. {c['title']} (cos: {c['faiss_score']:.4f} | bm25: {c['bm25_score']:.2f})")
+            print(f"    {i}. {c['title']} (score: {c['final_score']:.4f} | cos: {c['faiss_score']:.4f} | bm25: {c['bm25_score']:.2f})")
         if unreg:
-            print(f"\n  Top UNREGISTERED: {unreg[0]['title']} (cos: {u1:.4f})")
+            print(f"\n  Top UNREGISTERED: {unreg[0]['title']} (score: {u1:.4f} | cos: {unreg[0]['faiss_score']:.4f})")
         print(f"\n  -> VERDICT: {verdict.upper()} (score: {winning_score:.4f}, thr={THR}, lo={LO}, margin={MARGIN})")
 
     top_reg = reg[0] if reg else None
