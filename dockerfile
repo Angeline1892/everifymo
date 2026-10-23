@@ -25,6 +25,9 @@ COPY backend/scripts ./backend/scripts
 
 ENV PYTHONPATH=/everifymo/backend:/everifymo
 
+# Embed deployment build timestamp inside the image
+RUN date +%s > /everifymo/.build_id
+
 
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
