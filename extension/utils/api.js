@@ -21,15 +21,26 @@ async function handleResponse(response, options = {}) {
         if (options.isLogin) {
             throw new Error('Incorrect password.');
         }
-        throw new UnauthorizedError('Session expired. Please login once again');
+        const err = new UnauthorizedError('Session expired. Please login once again');
+        err.status = 401;
+        throw err;
     }
 
     if (!response.ok) {
         const data = await response.json().catch(() => null);
-        const message = data?.detail 
-            ? (Array.isArray(data.detail) ? data.detail.map(d => d.msg).join(', ') : data.detail)
-            : `Server responded ${response.status}`;
-        throw new Error(message);
+        let message = `Server responded ${response.status}`;
+
+        if (typeof data?.detail === 'string') {
+            message = data.detail;
+        } else if (Array.isArray(data?.detail) && data.detail.length) {
+            message = data.detail
+                .map(d => (d.msg || '').replace(/^Value error,\s*/, ''))
+                .join(', ');
+        }
+
+        const err = new Error(message);
+        err.status = response.status;
+        throw err;
     }
 
     return response.json();

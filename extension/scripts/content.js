@@ -1,8 +1,22 @@
 //extension/scripts/content.js
 console.log('FDA Checker content script loaded');
-console.log("Hello World from content.js")
 
-chrome.runtime.sendMessage({ action: 'pageVisited', url: location.href });
+
+function productKey(url) {
+  try {
+    const u = new URL(url);
+    const p = decodeURIComponent(u.pathname);
+    let m;
+    if (u.hostname.includes('shopee') && (m = p.match(/-i\.(\d+)\.(\d+)/))) return `shopee:${m[1]}.${m[2]}`;
+    if (u.hostname.includes('lazada') && (m = p.match(/-i(\d+)/))) return `lazada:${m[1]}`;
+    if (u.hostname.includes('tiktok') && (m = p.match(/\/pdp\/(?:.*\/)?(\d+)\/?$/))) return `tiktok:${m[1]}`;
+    if (u.hostname.includes('facebook') && (m = p.match(/\/marketplace\/item\/(\d+)/))) return `facebook:${m[1]}`;
+    return u.origin + u.pathname;   // fallback for anything else
+  } catch {
+    return url;
+  }
+}
+
 
 const verifyBtn = document.createElement("button");
 verifyBtn.textContent = "Check Product";
@@ -23,35 +37,30 @@ document.body.appendChild(verifyBtn);
 let verifyButtonEnabled = true; // default
 let termsAgreed = false;        // stays false until the person agrees to the Terms
 let lastStoreName = '';
-let lastBrand = '';
 let lastSearchText = '';
 
 // checking if its in the product page
 function isProductPage() {
 
-    const currentUrl = location.href;
+  const currentUrl = location.href;
 
-    if ((currentUrl.includes("shopee.ph") && currentUrl.includes("-i.")) || currentUrl.includes("shopee.ph/product")) {
-        console.log("Product page of shopee");
-        return true;
-    }    
+  if ((currentUrl.includes("shopee.ph") && currentUrl.includes("-i.")) || currentUrl.includes("shopee.ph/product")) {
+    return true;
+  }
 
-    if (currentUrl.includes("lazada.com.ph/products/") && currentUrl.includes(".html")){
-        console.log("Product page of lazada");
-        return true;
-    } 
+  if (currentUrl.includes("lazada.com.ph/products/") && currentUrl.includes(".html")) {
+    return true;
+  }
 
-    if (currentUrl.includes("facebook.com/marketplace/item/")) {
-        console.log("Product page of facebook");
-        return true;  
-    } 
+  if (currentUrl.includes("facebook.com/marketplace/item/")) {
+    return true;
+  }
 
-    if (currentUrl.includes("shop.tiktok.com/ph/pdp")) {
-        console.log("Product page of tiktok");
-        return true;
-    }   
+  if (currentUrl.includes("shop.tiktok.com/ph/pdp")) {
+    return true;
+  }
 
-    return false;
+  return false;
 }
 
 function updateButton() {
@@ -63,13 +72,14 @@ setInterval(() => {
   if (location.href !== lastUrl) {
     lastUrl = location.href;
     updateButton();
+    if (modal) modal.style.display = 'none';
   }
 }, 500);
 
 chrome.storage.local.get(['verifyButtonEnabled', 'termsAgreed'], (result) => {
   verifyButtonEnabled = result.verifyButtonEnabled !== false;
   termsAgreed = result.termsAgreed === true;
-  updateButton();   // new
+  updateButton();
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -106,8 +116,8 @@ const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 const RF_FIELDS = [
   { input: '#rf-product-name', error: '#rf-product-name-error', label: 'Product name', max: RF_LIMITS.PRODUCT_NAME_MAX, required: true },
-  { input: '#rf-store-name',   error: '#rf-store-name-error',   label: 'Store name',   max: RF_LIMITS.STORE_NAME_MAX,   required: true },
-  { input: '#rf-description',  error: '#rf-description-error',  label: 'Description',  max: RF_LIMITS.DESCRIPTION_MAX,  required: false },
+  { input: '#rf-store-name', error: '#rf-store-name-error', label: 'Store name', max: RF_LIMITS.STORE_NAME_MAX, required: true },
+  { input: '#rf-description', error: '#rf-description-error', label: 'Description', max: RF_LIMITS.DESCRIPTION_MAX, required: false },
 ];
 
 // live = true while typing: only length is checked, "required" waits for submit
@@ -146,7 +156,7 @@ function createModal() {
   modal.style.minHeight = '500px';
   modal.style.maxHeight = '600px';
   modal.style.overflowY = 'auto';
- 
+
   modal.innerHTML = `
     <header class="mo-header">
       <img src="${chrome.runtime.getURL('assets/images/extension_icon.png')}" alt="ProduCheck Logo" class="mo-logo" />
@@ -448,7 +458,7 @@ function createModal() {
 
     </main>
   `;
- 
+
   document.body.appendChild(modal);
 
   // live red text while typing
@@ -460,7 +470,7 @@ function createModal() {
   const attachInput = modal.querySelector('#rf-attach-input');
   const attachPreview = modal.querySelector('#rf-attach-preview');
   const attachText = modal.querySelector('#rf-attach-text');
-  
+
   attachBox.addEventListener('click', () => attachInput.click());
 
   attachInput.addEventListener('change', () => {
@@ -505,7 +515,7 @@ function createModal() {
   modal.querySelector('#check-error-close').addEventListener('click', () => {
     modal.style.display = 'none';
   });
- 
+
   modal.querySelectorAll('.btn-skip').forEach(btn => {
     btn.addEventListener('click', () => { modal.style.display = 'none'; });
   });
@@ -521,7 +531,7 @@ function createModal() {
 
   let lastResultState = '';
   modal.querySelectorAll('.btn-report').forEach(btn => {
-    btn.addEventListener('click', () => {  
+    btn.addEventListener('click', () => {
       chrome.runtime.sendMessage({ action: "checkAuth" }, (res) => {
         if (!res?.loggedIn) {
           lastResultState = btn.closest('.state').id;
@@ -530,13 +540,13 @@ function createModal() {
         }
 
         lastResultState = btn.closest('.state').id;
-       
+
         const productName = modal.querySelector('#rf-product-name');
         const url = modal.querySelector('#rf-product-url');
-       
+
         if (productName) productName.value = lastProductTitle;
         if (url) url.value = sanitizeUrl(lastProductUrl);
-       
+
         modal.querySelector('#rf-store-name').value = lastStoreName;
         modal.querySelector('#rf-description').value = '';
 
@@ -545,7 +555,7 @@ function createModal() {
           modal.querySelector(f.input).classList.remove('rf-input-invalid');
         });
         modal.querySelector('#rf-attach-error').textContent = '';
-       
+
         showState('state-report-form');
       });
     });
@@ -610,9 +620,9 @@ function sanitizeUrl(rawUrl) {
     let url = new URL(rawUrl);
     let suspiciousPatterns = /token|session|auth|sp_atk|spm/i;
     [...url.searchParams.keys()].forEach(key => {
-        if (suspiciousPatterns.test(key)) {
-            url.searchParams.delete(key);
-        }
+      if (suspiciousPatterns.test(key)) {
+        url.searchParams.delete(key);
+      }
     });
     return url.toString();
   } catch {
@@ -646,7 +656,7 @@ function setLoading(on, text = 'Verifying product…') {
   showState('state-loading');
   if (!on) modal.querySelector('#mo-close-x').style.display = 'block';
 }
- 
+
 function renderResult(status, productTitle, results = []) {
   const stateId = ['registered', 'suspicious', 'unregistered'].includes(status)
     ? `state-${status}`
@@ -658,18 +668,18 @@ function renderResult(status, productTitle, results = []) {
     note = document.createElement('div');
     note.className = 'detected-note';
     note.style.cssText = 'font-size:11px;color:#6b7280;margin:6px 0;';
-    stateEl.firstElementChild.after(note);   
+    stateEl.firstElementChild.after(note);
   }
   note.textContent = lastSearchText ? `Searched as: ${lastSearchText}` : '';
   note.style.display = lastSearchText ? 'block' : 'none';
- 
+
   const nameSpan = modal.querySelector(`#product-name-${status}`);
   if (nameSpan) nameSpan.textContent = productTitle;
- 
+
   if (status === 'registered' || status === 'unregistered') {
     populateMatches(stateId, results);
   }
- 
+
   showState(stateId);
 }
 
@@ -682,7 +692,7 @@ function matchTier(pct) {
 function populateMatches(stateId, results) {
   const suffix = stateId === 'state-unregistered' ? '-red' : '';
   const cards = modal.querySelectorAll(`#${stateId} .match-card${suffix}`);
- 
+
   cards.forEach((card, i) => {
     const match = results[i];
     if (!match) { card.style.display = 'none'; return; }
@@ -715,7 +725,7 @@ verifyBtn.addEventListener("click", async () => {
 
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-  chrome.runtime.sendMessage({ 
+  chrome.runtime.sendMessage({
     action: "captureScreenshot",
     url: location.href,
     platform: platform(location.href),
@@ -749,7 +759,6 @@ verifyBtn.addEventListener("click", async () => {
 
       lastProductTitle = (response.title || '').slice(0, RF_LIMITS.PRODUCT_NAME_MAX);
       lastStoreName = response.store || '';
-      lastBrand = (response.brand || '').slice(0, 100);
       lastSearchText = (response.searchText || '').slice(0, RF_LIMITS.PRODUCT_NAME_MAX);
 
       if (!lastProductTitle.trim()) {
@@ -765,7 +774,7 @@ verifyBtn.addEventListener("click", async () => {
         platform: platform(location.href),
         url: location.href
       }, (res) => {
-        if (res?.status !== 'success') {          
+        if (res?.status !== 'success') {
           setLoading(false, "We couldn't reach the verification service. Please try again.");
           return;
         }
