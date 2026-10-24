@@ -76,7 +76,7 @@ async function checkTabForNotification(tabId, url) {
   // navigating to the page, and it never touches the platform itself.
   if (storedTitle) {
     try {
-      const res = await fetch('http://localhost:8001/verify', {
+      const res = await fetch('https://everify.store/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: storedTitle, top_k: 1 })
@@ -242,7 +242,7 @@ async function authorizedFetch(url, options = {}) {
 
   if (res.status === 401 && refresh_token) {
     const refreshRes = await fetch(
-      `http://localhost:8001/auth/refresh?refresh_token=${encodeURIComponent(refresh_token)}`,
+      `https://everify.store/auth/refresh?refresh_token=${encodeURIComponent(refresh_token)}`,
       { method: 'POST' }
     );
 
@@ -321,7 +321,7 @@ function handleMessage(message, sender, sendResponse) {
   if (message.action === "verifyScreenshot") {
     (async () => {
       try {
-        const res = await fetch('http://localhost:8001/verify-screenshot', {
+        const res = await fetch('https://everify.store/verify-screenshot', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -364,7 +364,7 @@ function handleMessage(message, sender, sendResponse) {
       let verified = false;
       console.log('Background received extractedTitle:', message.title);
       try {
-        const response = await fetch('http://localhost:8001/verify', {
+        const response = await fetch('https://everify.store/verify', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -401,7 +401,7 @@ function handleMessage(message, sender, sendResponse) {
         sendResponse({ status: 'success', data: data });
         verified = true;
 
-        const res = await authorizedFetch('http://localhost:8001/submitVerification', {
+        const res = await authorizedFetch('https://everify.store/submitVerification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -447,7 +447,7 @@ function handleMessage(message, sender, sendResponse) {
           return;
         }
 
-        const response = await fetch('http://localhost:8001/marketplace-detections', { // http://localhost:8001
+        const response = await fetch('https://everify.store/marketplace-detections', { // http://localhost:8001
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -469,7 +469,7 @@ function handleMessage(message, sender, sendResponse) {
   if (message.action === 'submitComplaint') {
     (async () => {
       try {
-        const res = await authorizedFetch('http://localhost:8001/submitComplaint', {
+        const res = await authorizedFetch('https://everify.store/submitComplaint', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
