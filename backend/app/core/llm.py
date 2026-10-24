@@ -5,6 +5,8 @@ import io, base64
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor
 
+client = httpx.Client(timeout=30)
+
 BRAND_MODEL = os.getenv("BRAND_MODEL", "claude-sonnet-5-5")
 
 PROMPT = (
@@ -41,11 +43,15 @@ def crop_data_url(image_data_url, rect, dpr):
     img = Image.open(io.BytesIO(base64.b64decode(b64)))
     box = (rect["x"]*dpr, rect["y"]*dpr, (rect["x"]+rect["w"])*dpr, (rect["y"]+rect["h"])*dpr)
     out = io.BytesIO()
-    img.crop(box).save(out, format="PNG")
+
+    crop = img.crop(box)
+    crop.thumbnail((1568, 1568))
+    crop.save(out, format="PNG", compress_level=1)
+
     return base64.b64encode(out.getvalue()).decode()
 
 def call_claude(b64, media_type, prompt, max_tokens=200, model="claude-haiku-4-5-20251001"):
-    res = httpx.post(
+    res = client.post(
         "https://api.anthropic.com/v1/messages",
         headers={"x-api-key": os.getenv("LLM_API_KEY"), "anthropic-version": "2023-06-01", "content-type": "application/json"},
         json={"model": model, "max_tokens": max_tokens,
@@ -58,9 +64,19 @@ def call_claude(b64, media_type, prompt, max_tokens=200, model="claude-haiku-4-5
     return res.json()["content"][0]["text"]
 
 def extract_listing(image_data_url: str, rect=None, dpr=1) -> dict:
+    pool = ThreadPoolExecutor(1)
     try:
+        brand_f = pool.submit(lambda: read_brand(crop_data_url(image_data_url, rect, dpr))) if rect else None
+
         header, b64 = image_data_url.split(",", 1)
         media_type = header.split(";")[0].replace("data:", "") 
+
+        img = Image.open(io.BytesIO(base64.b64decode(b64)))
+        if max(img.size) > 1568:
+            img.thumbnail((1568, 1568))
+            out = io.BytesIO()
+            img.convert("RGB").save(out, format="JPEG", quality=92)
+            b64, media_type = base64.b64encode(out.getvalue()).decode(), "image/jpeg"
 
         text = call_claude(b64, media_type, PROMPT)
 
@@ -72,9 +88,9 @@ def extract_listing(image_data_url: str, rect=None, dpr=1) -> dict:
         title = data.get("title")
 
         brand = None
-        if rect and title:
+        if brand_f and title:
             try:
-                brand = read_brand(crop_data_url(image_data_url, rect, dpr))
+                brand = brand_f.result()
             except Exception as e:
                 print("brand read failed:", e)
 
@@ -110,3 +126,5 @@ def extract_listing(image_data_url: str, rect=None, dpr=1) -> dict:
             "search_text": None, 
             "error": "service_error"
         }
+    finally:
+        pool.shutdown(wait=False)
